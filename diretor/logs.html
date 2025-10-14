@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Logs da Escola - Escola Log</title>
+    <meta name="description" content="Logs da escola - Escola Log - Sistema de gestão escolar">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/diretor/logs.html">
+    <meta property="og:title" content="Logs da Escola - Escola Log">
+    <meta property="og:description" content="Logs da escola - Escola Log - Sistema de gestão escolar">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/diretor/logs.html">
+    <meta name="twitter:title" content="Logs da Escola - Escola Log">
+    <meta name="twitter:description" content="Logs da escola - Escola Log - Sistema de gestão escolar">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #3b82f6;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .escola-info {
+            font-size: 0.9rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .escola-info svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Filters Card */
+        .filters-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .filters-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .filters-title svg {
+            width: 20px;
+            height: 20px;
+            color: #8b5cf6;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-field label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            height: 44px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0 12px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .filter-field input:focus,
+        .filter-field select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .filters-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Logs Card */
+        .logs-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logs-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .logs-title h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .logs-title svg {
+            width: 20px;
+            height: 20px;
+            color: #8b5cf6;
+        }
+
+        .logs-count {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .logs-table thead {
+            background: #f8fafc;
+        }
+
+        .logs-table th {
+            text-align: left;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+        }
+
+        .logs-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .logs-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .foto-aluno {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+        }
+
+        .evento-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .evento-entrada {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .evento-saida {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .evento-default {
+            background: rgba(107, 114, 128, 0.1);
+            color: #4b5563;
+        }
+
+        .confianca-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .confianca-alta {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .confianca-media {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .confianca-baixa {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            color: #cbd5e1;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .loading svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            .header {
+                padding: 15px;
+                margin-bottom: 15px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .header-title h1 {
+                font-size: 1.3rem;
+            }
+
+            .escola-info {
+                font-size: 0.8rem;
+            }
+
+            .filters-card,
+            .logs-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .filters-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                justify-content: center;
+                padding: 12px 16px;
+            }
+
+            .logs-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .logs-table th,
+            .logs-table td {
+                padding: 8px;
+                font-size: 0.8rem;
+            }
+
+            .foto-aluno {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 12px;
+            }
+
+            .header-title h1 {
+                font-size: 1.2rem;
+            }
+
+            .filters-card,
+            .logs-card {
+                padding: 12px;
+            }
+
+            .logs-table th,
+            .logs-table td {
+                padding: 6px;
+                font-size: 0.75rem;
+            }
+
+            .foto-aluno {
+                width: 28px;
+                height: 28px;
+            }
+
+            .empty-state {
+                padding: 40px 15px;
+            }
+
+            .empty-state svg {
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            }
+
+            .header,
+            .filters-card,
+            .logs-card {
+                background: rgba(30, 41, 59, 0.95);
+                color: #f1f5f9;
+            }
+
+            .header-title h1,
+            .filters-title,
+            .logs-title h2 {
+                color: #f1f5f9;
+            }
+
+            .escola-info,
+            .filter-field label {
+                color: #94a3b8;
+            }
+
+            .filter-field input,
+            .filter-field select {
+                background: rgba(15, 23, 42, 0.5);
+                border-color: #334155;
+                color: #f1f5f9;
+            }
+
+            .logs-table {
+                background: rgba(15, 23, 42, 0.5);
+            }
+
+            .logs-table thead {
+                background: rgba(30, 41, 59, 0.8);
+            }
+
+            .logs-table th {
+                color: #94a3b8;
+                border-color: #334155;
+            }
+
+            .logs-table td {
+                color: #f1f5f9;
+                border-color: #1e293b;
+            }
+
+            .logs-table tbody tr:hover {
+                background: rgba(30, 41, 59, 0.5);
+            }
+
+            .empty-state h3 {
+                color: #f1f5f9;
+            }
+
+            .empty-state p {
+                color: #94a3b8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.location.href='menu.html'" title="Voltar ao menu">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="header-title">
+                    <h1>Logs da Escola</h1>
+                    <div class="escola-info" id="escolaInfo">
+                        <i data-lucide="school"></i>
+                        <span>Carregando informações da escola...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-card" id="filtersCard" style="display: none;">
+            <div class="filters-title">
+                <i data-lucide="filter"></i>
+                Filtros
+            </div>
+            
+            <div class="filters-grid">
+                <div class="filter-field">
+                    <label for="dataInicio">Data de Início</label>
+                    <input type="date" id="dataInicio" />
+                </div>
+                
+                <div class="filter-field">
+                    <label for="dataFim">Data de Fim</label>
+                    <input type="date" id="dataFim" />
+                </div>
+                
+                <div class="filter-field">
+                    <label for="turmaId">Turma</label>
+                    <select id="turmaId">
+                        <option value="">Todas as turmas</option>
+                    </select>
+                </div>
+                
+                <div class="filter-field">
+                    <label for="alunoBusca">Nome do Aluno</label>
+                    <input type="text" id="alunoBusca" placeholder="Digite o nome do aluno" />
+                </div>
+                
+                <div class="filter-field">
+                    <label for="deviceId">ID do Dispositivo</label>
+                    <input type="text" id="deviceId" placeholder="Digite o ID do dispositivo" />
+                </div>
+                
+                <div class="filter-field">
+                    <label for="tipoEvento">Tipo de Evento</label>
+                    <select id="tipoEvento">
+                        <option value="">Todos os eventos</option>
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filters-actions">
+                <button class="btn btn-secondary" id="btnLimpar">
+                    <i data-lucide="x"></i>
+                    Limpar Filtros
+                </button>
+                <button class="btn btn-primary" id="btnAplicar">
+                    <i data-lucide="search"></i>
+                    Aplicar Filtros
+                </button>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="logs-card">
+            <div class="logs-title">
+                <h2>
+                    <i data-lucide="activity"></i>
+                    Registros de Logs
+                </h2>
+                <div class="logs-count" id="logsCount" style="display: none;">
+                    0 registros
+                </div>
+            </div>
+
+            <div id="loadingState" class="loading" style="display: none;">
+                <i data-lucide="loader-2"></i>
+                Carregando logs...
+            </div>
+
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Data/Hora</th>
+                            <th>Aluno</th>
+                            <th>Turma</th>
+                            <th>Série</th>
+                            <th>Evento</th>
+                            <th>Dispositivo</th>
+                            <th>Confiança</th>
+                            <th>Máscara</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i data-lucide="search-x"></i>
+                <h3>Nenhum log encontrado</h3>
+                <p>Não foram encontrados registros para os filtros selecionados.<br>Tente ajustar os critérios de busca.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Scripts -->
+    <script src="../js/pwa.js"></script>
+    
+    <script>
+        // Configuração do Supabase
+        let supabase = null;
+        let currentUser = null;
+        let escolaId = null;
+        let escolaData = null;
+        let turmas = [];
+        let logsCache = [];
+
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Não logar resposta da Lambda
+                
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            
+            console.log('🔧 Inicializando Supabase com:', {
+                url: keys.url,
+                key: keys.key ? 'Configurada' : 'Não configurada',
+                keyType: keys.key?.includes('eyJ') ? 'JWT Token' : 'Unknown'
+            });
+            
+            // Definir variáveis globais
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            
+            // Configurar Supabase
+            supabase = window.supabase.createClient(keys.url, keys.key);
+            
+            console.log('✅ Supabase inicializado com sucesso');
+            return supabase;
+        }
+
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎯 Inicializando logs do diretor...');
+            
+            try {
+                // Inicializar ícones Lucide
+                lucide.createIcons();
+                
+                // Verificar autenticação
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                // Inicializar Supabase
+                await initializeSupabase();
+                
+                // Buscar dados da escola
+                await getEscolaFromPermissions();
+                
+                // Mostrar interface
+                await showLogsList();
+                
+                console.log('✅ Logs do diretor inicializados com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar logs do diretor:', error);
+                showError('Erro ao inicializar: ' + error.message);
+            }
+        });
+
+        // Verificar se o usuário está autenticado e é diretor
+        async function checkAuthentication() {
+            try {
+                // Verificar se há usuário logado via WhatsApp
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', currentUser);
+                
+                // Verificar se o usuário é diretor
+                if (currentUser.tipo_usuario !== 'diretor') {
+                    console.log('❌ Usuário não é diretor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para diretores.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                // Verificar status
+                if (currentUser.status && currentUser.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', currentUser.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                console.log('✅ Diretor autorizado:', currentUser.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+
+        // Redirecionar para login
+        function redirectToLogin() {
+            window.location.href = '../login.html';
+        }
+
+        // Buscar escola do diretor através das permissões
+        async function getEscolaFromPermissions() {
+            try {
+                console.log('🏫 Buscando escola do diretor...');
+                
+                // Buscar permissão do diretor
+                const { data: permissao, error: permissaoError } = await supabase
+                    .from('permissoes')
+                    .select('referencia_id')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'escola')
+                    .eq('ativo', true)
+                    .limit(1)
+                    .single();
+                
+                if (permissaoError) {
+                    throw new Error('Erro ao buscar permissões: ' + permissaoError.message);
+                }
+                
+                if (!permissao) {
+                    throw new Error('Diretor não possui permissões de escola');
+                }
+                
+                escolaId = permissao.referencia_id;
+                console.log('🎯 Escola ID encontrada:', escolaId);
+                
+                // Buscar dados da escola
+                const { data: escola, error: escolaError } = await supabase
+                    .from('escolas')
+                    .select('id, nome, cidade, estado')
+                    .eq('id', escolaId)
+                    .or('soft_delete.is.null,soft_delete.eq.false')
+                    .single();
+                
+                if (escolaError) {
+                    throw new Error('Erro ao buscar dados da escola: ' + escolaError.message);
+                }
+                
+                escolaData = escola;
+                console.log('✅ Dados da escola carregados:', escolaData);
+                
+                // Atualizar interface
+                updateEscolaInfo();
+                
+            } catch (error) {
+                console.error('❌ Erro ao buscar escola:', error);
+                throw error;
+            }
+        }
+
+        // Atualizar informações da escola na interface
+        function updateEscolaInfo() {
+            const escolaInfoElement = document.getElementById('escolaInfo');
+            if (escolaData) {
+                const location = [escolaData.cidade, escolaData.estado].filter(Boolean).join(', ');
+                escolaInfoElement.innerHTML = `
+                    <i data-lucide="school"></i>
+                    <span>${escolaData.nome}${location ? ' - ' + location : ''}</span>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        // Mostrar lista de logs
+        async function showLogsList() {
+            try {
+                console.log('📋 Mostrando lista de logs...');
+                
+                // Mostrar filtros
+                document.getElementById('filtersCard').style.display = 'block';
+                
+                // Carregar dados
+                await Promise.all([
+                    loadTurmas(),
+                    loadLogs()
+                ]);
+                
+                // Configurar eventos dos filtros
+                setupFilterEvents();
+                
+                console.log('✅ Lista de logs configurada');
+                
+            } catch (error) {
+                console.error('❌ Erro ao mostrar lista de logs:', error);
+                showError('Erro ao carregar logs: ' + error.message);
+            }
+        }
+
+        // Configurar eventos dos filtros
+        function setupFilterEvents() {
+            // Botão aplicar filtros
+            document.getElementById('btnAplicar').addEventListener('click', applyFilters);
+            
+            // Botão limpar filtros
+            document.getElementById('btnLimpar').addEventListener('click', clearFilters);
+            
+            // Enter nos campos de texto
+            document.getElementById('alunoBusca').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+            
+            document.getElementById('deviceId').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+        }
+
+        // Carregar turmas da escola
+        async function loadTurmas() {
+            try {
+                console.log('📚 Carregando turmas...');
+                
+                const { data, error } = await supabase
+                    .from('turmas')
+                    .select('id, nome')
+                    .eq('escola_id', escolaId)
+                    .or('soft_delete.is.null,soft_delete.eq.false')
+                    .order('nome');
+                
+                if (error) {
+                    console.error('Erro ao carregar turmas:', error);
+                    return;
+                }
+                
+                turmas = data || [];
+                console.log('✅ Turmas carregadas:', turmas.length);
+                
+                // Atualizar select de turmas
+                const turmaSelect = document.getElementById('turmaId');
+                turmaSelect.innerHTML = '<option value="">Todas as turmas</option>';
+                
+                turmas.forEach(turma => {
+                    const option = document.createElement('option');
+                    option.value = turma.id;
+                    option.textContent = turma.nome;
+                    turmaSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar turmas:', error);
+            }
+        }
+
+        // Carregar logs
+        async function loadLogs() {
+            try {
+                console.log('📊 Carregando logs...');
+                showLoading();
+                
+                // Construir query base
+                let query = supabase
+                    .from('logs')
+                    .select(`
+                        *,
+                        turma:turma_id(nome),
+                        serie:serie(nome)
+                    `)
+                    .eq('escola', escolaId)
+                    .order('data_do_log', { ascending: false })
+                    .limit(500);
+                
+                // Aplicar filtros
+                const filters = getFilters();
+                query = applyFiltersToQuery(query, filters);
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('Erro ao carregar logs:', error);
+                    showError('Erro ao carregar logs: ' + error.message);
+                    return;
+                }
+                
+                logsCache = data || [];
+                console.log('✅ Logs carregados:', logsCache.length);
+                
+                // Renderizar logs
+                renderLogs(logsCache);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar logs:', error);
+                showError('Erro ao carregar logs: ' + error.message);
+            }
+        }
+
+        // Obter filtros atuais
+        function getFilters() {
+            return {
+                dataInicio: document.getElementById('dataInicio').value,
+                dataFim: document.getElementById('dataFim').value,
+                turmaId: document.getElementById('turmaId').value,
+                alunoBusca: document.getElementById('alunoBusca').value?.trim(),
+                deviceId: document.getElementById('deviceId').value?.trim(),
+                tipoEvento: document.getElementById('tipoEvento').value
+            };
+        }
+
+        // Aplicar filtros à query
+        function applyFiltersToQuery(query, filters) {
+            // Filtro de data início
+            if (filters.dataInicio) {
+                const dataInicio = new Date(filters.dataInicio);
+                dataInicio.setHours(0, 0, 0, 0);
+                query = query.gte('data_do_log', dataInicio.toISOString());
+            }
+            
+            // Filtro de data fim
+            if (filters.dataFim) {
+                const dataFim = new Date(filters.dataFim);
+                dataFim.setHours(23, 59, 59, 999);
+                query = query.lte('data_do_log', dataFim.toISOString());
+            }
+            
+            // Filtro de turma
+            if (filters.turmaId) {
+                query = query.eq('turma_id', filters.turmaId);
+            }
+            
+            // Filtro de nome do aluno
+            if (filters.alunoBusca) {
+                query = query.ilike('nome_aluno', `%${filters.alunoBusca}%`);
+            }
+            
+            // Filtro de device ID
+            if (filters.deviceId) {
+                query = query.eq('device_id', filters.deviceId);
+            }
+            
+            // Filtro de tipo de evento
+            if (filters.tipoEvento) {
+                query = query.ilike('event', `%${filters.tipoEvento}%`);
+            }
+            
+            return query;
+        }
+
+        // Aplicar filtros
+        function applyFilters() {
+            loadLogs();
+        }
+
+        // Limpar filtros
+        function clearFilters() {
+            document.getElementById('dataInicio').value = '';
+            document.getElementById('dataFim').value = '';
+            document.getElementById('turmaId').value = '';
+            document.getElementById('alunoBusca').value = '';
+            document.getElementById('deviceId').value = '';
+            document.getElementById('tipoEvento').value = '';
+            
+            loadLogs();
+        }
+
+        // Renderizar logs na tabela
+        function renderLogs(logs) {
+            const tableContainer = document.getElementById('tableContainer');
+            const emptyState = document.getElementById('emptyState');
+            const logsCount = document.getElementById('logsCount');
+            const tbody = document.getElementById('logsTableBody');
+            
+            hideLoading();
+            
+            if (!logs || logs.length === 0) {
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'block';
+                logsCount.style.display = 'none';
+                return;
+            }
+            
+            // Mostrar tabela e contador
+            tableContainer.style.display = 'block';
+            emptyState.style.display = 'none';
+            logsCount.style.display = 'block';
+            logsCount.textContent = `${logs.length} registro${logs.length !== 1 ? 's' : ''}`;
+            
+            // Limpar tbody
+            tbody.innerHTML = '';
+            
+            // Renderizar cada log
+            logs.forEach(log => {
+                const row = createLogRow(log);
+                tbody.appendChild(row);
+            });
+        }
+
+        // Criar linha da tabela para um log
+        function createLogRow(log) {
+            const row = document.createElement('tr');
+            
+            // Foto
+            const fotoCell = document.createElement('td');
+            const foto = document.createElement('img');
+            foto.className = 'foto-aluno';
+            foto.src = log.url_foto_aluno || generatePlaceholderImage();
+            foto.alt = log.nome_aluno || 'Aluno';
+            foto.onerror = function() {
+                this.src = generatePlaceholderImage();
+            };
+            fotoCell.appendChild(foto);
+            row.appendChild(fotoCell);
+            
+            // Data/Hora
+            const dataCell = document.createElement('td');
+            dataCell.textContent = formatDateTime(log.data_do_log);
+            row.appendChild(dataCell);
+            
+            // Aluno
+            const alunoCell = document.createElement('td');
+            alunoCell.textContent = log.nome_aluno || '—';
+            row.appendChild(alunoCell);
+            
+            // Turma
+            const turmaCell = document.createElement('td');
+            turmaCell.textContent = log.turma?.nome || '—';
+            row.appendChild(turmaCell);
+            
+            // Série
+            const serieCell = document.createElement('td');
+            serieCell.textContent = log.serie?.nome || '—';
+            row.appendChild(serieCell);
+            
+            // Evento
+            const eventoCell = document.createElement('td');
+            const eventoBadge = createEventoBadge(log.event || log.log_type_id);
+            eventoCell.appendChild(eventoBadge);
+            row.appendChild(eventoCell);
+            
+            // Dispositivo
+            const dispositivoCell = document.createElement('td');
+            dispositivoCell.textContent = log.device_id || '—';
+            row.appendChild(dispositivoCell);
+            
+            // Confiança
+            const confiancaCell = document.createElement('td');
+            if (log.confidence) {
+                const confiancaBadge = createConfiancaBadge(log.confidence);
+                confiancaCell.appendChild(confiancaBadge);
+            } else {
+                confiancaCell.textContent = '—';
+            }
+            row.appendChild(confiancaCell);
+            
+            // Máscara
+            const mascaraCell = document.createElement('td');
+            mascaraCell.textContent = log.mask || '—';
+            row.appendChild(mascaraCell);
+            
+            return row;
+        }
+
+        // Criar badge de evento
+        function createEventoBadge(evento) {
+            const badge = document.createElement('span');
+            badge.className = 'evento-badge';
+            
+            const eventoLower = String(evento || '').toLowerCase();
+            
+            if (eventoLower.includes('entrada') || eventoLower.includes('entry')) {
+                badge.className += ' evento-entrada';
+                badge.textContent = 'Entrada';
+            } else if (eventoLower.includes('saida') || eventoLower.includes('exit')) {
+                badge.className += ' evento-saida';
+                badge.textContent = 'Saída';
+            } else {
+                badge.className += ' evento-default';
+                badge.textContent = evento || 'Desconhecido';
+            }
+            
+            return badge;
+        }
+
+        // Criar badge de confiança
+        function createConfiancaBadge(confidence) {
+            const badge = document.createElement('span');
+            badge.className = 'confianca-badge';
+            
+            const conf = parseFloat(confidence);
+            
+            if (conf >= 0.8) {
+                badge.className += ' confianca-alta';
+                badge.textContent = `${(conf * 100).toFixed(0)}%`;
+            } else if (conf >= 0.6) {
+                badge.className += ' confianca-media';
+                badge.textContent = `${(conf * 100).toFixed(0)}%`;
+            } else {
+                badge.className += ' confianca-baixa';
+                badge.textContent = `${(conf * 100).toFixed(0)}%`;
+            }
+            
+            return badge;
+        }
+
+        // Formatar data e hora
+        function formatDateTime(dateTime) {
+            if (!dateTime) return '—';
+            
+            try {
+                const date = new Date(dateTime);
+                return date.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'UTC'
+                });
+            } catch (error) {
+                return String(dateTime);
+            }
+        }
+
+        // Gerar imagem placeholder
+        function generatePlaceholderImage() {
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                    <rect width="100%" height="100%" fill="#f3f4f6"/>
+                    <circle cx="20" cy="16" r="6" fill="#d1d5db"/>
+                    <path d="M8 32c0-6.627 5.373-12 12-12s12 5.373 12 12" fill="#d1d5db"/>
+                </svg>
+            `);
+        }
+
+        // Mostrar estado de carregamento
+        function showLoading() {
+            document.getElementById('loadingState').style.display = 'flex';
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        // Esconder estado de carregamento
+        function hideLoading() {
+            document.getElementById('loadingState').style.display = 'none';
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            hideLoading();
+            document.getElementById('tableContainer').style.display = 'none';
+            
+            const emptyState = document.getElementById('emptyState');
+            emptyState.innerHTML = `
+                <i data-lucide="alert-circle"></i>
+                <h3>Erro ao carregar logs</h3>
+                <p>${message}</p>
+            `;
+            emptyState.style.display = 'block';
+            
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

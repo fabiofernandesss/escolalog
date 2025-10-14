@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chamada - Escola Log</title>
+    <meta name="description" content="Controle de chamada dos alunos - Escola Log - Sistema de gestão escolar">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/professor/chamada.html">
+    <meta property="og:title" content="Chamada - Escola Log">
+    <meta property="og:description" content="Controle de chamada dos alunos - Escola Log - Sistema de gestão escolar">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/professor/chamada.html">
+    <meta name="twitter:title" content="Chamada - Escola Log">
+    <meta name="twitter:description" content="Controle de chamada dos alunos - Escola Log - Sistema de gestão escolar">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .back-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .user-details h3 {
+            font-size: 0.9rem;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        .user-details p {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        /* Filtros */
+        .filters-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .form-input, .form-select {
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Cards de Estatísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color);
+        }
+
+        .stat-card.presente { --card-color: #10b981; }
+        .stat-card.ausente { --card-color: #ef4444; }
+        .stat-card.total { --card-color: #3b82f6; }
+        .stat-card.percentual { --card-color: #f59e0b; }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--card-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .stat-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Cards dos Alunos - Mobile First */
+        .students-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .students-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .students-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .students-count {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .student-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .student-card:active {
+            transform: scale(0.98);
+        }
+
+        .student-card.presente {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.03), rgba(255, 255, 255, 0.98));
+        }
+
+        .student-card.ausente {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(255, 255, 255, 0.98));
+            box-shadow: 0 2px 12px rgba(239, 68, 68, 0.15);
+        }
+
+        .student-card-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .student-photo {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .student-photo-placeholder {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .student-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .student-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e293b;
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
+        .student-details {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .student-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .student-status.presente {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-status.ausente {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-status svg {
+            width: 10px;
+            height: 10px;
+        }
+
+        .student-time {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 0.65rem;
+            color: #64748b;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading .stat-card {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* Responsive Design - Mobile First */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .header-content {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .logo img {
+                height: 40px;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .filters-section {
+                padding: 20px;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .students-section {
+                padding: 20px;
+            }
+
+            .students-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .student-card {
+                padding: 15px;
+            }
+
+            .student-photo,
+            .student-photo-placeholder {
+                width: 50px;
+                height: 50px;
+            }
+
+            .student-photo-placeholder {
+                font-size: 1.2rem;
+            }
+
+            .student-name {
+                font-size: 0.95rem;
+            }
+
+            .student-details {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .students-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .students-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Responsivo para tablets */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 32px;
+                flex-shrink: 0;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-left: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .user-info {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .user-name {
+                display: none;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+        }
+
+        /* Ajustes específicos para mobile */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .header {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            .logo img {
+                height: 30px;
+            }
+
+            .page-title {
+                font-size: 1rem;
+            }
+
+            .back-btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+
+            .filters-section {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            .filters-grid {
+                gap: 10px;
+            }
+
+            .form-input, .form-select {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 12px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+            }
+
+            .students-section {
+                padding: 12px;
+            }
+
+            .students-header {
+                margin-bottom: 12px;
+            }
+
+            .students-title {
+                font-size: 1rem;
+            }
+
+            .students-count {
+                font-size: 0.75rem;
+                padding: 5px 10px;
+            }
+
+            .student-card {
+                padding: 10px;
+            }
+
+            .student-photo,
+            .student-photo-placeholder {
+                width: 40px;
+                height: 40px;
+            }
+
+            .student-photo-placeholder {
+                font-size: 1rem;
+            }
+
+            .student-name {
+                font-size: 0.85rem;
+            }
+
+            .student-details {
+                font-size: 0.7rem;
+            }
+
+            .student-status {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
+
+            .student-time {
+                font-size: 0.6rem;
+                top: 4px;
+                right: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="../img/logo-horizonal.png" alt="Escola Log">
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="menu.html" class="back-btn" aria-label="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-input" id="filterData" onchange="filterStudents()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Turma</label>
+                    <select class="form-select" id="filterTurma" onchange="filterStudents()">
+                        <option value="">Todas as turmas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="filterStatus" onchange="filterStudents()">
+                        <option value="">Todos</option>
+                        <option value="presente">Presentes</option>
+                        <option value="ausente">Ausentes</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Estatísticas -->
+        <div class="stats-grid">
+            <div class="stat-card presente">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i data-lucide="user-check"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalPresentes">0</div>
+                <div class="stat-label">Alunos Presentes</div>
+            </div>
+
+            <div class="stat-card ausente">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i data-lucide="user-x"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalAusentes">0</div>
+                <div class="stat-label">Alunos Ausentes</div>
+            </div>
+
+            <div class="stat-card total">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalAlunos">0</div>
+                <div class="stat-label">Total de Alunos</div>
+            </div>
+
+            <div class="stat-card percentual">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="taxaPresenca">0%</div>
+                <div class="stat-label">Taxa de Presença</div>
+            </div>
+        </div>
+
+        <!-- Cards dos Alunos -->
+        <div class="students-section">
+            <div class="students-header">
+                <h3 class="students-title">Chamada dos Alunos</h3>
+                <span class="students-count" id="studentsCount">0 alunos</span>
+            </div>
+            <div class="students-grid" id="studentsGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>Carregando chamada...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Scripts -->
+    <script src="../js/pwa.js"></script>
+    
+    <script>
+        // Configuração do Supabase
+        let supabase = null;
+        let currentUser = null;
+        let studentsData = [];
+        let logsData = [];
+        let turmas = [];
+        let professorPermissions = [];
+        
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Não logar resposta da Lambda
+                
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            
+            console.log('🔧 Inicializando Supabase com:', {
+                url: keys.url,
+                key: keys.key ? 'Configurada' : 'Não configurada',
+                keyType: keys.key?.includes('eyJ') ? 'JWT Token' : 'Unknown'
+            });
+            
+            // Definir variáveis globais
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            
+            // Configurar Supabase
+            supabase = window.supabase.createClient(keys.url, keys.key);
+            
+            console.log('✅ Supabase inicializado com sucesso');
+            console.log('🔍 Cliente Supabase:', {
+                supabaseUrl: supabase.supabaseUrl,
+                supabaseKey: supabase.supabaseKey ? 'Configurada' : 'Não configurada'
+            });
+            
+            return supabase;
+        }
+
+        // Verificar autenticação
+        function checkAuthentication() {
+            try {
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', currentUser);
+                
+                if (currentUser.tipo_usuario !== 'professor') {
+                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                if (currentUser.status && currentUser.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', currentUser.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                console.log('✅ Professor autorizado:', currentUser.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+
+        // Carregar permissões do professor
+        async function loadProfessorPermissions() {
+            try {
+                console.log('🔐 Carregando turmas do professor...');
+                
+                // Buscar turmas onde o professor é responsável
+                const { data: turmasResponsavel, error: turmasError } = await supabase
+                    .from('turmas')
+                    .select(`
+                        id,
+                        nome,
+                        serie_id,
+                        professor_responsavel_id,
+                        series:serie_id (
+                            id,
+                            nome
+                        )
+                    `)
+                    .eq('professor_responsavel_id', currentUser.id)
+                    .eq('soft_delete', false);
+
+                if (turmasError) {
+                    console.error('❌ Erro ao carregar turmas como responsável:', turmasError);
+                }
+
+                // Buscar permissões específicas de turma
+                const { data: permissions, error: permError } = await supabase
+                    .from('permissoes')
+                    .select('*')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'turma')
+                    .eq('ativo', true);
+
+                if (permError) {
+                    console.error('❌ Erro ao carregar permissões:', permError);
+                }
+
+                let turmasPermissoes = [];
+                if (permissions && permissions.length > 0) {
+                    // Buscar turmas baseadas nas permissões
+                    const turmaIds = permissions.map(p => p.referencia_id).filter(id => id);
+                    
+                    if (turmaIds.length > 0) {
+                        const { data: turmasData, error: turmasPermError } = await supabase
+                            .from('turmas')
+                            .select(`
+                                id,
+                                nome,
+                                serie_id,
+                                professor_responsavel_id,
+                                series:serie_id (
+                                    id,
+                                    nome
+                                )
+                            `)
+                            .in('id', turmaIds)
+                            .eq('soft_delete', false);
+
+                        if (!turmasPermError && turmasData) {
+                            turmasPermissoes = turmasData;
+                        }
+                    }
+                }
+
+                // Combinar turmas (responsável + permissões) e remover duplicatas
+                const todasTurmas = [...(turmasResponsavel || []), ...turmasPermissoes];
+                const turmasUnicas = todasTurmas.filter((turma, index, self) => 
+                    index === self.findIndex(t => t.id === turma.id)
+                );
+
+                // Converter para formato de permissões para compatibilidade
+                professorPermissions = turmasUnicas.map(turma => ({
+                    id: `perm_${turma.id}`,
+                    usuario_id: currentUser.id,
+                    tipo: 'turma',
+                    referencia_id: turma.id,
+                    turma: turma,
+                    ativo: true
+                }));
+
+                turmas = turmasUnicas;
+                console.log(`✅ ${turmas.length} turmas carregadas`);
+                
+                if (turmas.length === 0) {
+                    console.log('⚠️ Professor não possui turmas associadas');
+                    showEmptyState('Você não possui turmas associadas');
+                    return;
+                }
+                
+                // Preencher select de turmas
+                const filterTurmaSelect = document.getElementById('filterTurma');
+                if (filterTurmaSelect) {
+                    filterTurmaSelect.innerHTML = '<option value="">Todas as turmas</option>';
+                    turmas.forEach(turma => {
+                        const option = document.createElement('option');
+                        option.value = turma.id;
+                        option.textContent = `${turma.nome} - ${turma.series?.nome || 'Série não definida'}`;
+                        filterTurmaSelect.appendChild(option);
+                    });
+                }
+                
+                console.log('✅ Turmas do professor:', turmas.map(t => t.nome));
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar permissões do professor:', error);
+            }
+        }
+
+        // Carregar alunos das turmas do professor
+        async function loadStudents() {
+            try {
+                console.log('👥 Carregando alunos das turmas do professor...');
+                
+                if (turmas.length === 0) {
+                    console.log('⚠️ Professor não possui turmas associadas');
+                    showEmptyState('Você não possui turmas associadas');
+                    return;
+                }
+                
+                const turmaIds = turmas.map(t => t.id);
+                
+                // Buscar alunos das turmas
+                const { data: alunosData, error: alunosError } = await supabase
+                    .from('alunos')
+                    .select(`
+                        id,
+                        id_control_id,
+                        nome,
+                        matricula,
+                        foto_url,
+                        sexo,
+                        turma_id,
+                        turmas:turma_id(
+                            id,
+                            nome,
+                            serie_id,
+                            series:serie_id(
+                                id,
+                                nome
+                            )
+                        )
+                    `)
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                if (alunosError) {
+                    console.error('❌ Erro ao carregar alunos:', alunosError);
+                    showEmptyState('Erro ao carregar alunos: ' + alunosError.message);
+                    return;
+                }
+
+                studentsData = alunosData || [];
+                console.log(`✅ ${studentsData.length} alunos carregados`);
+                
+                // Carregar logs de hoje para verificar presença
+                await loadTodayLogs();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar alunos:', error);
+                showEmptyState('Erro ao carregar alunos: ' + error.message);
+            }
+        }
+
+        // Função para obter data local do Brasil (UTC-3)
+        function getTodayBrazil() {
+            const now = new Date();
+            // Ajustar para fuso horário do Brasil (UTC-3)
+            const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+            return brazilTime.toISOString().split('T')[0];
+        }
+
+        // Carregar logs de hoje
+        async function loadTodayLogs() {
+            try {
+                console.log('📊 Carregando logs de hoje...');
+                
+                const today = getTodayBrazil();
+                const filterData = document.getElementById('filterData');
+                if (filterData && !filterData.value) {
+                    filterData.value = today;
+                }
+                
+                const selectedDate = filterData?.value || today;
+                const turmaIds = turmas.map(t => t.id);
+                if (!turmaIds.length) {
+                    console.log('⚠️ Sem turmas com permissão para carregar logs');
+                    logsData = [];
+                    renderStudents();
+                    updateStats();
+                    return;
+                }
+                
+                const { data, error } = await supabase
+                    .from('frequencia_diaria')
+                    .select('*')
+                    .in('turma_id', turmaIds)
+                    .eq('dia', selectedDate)
+                    .order('nome_aluno', { ascending: true });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar logs:', error);
+                    return;
+                }
+
+                logsData = data || [];
+                console.log(`✅ ${logsData.length} logs carregados para ${selectedDate}`);
+                
+                // Renderizar alunos com status de presença
+                renderStudents();
+                updateStats();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar logs:', error);
+            }
+        }
+
+        // Utilitários de data dos logs
+        function parseLogDate(dt) {
+            if (!dt) return null;
+            try {
+                if (typeof dt === 'string') {
+                    const iso = dt.includes('T') ? dt : dt.replace(' ', 'T');
+                    const d = new Date(iso);
+                    if (!isNaN(d.getTime())) return d;
+                    const d2 = new Date(dt);
+                    if (!isNaN(d2.getTime())) return d2;
+                    return null;
+                }
+                const d = new Date(dt);
+                return isNaN(d.getTime()) ? null : d;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function formatTimeView(dt) {
+            const d = parseLogDate(dt);
+            return d ? d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '';
+        }
+
+        // Renderizar cards dos alunos
+        function renderStudents() {
+            const studentsGrid = document.getElementById('studentsGrid');
+            
+            if (!studentsData || studentsData.length === 0) {
+                studentsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>Nenhum aluno encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filtrar alunos
+            const filteredStudents = filterStudentsData();
+            
+            if (filteredStudents.length === 0) {
+                studentsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <p>Nenhum aluno encontrado com os filtros aplicados</p>
+                    </div>
+                `;
+                return;
+            }
+
+            studentsGrid.innerHTML = filteredStudents.map(student => {
+                // Registros agregados da VIEW para o aluno no dia selecionado
+                const studentFreqs = logsData.filter(row => String(row.user_id) == String(student.id_control_id || student.id));
+
+                // Presença baseada no tipo_frequencia da VIEW
+                const hasPresentTipo = studentFreqs.some(r => ['APENAS_ENTRADA', 'ENTRADA_SAIDA', 'ENTRADA_SAIDA_FILTRADA'].includes(r.tipo_frequencia));
+
+                // Calcular horários de entrada (mínimo) e saída (máximo) a partir da VIEW
+                const entradaCandidates = studentFreqs.map(r => r.entrada).filter(Boolean);
+                const saidaCandidates = studentFreqs.map(r => r.saida).filter(Boolean);
+
+                const entradaTime = entradaCandidates.length
+                    ? entradaCandidates.reduce((min, t) => (parseLogDate(t) < parseLogDate(min) ? t : min), entradaCandidates[0])
+                    : null;
+                const saidaTime = saidaCandidates.length
+                    ? saidaCandidates.reduce((max, t) => (parseLogDate(t) > parseLogDate(max) ? t : max), saidaCandidates[0])
+                    : null;
+
+                const entradaText = entradaTime ? formatTimeView(entradaTime) : '';
+                const saidaText = saidaTime ? formatTimeView(saidaTime) : '';
+
+                const isPresent = hasPresentTipo || !!entradaTime || !!saidaTime;
+                const statusClass = isPresent ? 'presente' : 'ausente';
+                const statusText = isPresent ? 'Presente' : 'Ausente';
+                const statusIcon = isPresent ? 'user-check' : 'user-x';
+                
+                const fotoUrl = student.foto_url;
+                
+                return `
+                    <div class="student-card ${statusClass}">
+                        ${(entradaText || saidaText) ? `<div class="student-time">${entradaText ? `Entrada ${entradaText}` : ''}${entradaText && saidaText ? ' • ' : ''}${saidaText ? `Saída ${saidaText}` : ''}</div>` : ''}
+                        <div class="student-card-content">
+                            ${fotoUrl ? 
+                                `<img src="${fotoUrl}" alt="${student.nome}" class="student-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                 <div class="student-photo-placeholder" style="display: none;">${student.nome.charAt(0).toUpperCase()}</div>` :
+                                `<div class="student-photo-placeholder">${student.nome.charAt(0).toUpperCase()}</div>`
+                            }
+                            <div class="student-info">
+                                <div class="student-name">${student.nome}</div>
+                                <div class="student-details">
+                                    ${student.turmas?.nome || 'Sem turma'} • ${student.turmas?.series?.nome || 'Sem série'}
+                                </div>
+                                <div class="student-status ${statusClass}">
+                                    <i data-lucide="${statusIcon}"></i>
+                                    ${statusText}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Atualizar contadores
+            document.getElementById('studentsCount').textContent = `${filteredStudents.length} aluno${filteredStudents.length !== 1 ? 's' : ''}`;
+            
+            // Recriar ícones do Lucide
+            lucide.createIcons();
+        }
+
+        // Filtrar dados dos alunos
+        function filterStudentsData() {
+            let filtered = [...studentsData];
+            
+            // Filtro por turma
+            const filterTurma = document.getElementById('filterTurma').value;
+            if (filterTurma) {
+                filtered = filtered.filter(student => student.turma_id == filterTurma);
+            }
+            
+            // Filtro por status
+            const filterStatus = document.getElementById('filterStatus').value;
+            if (filterStatus) {
+                filtered = filtered.filter(student => {
+                    const studentLogs = logsData.filter(log => String(log.user_id) == String(student.id_control_id || student.id));
+                    const isPresent = studentLogs.length > 0;
+                    
+                    if (filterStatus === 'presente') return isPresent;
+                    if (filterStatus === 'ausente') return !isPresent;
+                    return true;
+                });
+            }
+            
+            return filtered;
+        }
+
+        // Atualizar estatísticas
+        function updateStats() {
+            const filteredStudents = filterStudentsData();
+            const totalAlunos = filteredStudents.length;
+            
+            let totalPresentes = 0;
+            let totalAusentes = 0;
+            
+            filteredStudents.forEach(student => {
+                const studentLogs = logsData.filter(log => String(log.user_id) == String(student.id_control_id || student.id));
+                const isPresent = studentLogs.length > 0;
+                
+                if (isPresent) {
+                    totalPresentes++;
+                } else {
+                    totalAusentes++;
+                }
+            });
+            
+            const taxaPresenca = totalAlunos > 0 ? Math.round((totalPresentes / totalAlunos) * 100) : 0;
+            
+            document.getElementById('totalAlunos').textContent = totalAlunos;
+            document.getElementById('totalPresentes').textContent = totalPresentes;
+            document.getElementById('totalAusentes').textContent = totalAusentes;
+            document.getElementById('taxaPresenca').textContent = taxaPresenca + '%';
+        }
+
+        // Filtrar alunos
+        function filterStudents() {
+            // Recarregar logs se a data mudou
+            const filterData = document.getElementById('filterData');
+            if (filterData.value) {
+                loadTodayLogs();
+            } else {
+                renderStudents();
+                updateStats();
+            }
+        }
+
+        // Função para mostrar estado vazio
+        function showEmptyState(message) {
+            const studentsGrid = document.getElementById('studentsGrid');
+            studentsGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Carregar dados do usuário
+        function loadUserData() {
+            if (!currentUser) return;
+
+            try {
+                const userName = document.getElementById('userName');
+                if (userName) {
+                    userName.textContent = currentUser.nome || 'Professor';
+                }
+
+                const userAvatar = document.getElementById('userAvatar');
+                if (userAvatar && currentUser.nome) {
+                    userAvatar.textContent = currentUser.nome.charAt(0).toUpperCase();
+                }
+
+                if (currentUser.foto_url) {
+                    userAvatar.style.backgroundImage = `url(${currentUser.foto_url})`;
+                    userAvatar.style.backgroundSize = 'cover';
+                    userAvatar.style.backgroundPosition = 'center';
+                    userAvatar.textContent = '';
+                }
+
+                console.log('✅ Dados do usuário carregados na interface');
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+            }
+        }
+
+        // Redirecionar para login
+        function redirectToLogin() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('whatsapp_user');
+            sessionStorage.clear();
+            window.location.href = '../login.html';
+        }
+
+        function goBack() {
+            window.location.href = 'menu.html';
+        }
+
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎯 Inicializando chamada do professor...');
+            
+            try {
+                await initializeSupabase();
+                lucide.createIcons();
+                
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                loadUserData();
+                await loadProfessorPermissions();
+                await loadStudents();
+                
+                console.log('✅ Chamada do professor inicializada com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar chamada do professor:', error);
+            }
+        });
+    </script>
+    
+    <!-- PWA Status Bar -->
+    <div class="pwa-status-bar"></div>
+</body>
+</html>

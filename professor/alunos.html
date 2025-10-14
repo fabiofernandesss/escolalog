@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alunos - Professor - Escola Log</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Visualização de alunos das turmas do professor - Escola Log">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .back-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .professor-info {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        .turmas-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;
+        }
+
+        .professor-info h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .turmas-list {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            align-items: center;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .turma-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .search-filters {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .filters-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .filters-title {
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-toggle {
+            transition: transform 0.3s ease;
+        }
+
+        .filters-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .filters-content {
+            padding: 20px;
+            display: none;
+        }
+
+        .filters-content.open {
+            display: block;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        .form-input {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .students-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .students-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .students-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .student-card {
+            background: white;
+            border: 2px solid #3b82f6; /* default, overridden by palette */
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 140px;
+        }
+
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Paleta de cores para a borda dos cards */
+        .students-grid .student-card:nth-child(6n+1) { border-color: #3b82f6; } /* blue */
+        .students-grid .student-card:nth-child(6n+2) { border-color: #0ea5e9; } /* sky */
+        .students-grid .student-card:nth-child(6n+3) { border-color: #6366f1; } /* indigo */
+        .students-grid .student-card:nth-child(6n+4) { border-color: #8b5cf6; } /* violet */
+        .students-grid .student-card:nth-child(6n+5) { border-color: #06b6d4; } /* cyan */
+        .students-grid .student-card:nth-child(6n)   { border-color: #10b981; } /* emerald */
+
+        .student-card-photo-container {
+            margin-bottom: 12px;
+        }
+
+        .student-card-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .student-card-photo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .student-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .student-card-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .student-card-class {
+            font-size: 0.75rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .student-card-body {
+            padding: 20px;
+        }
+
+        .student-card-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .student-detail {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .student-detail:hover {
+            background: #f1f5f9;
+            border-color: #3b82f6;
+        }
+
+        .student-detail-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .student-detail-value {
+            color: #1e293b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .student-card-footer {
+            padding: 15px 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .student-card-matricula {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .student-card-action {
+            color: #3b82f6;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.1);
+            height: 28px;
+            box-sizing: border-box;
+        }
+
+        .student-card-action:hover {
+            color: #2563eb;
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateX(2px);
+        }
+
+        .student-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+        }
+
+        .student-photo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+
+
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .modal-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+            transform: scale(1.1);
+        }
+
+        .modal-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-photo-section {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e2e8f0;
+            margin: 0 auto 15px;
+            display: block;
+        }
+
+        .modal-photo-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin: 0 auto 15px;
+        }
+
+        .modal-photo-edit {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 44px;
+            box-sizing: border-box;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .modal-photo-edit:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .modal-photo-edit:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .modal-details {
+            display: grid;
+            gap: 15px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .modal-detail-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .modal-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-detail-label {
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .modal-detail-value {
+            color: #1e293b;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .modal-detail-full {
+            grid-column: 1 / -1;
+        }
+
+        /* File input hidden */
+        .photo-input {
+            display: none;
+        }
+
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            height: 44px;
+            box-sizing: border-box;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                margin-bottom: 15px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 32px;
+                flex-shrink: 0;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-left: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+
+            .add-student-btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .students-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 12px;
+                padding: 15px;
+            }
+
+            .student-card-header {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .student-card-photo,
+            .student-card-photo-placeholder {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .student-card-body {
+                padding: 15px;
+            }
+
+            .student-card-details {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .student-detail {
+                padding: 10px;
+            }
+
+            .student-card-footer {
+                padding: 12px 15px;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .modal {
+                margin: 10px;
+                max-height: 95vh;
+            }
+
+            .modal-detail-group {
+                grid-template-columns: 1fr;
+            }
+
+            .turmas-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .turma-badge {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+                height: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .header {
+                padding: 12px;
+            }
+
+            .logo img {
+                height: 35px;
+            }
+
+            .page-title {
+                font-size: 1.3rem;
+            }
+
+            .students-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .student-card-header {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .student-card-photo,
+            .student-card-photo-placeholder {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1rem;
+            }
+
+            .student-card-name {
+                font-size: 1rem;
+            }
+
+            .student-card-body {
+                padding: 12px;
+            }
+
+            .student-card-details {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+
+            .student-detail {
+                padding: 8px;
+            }
+
+            .student-detail-label {
+                font-size: 0.7rem;
+            }
+
+            .student-detail-value {
+                font-size: 0.8rem;
+            }
+
+            .student-card-footer {
+                padding: 10px 12px;
+            }
+
+            .modal {
+                margin: 5px;
+            }
+
+            .modal-content {
+                padding: 15px;
+            }
+
+            .modal-photo {
+                width: 100px;
+                height: 100px;
+            }
+
+            .modal-photo-placeholder {
+                width: 100px;
+                height: 100px;
+                font-size: 2rem;
+            }
+        }
+
+        /* Garantir 2 colunas em telas pequenas */
+        @media (max-width: 360px) {
+            .students-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                padding: 8px;
+            }
+
+            .student-card {
+                padding: 12px;
+                min-height: 120px;
+            }
+
+            .student-card-photo-container {
+                margin-bottom: 8px;
+            }
+
+            .student-card-photo,
+            .student-card-photo-placeholder {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .student-card-name {
+                font-size: 0.8rem;
+                margin-bottom: 4px;
+            }
+
+            .student-card-class {
+                font-size: 0.65rem;
+                padding: 3px 6px;
+            }
+        }
+
+        /* Garantir 2 colunas em telas muito pequenas */
+        @media (max-width: 320px) {
+            .students-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .student-card {
+                padding: 10px;
+                min-height: 110px;
+            }
+
+            .student-card-photo-container {
+                margin-bottom: 6px;
+            }
+
+            .student-card-photo,
+            .student-card-photo-placeholder {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+
+            .student-card-name {
+                font-size: 0.75rem;
+                margin-bottom: 3px;
+            }
+
+            .student-card-class {
+                font-size: 0.6rem;
+                padding: 2px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="../img/logo-horizonal.png" alt="Escola Log">
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <a href="menu.html" class="back-btn" aria-label="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Informações do Professor -->
+        <div class="professor-info" id="professorInfo" style="display: none;">
+            <h3>📚 Suas Turmas</h3>
+            <div class="turmas-list" id="turmasList" style="margin-top:10px;">
+                <!-- Turmas serão carregadas aqui -->
+            </div>
+        </div>
+
+        <!-- Filtros de Busca -->
+        <div class="search-filters">
+            <div class="filters-header" onclick="toggleFilters()">
+                <div class="filters-title">
+                    🔍 Filtros de Busca
+                </div>
+                <div class="filters-toggle" id="filtersToggle">▼</div>
+            </div>
+            <div class="filters-content" id="filtersContent">
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label" for="searchName">Nome do Aluno</label>
+                    <input type="text" id="searchName" class="form-input" placeholder="Digite o nome..." onkeyup="filterStudents()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="searchMatricula">Matrícula</label>
+                    <input type="text" id="searchMatricula" class="form-input" placeholder="Digite a matrícula..." onkeyup="filterStudents()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="filterClass">Turma</label>
+                    <select id="filterClass" class="form-input" onchange="filterStudents()">
+                        <option value="">Todas as turmas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="filterSerie">Série</label>
+                    <select id="filterSerie" class="form-input" onchange="filterStudents()">
+                        <option value="">Todas as séries</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="filterSexo">Sexo</label>
+                    <select id="filterSexo" class="form-input" onchange="filterStudents()">
+                        <option value="">Todos</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                    </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Alunos -->
+        <div class="students-container">
+            <div class="students-header">
+                <h2 class="students-title">Meus Alunos</h2>
+                <span id="studentsCount">0 alunos</span>
+            </div>
+            <div class="students-grid" id="studentsGrid">
+                <div class="loading">
+                                <div class="spinner"></div>
+                                Carregando alunos...
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalhes do Aluno -->
+        <div class="modal-overlay" id="studentModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle">Detalhes do Aluno</h3>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-photo-section">
+                        <img id="modalPhoto" class="modal-photo" style="display: none;" alt="Foto do aluno">
+                        <div id="modalPhotoPlaceholder" class="modal-photo-placeholder"></div>
+                        <button class="modal-photo-edit" onclick="editPhoto()">📷 Alterar Foto</button>
+                        <input type="file" id="photoInput" class="photo-input" accept="image/*" onchange="handlePhotoChange(event)">
+                    </div>
+                    <div class="modal-details" id="modalDetails">
+                        <!-- Detalhes serão preenchidos via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Configuração global
+        let supabase = null;
+        let currentUser = null;
+        let professorPermissions = [];
+        let students = [];
+        let turmas = [];
+        let currentStudent = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Inicializando Alunos do Professor...');
+            
+            try {
+                // Verificar autenticação
+                if (!await checkAuthentication()) {
+                    return;
+                }
+
+                // Inicializar Supabase
+                await initializeSupabase();
+                
+                // Buscar permissões do professor
+                await getProfessorPermissions();
+                
+                // Carregar alunos das turmas permitidas
+                await loadStudents();
+                
+                console.log('✅ Alunos do professor inicializados com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar alunos:', error);
+                alert('Erro ao inicializar: ' + error.message);
+            }
+        });
+
+        // Verificar autenticação
+        async function checkAuthentication() {
+            try {
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                console.log('🔍 Dados do usuário carregados:', currentUser);
+                console.log('🔍 Chaves do objeto user:', Object.keys(currentUser));
+                console.log('🔍 Valores do objeto user:', Object.values(currentUser));
+                
+                if (currentUser.tipo_usuario !== 'professor') {
+                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                console.log('✅ Professor autorizado:', currentUser.nome);
+                console.log('📱 WhatsApp do usuário:', currentUser.whatsapp);
+                console.log('📱 Telefone do usuário:', currentUser.telefone);
+                console.log('📱 Phone do usuário:', currentUser.phone);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        // Inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                console.log('🔧 Inicializando Supabase...');
+                
+                let url, key;
+                
+                try {
+                    // Buscar chaves via Lambda
+                    const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/');
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.url && result.data.key) {
+                        url = result.data.url;
+                        key = result.data.key;
+                    // Não logar chaves obtidas da Lambda
+                    } else {
+                        throw new Error('Lambda não retornou dados válidos');
+                    }
+                } catch (lambdaError) {
+                    // Erro na Lambda, fallback sem detalhes
+                    
+                    // Fallback para chaves hardcoded
+                    url = 'https://sntyndufbxfzasnqvayc.supabase.co';
+                    key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM';
+                }
+                
+                // Inicializar cliente Supabase
+                supabase = window.supabase.createClient(url, key);
+                console.log('✅ Supabase inicializado');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Buscar permissões do professor
+        async function getProfessorPermissions() {
+            try {
+                console.log('🔍 Buscando permissões do professor...');
+                console.log('👤 Current user:', currentUser);
+                
+                // Verificar se o ID do usuário está disponível
+                if (!currentUser.id) {
+                    console.error('❌ ID do usuário não encontrado:', currentUser);
+                    throw new Error('ID do usuário não encontrado. Faça login novamente.');
+                }
+                
+                console.log('🆔 ID do usuário:', currentUser.id);
+
+                // Buscar permissões do usuário
+                const { data: permissoesData, error: permissoesError } = await supabase
+                    .from('permissoes')
+                    .select(`
+                        id,
+                        tipo,
+                        referencia_id
+                    `)
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'turma')
+                    .eq('ativo', true);
+
+                if (permissoesError) {
+                    throw new Error('Erro ao buscar permissões: ' + permissoesError.message);
+                }
+
+                if (!permissoesData || permissoesData.length === 0) {
+                    throw new Error('Nenhuma permissão encontrada para este professor');
+                }
+
+                // Buscar turmas das permissões
+                const turmaIds = permissoesData.map(p => p.referencia_id);
+                
+                const { data: turmasData, error: turmasError } = await supabase
+                    .from('turmas')
+                    .select(`
+                            id,
+                            nome,
+                            escola_id,
+                            serie_id,
+                            escolas (
+                                id,
+                                nome
+                            ),
+                            series (
+                                id,
+                                nome
+                            )
+                    `)
+                    .in('id', turmaIds)
+                    .eq('soft_delete', false);
+
+                if (turmasError) {
+                    throw new Error('Erro ao buscar turmas: ' + turmasError.message);
+                }
+
+                professorPermissions = permissoesData;
+                turmas = turmasData || [];
+
+                console.log(`✅ ${professorPermissions.length} permissões encontradas`);
+                console.log(`✅ ${turmas.length} turmas encontradas`);
+                
+                // Mostrar informações do professor
+                showProfessorInfo();
+                
+                // Popular filtro de turmas
+                populateClassFilter();
+                
+                // Popular filtro de séries
+                populateSeriesFilter();
+                
+            } catch (error) {
+                console.error('❌ Erro ao buscar permissões:', error);
+                throw error;
+            }
+        }
+
+        // Mostrar informações do professor
+        function showProfessorInfo() {
+            const professorInfo = document.getElementById('professorInfo');
+            const turmasList = document.getElementById('turmasList');
+            
+            turmasList.innerHTML = turmas.map(turma => 
+                `<span class="turma-badge">${turma.nome}</span>`
+            ).join('');
+            
+            professorInfo.style.display = 'block';
+        }
+
+        // Popular filtro de turmas
+        function populateClassFilter() {
+            const select = document.getElementById('filterClass');
+            
+            turmas.forEach(turma => {
+                const option = document.createElement('option');
+                option.value = turma.id;
+                option.textContent = turma.nome;
+                select.appendChild(option);
+            });
+        }
+
+        // Popular filtro de séries
+        function populateSeriesFilter() {
+            const select = document.getElementById('filterSerie');
+            
+            // Obter séries únicas das turmas
+            const seriesUnicas = new Map();
+            turmas.forEach(turma => {
+                if (turma.series && turma.series.id) {
+                    seriesUnicas.set(turma.series.id, turma.series.nome);
+                }
+            });
+            
+            // Adicionar opções ao select
+            seriesUnicas.forEach((nome, id) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = nome;
+                select.appendChild(option);
+            });
+        }
+
+        // Carregar alunos das turmas permitidas
+        async function loadStudents() {
+            try {
+                console.log('👥 Carregando alunos das turmas permitidas...');
+                
+                const turmaIds = turmas.map(t => t.id);
+                
+                if (turmaIds.length === 0) {
+                    showEmptyState('Nenhuma turma encontrada para este professor');
+                    return;
+                }
+                
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select(`
+                        id,
+                        nome,
+                        matricula,
+                        sexo,
+                        turma_id,
+                        serie_id,
+                        bairro,
+                        cidade,
+                        whatsapp,
+                        nome_responsavel_1,
+                        foto_url,
+                        id_control_id,
+                        turmas (
+                            id,
+                            nome
+                        ),
+                        series (
+                            id,
+                            nome
+                        )
+                    `)
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                if (error) {
+                    throw new Error('Erro ao carregar alunos: ' + error.message);
+                }
+
+                students = data || [];
+                console.log(`✅ ${students.length} alunos carregados`);
+                
+                renderStudents(students);
+                updateStudentsCount(students.length);
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar alunos:', error);
+                showEmptyState('Erro ao carregar alunos: ' + error.message);
+            }
+        }
+
+        // Renderizar alunos em cards
+        function renderStudents(studentsData) {
+            const grid = document.getElementById('studentsGrid');
+            
+            if (!studentsData || studentsData.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                            <div class="empty-state-icon">👥</div>
+                            <p>Nenhum aluno encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = studentsData.map(student => `
+                <div class="student-card" onclick="openStudentModal('${student.id}')">
+                    <div class="student-card-photo-container">
+                        ${student.foto_url ? 
+                            `<img src="${student.foto_url}" alt="${student.nome}" class="student-card-photo">` :
+                            `<div class="student-card-photo-placeholder">${student.nome.charAt(0).toUpperCase()}</div>`
+                        }
+                    </div>
+                    <div class="student-card-content">
+                        <div class="student-card-name">${student.nome}</div>
+                        <div class="student-card-class">${student.turmas?.nome ? `${student.turmas.nome}${student.series?.nome ? ` - ${student.series.nome}` : ''}` : 'Sem turma'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Mostrar estado vazio
+        function showEmptyState(message) {
+            const grid = document.getElementById('studentsGrid');
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Atualizar contador
+        function updateStudentsCount(count) {
+            document.getElementById('studentsCount').textContent = `${count} aluno${count !== 1 ? 's' : ''}`;
+        }
+
+        // Filtrar alunos
+        function filterStudents() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const searchMatricula = document.getElementById('searchMatricula').value.toLowerCase();
+            const filterClass = document.getElementById('filterClass').value;
+            const filterSerie = document.getElementById('filterSerie').value;
+            const filterSexo = document.getElementById('filterSexo').value;
+
+            const filtered = students.filter(student => {
+                const matchName = !searchName || student.nome.toLowerCase().includes(searchName);
+                const matchMatricula = !searchMatricula || (student.matricula && student.matricula.toLowerCase().includes(searchMatricula));
+                const matchClass = !filterClass || student.turma_id === filterClass;
+                const matchSerie = !filterSerie || student.serie_id === filterSerie;
+                const matchSexo = !filterSexo || student.sexo === filterSexo;
+
+                return matchName && matchMatricula && matchClass && matchSerie && matchSexo;
+            });
+
+            renderStudents(filtered);
+            updateStudentsCount(filtered.length);
+        }
+
+        // Funções do Modal
+        function openStudentModal(studentId) {
+            currentStudent = students.find(s => s.id === studentId);
+            if (!currentStudent) return;
+
+            // Atualizar título
+            document.getElementById('modalTitle').textContent = currentStudent.nome;
+
+            // Atualizar foto
+            const modalPhoto = document.getElementById('modalPhoto');
+            const modalPhotoPlaceholder = document.getElementById('modalPhotoPlaceholder');
+            
+            if (currentStudent.foto_url) {
+                modalPhoto.src = currentStudent.foto_url;
+                modalPhoto.style.display = 'block';
+                modalPhotoPlaceholder.style.display = 'none';
+            } else {
+                modalPhoto.style.display = 'none';
+                modalPhotoPlaceholder.style.display = 'flex';
+                modalPhotoPlaceholder.textContent = currentStudent.nome.charAt(0).toUpperCase();
+            }
+
+            // Atualizar detalhes
+            const modalDetails = document.getElementById('modalDetails');
+            modalDetails.innerHTML = `
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Nome Completo</div>
+                        <div class="modal-detail-value">${currentStudent.nome}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Matrícula</div>
+                        <div class="modal-detail-value">${currentStudent.matricula || '-'}</div>
+                    </div>
+                </div>
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Sexo</div>
+                        <div class="modal-detail-value">${currentStudent.sexo === 'M' ? 'Masculino' : currentStudent.sexo === 'F' ? 'Feminino' : '-'}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Data de Nascimento</div>
+                        <div class="modal-detail-value">${currentStudent.data_nascimento || '-'}</div>
+                    </div>
+                </div>
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Turma</div>
+                        <div class="modal-detail-value">${currentStudent.turmas?.nome || '-'}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Série</div>
+                        <div class="modal-detail-value">${currentStudent.series?.nome || '-'}</div>
+                    </div>
+                </div>
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Bairro</div>
+                        <div class="modal-detail-value">${currentStudent.bairro || '-'}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Cidade</div>
+                        <div class="modal-detail-value">${currentStudent.cidade || '-'}</div>
+                    </div>
+                </div>
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">WhatsApp</div>
+                        <div class="modal-detail-value">${currentStudent.whatsapp || '-'}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Estado</div>
+                        <div class="modal-detail-value">${currentStudent.estado || '-'}</div>
+                    </div>
+                </div>
+                <div class="modal-detail modal-detail-full">
+                    <div class="modal-detail-label">Responsável Principal</div>
+                    <div class="modal-detail-value">${currentStudent.nome_responsavel_1 || '-'}</div>
+                </div>
+                <div class="modal-detail-group">
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Telefone Responsável</div>
+                        <div class="modal-detail-value">${currentStudent.telefone_responsavel_1 || '-'}</div>
+                    </div>
+                    <div class="modal-detail">
+                        <div class="modal-detail-label">Segundo Responsável</div>
+                        <div class="modal-detail-value">${currentStudent.responsavel_2 || '-'}</div>
+                    </div>
+                </div>
+            `;
+
+            // Mostrar modal
+            document.getElementById('studentModal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').classList.remove('open');
+            currentStudent = null;
+        }
+
+        // Funções de Filtros
+        function toggleFilters() {
+            const content = document.getElementById('filtersContent');
+            const toggle = document.getElementById('filtersToggle');
+            
+            content.classList.toggle('open');
+            toggle.classList.toggle('open');
+        }
+
+        // Funções de Foto
+        function editPhoto() {
+            document.getElementById('photoInput').click();
+        }
+
+        // Verificar se o bucket de fotos existe
+        async function checkPhotoBucket() {
+            try {
+                const { data, error } = await supabase.storage
+                    .from('fotos_alunos')
+                    .list('', { limit: 1 });
+                
+                if (error) {
+                    console.warn('Bucket fotos_alunos não encontrado:', error);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.warn('Erro ao verificar bucket:', error);
+                return false;
+            }
+        }
+
+        // Função para comprimir imagem
+        async function compressImage(file, maxSizeKB = 200, quality = 0.7) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Calcular dimensões mantendo proporção
+                    let { width, height } = img;
+                    const maxDimension = 800; // Máximo de 800px para dispositivos de controle
+                    
+                    if (width > height && width > maxDimension) {
+                        height = (height * maxDimension) / width;
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = (width * maxDimension) / height;
+                        height = maxDimension;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Desenhar imagem redimensionada
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Função recursiva para ajustar qualidade até atingir o tamanho desejado
+                    function tryCompress(currentQuality) {
+                        canvas.toBlob((blob) => {
+                            const sizeKB = blob.size / 1024;
+                            
+                            if (sizeKB <= maxSizeKB || currentQuality <= 0.1) {
+                                // Criar novo arquivo com o blob comprimido
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                console.log(`📦 Imagem comprimida: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB`);
+                                resolve(compressedFile);
+                            } else {
+                                // Reduzir qualidade e tentar novamente
+                                tryCompress(currentQuality - 0.1);
+                            }
+                        }, 'image/jpeg', currentQuality);
+                    }
+                    
+                    tryCompress(quality);
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // Função para obter sessão do dispositivo
+        async function getDeviceSession(ipAddress, login, password) {
+            try {
+                const ipAddressWithPort = ipAddress.includes(':') ? ipAddress : `${ipAddress}:80`;
+                
+                console.log(`🔐 Obtendo sessão para ${ipAddressWithPort} com login: ${login}`);
+                
+                const response = await fetch(`http://${ipAddressWithPort}/login.fcgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        login: login || 'admin',
+                        password: password || 'admin'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.session) {
+                    throw new Error('Sessão não retornada pelo dispositivo');
+                }
+
+                console.log(`✅ Sessão obtida com sucesso: ${data.session.substring(0, 10)}...`);
+                return data.session;
+                
+            } catch (error) {
+                console.error('❌ Erro ao obter sessão:', error);
+                throw new Error(`Não foi possível autenticar no dispositivo: ${error.message}`);
+            }
+        }
+
+        async function updatePhotoOnDevice(student, photoFile) {
+            console.log('🔧 Iniciando atualização de foto nos dispositivos...');
+            
+            try {
+                // 1. Buscar TODOS os dispositivos associados ao aluno
+                console.log('🔍 Buscando TODOS os dispositivos associados ao aluno...');
+                
+                const { data: deviceData, error: deviceError } = await supabase
+                    .from('aluno_dispositivo')
+                    .select(`
+                        id_do_aluno_no_dispositivo,
+                        dispositivos!inner(
+                            id,
+                            nome,
+                            ip,
+                            login,
+                            senha,
+                            status
+                        )
+                    `)
+                    .eq('aluno', student.id)
+                    .eq('dispositivos.status', 'ATIVO');
+
+                if (deviceError) {
+                    console.error('❌ Erro ao buscar dispositivo:', deviceError);
+                    throw new Error('Erro ao buscar dispositivo associado: ' + deviceError.message);
+                }
+
+                console.log('📱 Dados dos dispositivos encontrados:', deviceData);
+
+                if (!deviceData || deviceData.length === 0) {
+                    console.warn('⚠️ Nenhum dispositivo ativo encontrado para este aluno');
+                    return true; // Não é erro crítico, apenas não há dispositivos
+                }
+
+                console.log(`🎯 ${deviceData.length} dispositivo(s) encontrado(s) para atualização`);
+
+                // 2. Converter foto para ArrayBuffer uma única vez
+                console.log('🔄 Convertendo foto para envio aos dispositivos...');
+                const arrayBuffer = await photoFile.arrayBuffer();
+                
+                // 3. Atualizar foto em TODOS os dispositivos
+                const updatePromises = deviceData.map(async (device, index) => {
+                    const deviceIp = device.dispositivos.ip.replace(/\/$/, ''); // Remove trailing slash
+                    const studentDeviceId = device.id_do_aluno_no_dispositivo;
+                    const deviceName = device.dispositivos.nome;
+                    const deviceId = device.dispositivos.id;
+
+                    console.log(`📤 [${index + 1}/${deviceData.length}] Enviando foto para dispositivo "${deviceName}" (ID: ${deviceId})...`);
+                    
+                    try {
+                        // 1. Obter sessão do dispositivo
+                        console.log(`🔐 [${deviceName}] Obtendo sessão de autenticação...`);
+                        const session = await getDeviceSession(
+                            deviceIp, 
+                            device.dispositivos.login, 
+                            device.dispositivos.senha
+                        );
+                        
+                        // 2. Fazer requisição com sessão
+                        const timestamp = Math.floor(Date.now() / 1000);
+                        const deviceUrl = `http://${deviceIp}/user_set_image.fcgi?user_id=${studentDeviceId}&session=${session}&timestamp=${timestamp}`;
+                        
+                        // Configuração da requisição com timeout
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout (mais tempo para sessão)
+                        
+                        console.log(`🔄 [${deviceName}] Enviando foto com sessão autenticada...`);
+                        
+                        const deviceResponse = await fetch(deviceUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/octet-stream'
+                            },
+                            body: arrayBuffer,
+                            signal: controller.signal
+                        });
+
+                        clearTimeout(timeoutId);
+
+                        console.log(`📡 [${deviceName}] Resposta:`, {
+                            status: deviceResponse.status,
+                            statusText: deviceResponse.statusText,
+                            ok: deviceResponse.ok
+                        });
+
+                        if (!deviceResponse.ok) {
+                            const errorText = await deviceResponse.text();
+                            console.error(`❌ [${deviceName}] Erro na resposta:`, errorText);
+                            return {
+                                success: false,
+                                deviceName,
+                                deviceId,
+                                error: `${deviceResponse.status} - ${errorText}`
+                            };
+                        }
+
+                        const deviceResult = await deviceResponse.text();
+                        console.log(`✅ [${deviceName}] Resultado:`, deviceResult);
+
+                        // Verificar se a resposta indica sucesso
+                        if (deviceResult.includes('error') || deviceResult.includes('Error')) {
+                            console.error(`❌ [${deviceName}] Dispositivo retornou erro:`, deviceResult);
+                            return {
+                                success: false,
+                                deviceName,
+                                deviceId,
+                                error: deviceResult
+                            };
+                        }
+
+                        console.log(`🎉 [${deviceName}] Foto atualizada com sucesso!`);
+                        return {
+                            success: true,
+                            deviceName,
+                            deviceId,
+                            message: 'Foto atualizada com sucesso'
+                        };
+
+                    } catch (error) {
+                        console.error(`❌ [${deviceName}] Erro ao conectar:`, error);
+                        
+                        let errorMessage = 'Erro desconhecido';
+                        
+                        if (error.name === 'AbortError') {
+                            errorMessage = 'Timeout - Dispositivo não respondeu em 10 segundos';
+                        } else if (error.message.includes('Failed to fetch')) {
+                            errorMessage = 'Dispositivo offline ou inacessível';
+                        } else if (error.message.includes('CORS')) {
+                            errorMessage = 'Erro de CORS - Configuração do dispositivo';
+                        } else if (error.message.includes('NetworkError')) {
+                            errorMessage = 'Erro de rede - Verifique a conectividade';
+                        } else {
+                            errorMessage = error.message;
+                        }
+                        
+                        return {
+                            success: false,
+                            deviceName,
+                            deviceId,
+                            error: errorMessage
+                        };
+                    }
+                });
+
+                // 4. Aguardar todas as atualizações
+                console.log('⏳ Aguardando atualização em todos os dispositivos...');
+                const results = await Promise.all(updatePromises);
+
+                // 5. Analisar resultados
+                const successful = results.filter(r => r.success);
+                const failed = results.filter(r => !r.success);
+
+                console.log(`📊 Resumo da atualização:`);
+                console.log(`✅ Sucessos: ${successful.length}/${results.length}`);
+                console.log(`❌ Falhas: ${failed.length}/${results.length}`);
+
+                if (successful.length > 0) {
+                    console.log('✅ Dispositivos atualizados com sucesso:', successful.map(r => r.deviceName));
+                }
+
+                if (failed.length > 0) {
+                    console.warn('⚠️ Dispositivos com falha:', failed.map(r => `${r.deviceName}: ${r.error}`));
+                }
+
+                // Considera sucesso se pelo menos um dispositivo foi atualizado
+                const overallSuccess = successful.length > 0;
+                
+                if (overallSuccess) {
+                    console.log('🎉 Atualização concluída! Pelo menos um dispositivo foi atualizado com sucesso.');
+                } else {
+                    console.error('❌ Falha total: Nenhum dispositivo foi atualizado com sucesso.');
+                }
+
+                return overallSuccess;
+
+            } catch (error) {
+                console.error('❌ Erro geral ao atualizar foto nos dispositivos:', error);
+                // Não interrompe o fluxo principal, apenas loga o erro
+                return false;
+            }
+        }
+
+        async function handlePhotoChange(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log('📸 Iniciando processo de edição de foto...');
+            console.log('📁 Arquivo selecionado:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+            console.log('👤 Aluno atual:', {
+                id: currentStudent.id,
+                nome: currentStudent.nome,
+                id_control_id: currentStudent.id_control_id
+            });
+
+            // Validar tipo de arquivo
+            if (!file.type.startsWith('image/')) {
+                console.error('❌ Tipo de arquivo inválido:', file.type);
+                alert('Por favor, selecione apenas arquivos de imagem.');
+                return;
+            }
+
+            // Validar tamanho (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                console.error('❌ Arquivo muito grande:', file.size);
+                alert('A imagem deve ter no máximo 5MB.');
+                return;
+            }
+
+            // Verificar se o aluno tem id_control_id
+            if (!currentStudent.id_control_id) {
+                console.error('❌ Aluno sem ID de controle:', currentStudent);
+                alert('❌ Este aluno não possui ID de controle configurado. Entre em contato com o administrador.');
+                return;
+            }
+
+            try {
+                // Mostrar loading
+                const editButton = document.querySelector('.modal-photo-edit');
+                const originalText = editButton.textContent;
+                editButton.textContent = '📦 Comprimindo...';
+                editButton.disabled = true;
+
+                // Comprimir imagem antes de processar
+                console.log('📦 Comprimindo imagem...');
+                const compressedFile = await compressImage(file, 200, 0.7);
+                console.log('✅ Compressão concluída');
+
+                // Atualizar status
+                editButton.textContent = '⏳ Enviando...';
+
+                // Converter arquivo comprimido para base64
+                const fileExtension = 'jpg'; // Sempre JPG após compressão
+                console.log('🔧 Extensão do arquivo:', fileExtension);
+                const reader = new FileReader();
+                
+                const base64Promise = new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(compressedFile);
+                });
+
+                const base64Data = await base64Promise;
+                console.log('📄 Base64 gerado, tamanho:', base64Data.length);
+
+                // Preparar dados para a lambda
+                const lambdaPayload = {
+                    id_control_id: currentStudent.id_control_id,
+                    photo_base64: base64Data,
+                    file_extension: fileExtension
+                };
+                console.log('📦 Payload para Lambda:', {
+                    id_control_id: lambdaPayload.id_control_id,
+                    file_extension: lambdaPayload.file_extension,
+                    base64_size: lambdaPayload.photo_base64.length
+                });
+
+                // Chamar lambda de edição de foto
+                console.log('🚀 Enviando para Lambda...');
+                const lambdaResponse = await fetch('https://so2m6ipkdtqex3td5z75x27gfa0qjont.lambda-url.us-east-2.on.aws/', {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(lambdaPayload)
+                });
+
+                console.log('📡 Resposta da Lambda:', {
+                    status: lambdaResponse.status,
+                    statusText: lambdaResponse.statusText,
+                    ok: lambdaResponse.ok
+                });
+
+                const lambdaResult = await lambdaResponse.json();
+                console.log('📋 Resultado da Lambda:', lambdaResult);
+
+                if (!lambdaResponse.ok || !lambdaResult.success) {
+                    console.error('❌ Erro na Lambda:', lambdaResult);
+                    throw new Error(lambdaResult.error || 'Erro na lambda de edição de foto');
+                }
+
+                // Atualizar interface com a nova foto
+                const newPhotoUrl = lambdaResult.student.foto_url;
+                console.log('🖼️ Nova URL da foto:', newPhotoUrl);
+                currentStudent.foto_url = newPhotoUrl;
+                
+                // Atualizar foto no modal
+                const modalPhoto = document.getElementById('modalPhoto');
+                const modalPhotoPlaceholder = document.getElementById('modalPhotoPlaceholder');
+                
+                modalPhoto.src = newPhotoUrl;
+                modalPhoto.style.display = 'block';
+                modalPhotoPlaceholder.style.display = 'none';
+                console.log('✅ Foto atualizada no modal');
+
+                // Atualizar lista de alunos
+                const studentIndex = students.findIndex(s => s.id === currentStudent.id);
+                if (studentIndex !== -1) {
+                    students[studentIndex].foto_url = newPhotoUrl;
+                    console.log('✅ Foto atualizada na lista de alunos');
+                }
+
+                // Atualizar foto no dispositivo de controle de acesso
+                console.log('🔧 Iniciando atualização no dispositivo...');
+                try {
+                    await updatePhotoOnDevice(currentStudent, compressedFile);
+                    console.log('✅ Foto atualizada no dispositivo com sucesso');
+                } catch (deviceError) {
+                    console.error('⚠️ Erro ao atualizar foto no dispositivo:', deviceError);
+                    // Não interrompe o processo, apenas loga o erro
+                    alert('⚠️ Foto atualizada no sistema, mas houve erro ao sincronizar com o dispositivo: ' + deviceError.message);
+                }
+
+                // Recarregar a lista de alunos para atualizar todos os cards
+                console.log('🔄 Recarregando lista de alunos...');
+                
+                // Mostrar loading nos cards
+                const grid = document.getElementById('studentsGrid');
+                grid.innerHTML = `
+                    <div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <div class="spinner"></div>
+                        Atualizando lista de alunos...
+                    </div>
+                `;
+                
+                await loadStudents();
+                console.log('✅ Lista de alunos recarregada');
+
+                console.log('🎉 Processo de edição de foto concluído com sucesso!');
+                alert('✅ Foto atualizada com sucesso!');
+
+            } catch (error) {
+                console.error('❌ Erro no upload:', error);
+                alert('❌ Erro ao fazer upload da foto: ' + error.message);
+            } finally {
+                // Restaurar botão
+                const editButton = document.querySelector('.modal-photo-edit');
+                editButton.textContent = '📷 Alterar Foto';
+                editButton.disabled = false;
+                
+                // Limpar input
+                event.target.value = '';
+            }
+        }
+
+
+
+        // Fechar modal ao clicar fora
+        document.getElementById('studentModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+
+        // Inicializar ícones Lucide
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Alunos - Escola Log</title>
+    <meta name="description" content="Gerenciamento de alunos do Escola Log - Cadastro, edição e controle completo">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/admin/alunos.html">
+    <meta property="og:title" content="Alunos - Escola Log">
+    <meta property="og:description" content="Gerenciamento de alunos do Escola Log - Cadastro, edição e controle completo">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/admin/alunos.html">
+    <meta name="twitter:title" content="Alunos - Escola Log">
+    <meta name="twitter:description" content="Gerenciamento de alunos do Escola Log - Cadastro, edição e controle completo">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="../models/face-api/utils/face-api-loader.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --danger-color: #dc2626;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 0.75rem;
+            list-style: none;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        .user-avatar {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+
+        .user-avatar:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+            min-width: 150px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+            margin-left: 0;
+            margin-right: 0;
+            margin-bottom: 0;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            border-bottom: 1px solid var(--border);
+            margin: 0;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--background);
+            color: var(--primary-color);
+        }
+
+        .dropdown-item.logout {
+            color: var(--danger-color);
+        }
+
+        .dropdown-item.logout:hover {
+            background-color: #fef2f2;
+            color: var(--danger-color);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            height: 44px;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--background);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            height: 36px;
+            min-width: 80px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .search-filters {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .data-table {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table th {
+            background: var(--background);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .table td {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .table tbody tr:hover {
+            background: var(--background);
+        }
+
+        .student-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .student-photo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            position: relative;
+        }
+
+        .clickable-photo {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .clickable-photo:hover {
+            transform: scale(1.05);
+            filter: brightness(0.8);
+        }
+
+        .photo-edit-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .clickable-photo:hover .photo-edit-overlay {
+            opacity: 1;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0.25rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-grid-full {
+            grid-column: 1 / -1;
+        }
+
+        .photo-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem;
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .photo-upload:hover {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .photo-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--border);
+        }
+
+        .photo-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Estilos para Métricas Faciais */
+        .facial-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: var(--background);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 0.25rem;
+        }
+
+        .metric-value.success {
+            color: var(--success-color);
+        }
+
+        .metric-value.warning {
+            color: var(--warning-color);
+        }
+
+        .metric-value.error {
+            color: var(--error-color);
+        }
+
+        /* Estilos para Dispositivos */
+        .devices-container {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .device-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .devices-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .device-item:hover {
+            background: var(--background);
+            border-color: var(--primary-color);
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .device-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .device-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .device-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .device-status.active {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .device-status.inactive {
+            background: #fee2e2;
+            color: var(--error-color);
+        }
+
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1rem;
+            }
+
+            .table-container {
+                font-size: 0.75rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log" style="height: 2rem;">
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="alunos.html" class="active">Alunos</a></li>
+            
+                    <li><a href="escolas.html">Escolas</a></li>
+                    <li><a href="turmas.html">Turmas</a></li>
+                    <li><a href="series.html">Séries</a></li>
+                    <li><a href="dispositivos.html">Dispositivos</a></li>
+                    <li><a href="logs.html">Logs</a></li>
+                    <li><a href="usuarios.html">Usuários</a></li>
+                </ul>
+            </nav>
+            <div class="user-menu">
+                <div class="user-avatar" onclick="toggleDropdown()">A</div>
+                <div class="dropdown-menu" id="userDropdown">
+                    <a href="../login.html" class="dropdown-item logout" onclick="logout()">Sair</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Alunos</h1>
+                <p class="page-subtitle">Gerenciamento completo dos alunos cadastrados</p>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <a href="excel-import.html" class="btn" style="background: #10b981; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+                    📊 Importar Excel
+                </a>
+                <button class="btn btn-primary" onclick="openModal('add')">
+                    ➕ Novo Aluno
+                </button>
+            </div>
+        </div>
+
+        <div class="search-filters">
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label">Buscar por nome</label>
+                    <input type="text" class="form-input" id="searchName" placeholder="Digite o nome do aluno..." onkeyup="filterStudents()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Escola</label>
+                    <select class="form-input" id="filterSchool" onchange="filterStudents()">
+                        <option value="">Todas as escolas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Turma</label>
+                    <select class="form-input" id="filterClass" onchange="filterStudents()">
+                        <option value="">Todas as turmas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Série</label>
+                    <select class="form-input" id="filterSeries" onchange="filterStudents()">
+                        <option value="">Todas as séries</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Foto</label>
+                    <select class="form-input" id="filterPhoto" onchange="filterStudents()">
+                        <option value="">Todas</option>
+                        <option value="com">Com foto</option>
+                        <option value="sem">Sem foto</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">
+                <h3 class="table-title">Lista de Alunos</h3>
+                <div class="students-count-container">
+                    <strong>Total: <span id="studentsCount" style="color: #007bff; font-size: 1.1em;">0 alunos</span></strong>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Nome</th>
+                            <th>Matrícula</th>
+                            <th>Escola</th>
+                            <th>Turma</th>
+                            <th>Série</th>
+                            <th>Responsável</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        <tr>
+                            <td colspan="8" class="loading">Carregando alunos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Adicionar/Editar Aluno -->
+    <div class="modal" id="studentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Novo Aluno</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="studentForm">
+                    <input type="hidden" id="studentId">
+                    
+                    <div class="form-group form-grid-full">
+                        <label class="form-label">Foto do Aluno</label>
+                        <div class="photo-upload" onclick="document.getElementById('photoInput').click()">
+                            <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="previewPhoto(event)">
+                            <div id="photoPreview" class="photo-placeholder">📷</div>
+                            <p>Clique para selecionar uma foto</p>
+                        </div>
+                        <div class="photo-actions" style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                            <button type="button" class="btn" style="background: var(--danger-color); color: #fff; padding: 0.5rem 0.75rem; border-radius: 0.375rem;" onclick="deleteStudentPhoto()">🗑️ Excluir foto</button>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" class="form-input" id="nome" placeholder="Digite o nome completo do aluno" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Matrícula</label>
+                            <input type="text" class="form-input" id="matricula" placeholder="Ex: 2024001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Data de Nascimento</label>
+                            <input type="date" class="form-input" id="dataNascimento">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sexo</label>
+                            <select class="form-input" id="sexo">
+                                <option value="">Selecione o sexo</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Feminino</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Escola *</label>
+                            <select class="form-input" id="escolaId" required onchange="loadTurmasBySchool()">
+                                <option value="">Selecione uma escola</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Série</label>
+                            <select class="form-input" id="serieId">
+                                <option value="">Selecione uma série</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Turma</label>
+                            <select class="form-input" id="turmaId">
+                                <option value="">Selecione uma turma</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select class="form-input" id="estado" onchange="loadCidades(this.value)">
+                                <option value="">Selecione um estado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cidade</label>
+                            <select class="form-input" id="cidade">
+                                <option value="">Selecione uma cidade</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bairro</label>
+                            <input type="text" class="form-input" id="bairro" placeholder="Ex: Centro">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nome do Responsável 1</label>
+                            <input type="text" class="form-input" id="nomeResponsavel1" placeholder="Nome do responsável principal">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefone do Responsável 1</label>
+                            <input type="tel" class="form-input" id="telefoneResponsavel1" placeholder="(11) 99999-9999" maxlength="15">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nome do Responsável 2</label>
+                            <input type="text" class="form-input" id="responsavel2" placeholder="Nome do segundo responsável">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefone do Responsável 2</label>
+                            <input type="tel" class="form-input" id="telefoneResponsavel2" placeholder="(11) 99999-9999" maxlength="15">
+                        </div>
+                        <!-- Alertas de WhatsApp -->
+                        <div class="form-group form-grid-full">
+                            <label class="form-label">Alertas de WhatsApp</label>
+                            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="envio1">
+                                    <span>Enviar alertas para Responsável 1</span>
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="envio2">
+                                    <span>Enviar alertas para Responsável 2</span>
+                                </label>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">Os números devem estar cadastrados corretamente.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Dispositivos -->
+                    <div class="form-group form-grid-full" id="devicesSection">
+                        <h4 style="color: var(--primary-color); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                            📱 Dispositivos Associados
+                        </h4>
+                        <div class="devices-container">
+                            <div class="device-controls">
+                                <select id="deviceSelect" class="form-input" style="flex: 1;">
+                                    <option value="">Selecione um dispositivo...</option>
+                                </select>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addDevice()" style="margin-left: 10px;">
+                                    ➕ Adicionar
+                                </button>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                💡 <strong>Dica:</strong> Selecione o dispositivo para associar ao aluno
+                            </div>
+                            <div id="devicesList" class="devices-list">
+                                <!-- Lista de dispositivos será preenchida aqui -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Métricas Faciais -->
+                    <div class="form-group form-grid-full" id="facialMetricsSection" style="display: none;">
+                        <h4 style="color: var(--primary-color); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                            🤖 Métricas Faciais
+                        </h4>
+                        <div class="facial-metrics">
+                            <div class="metric-item">
+                                <label class="form-label">Qualidade da Face:</label>
+                                <div class="metric-value" id="faceQualityScore">-</div>
+                            </div>
+                            <div class="metric-item">
+                                <label class="form-label">Status do Processamento:</label>
+                                <div class="metric-value" id="processingStatus">Aguardando foto...</div>
+                            </div>
+                            <div class="metric-item">
+                                <label class="form-label">Data de Detecção:</label>
+                                <div class="metric-value" id="faceDetectionDate">-</div>
+                            </div>
+                            <div class="metric-item">
+                                <label class="form-label">Versão do Modelo:</label>
+                                <div class="metric-value" id="faceModelVersion">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveStudent()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        let supabase = null;
+        let students = [];
+        let schools = [];
+        let classes = [];
+        let series = [];
+        let currentStudentId = null;
+        let devices = [];
+        let studentDevices = [];
+        
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Não logar resposta da Lambda para evitar exposição de chaves
+                
+                if (data.status === 'success' && data.data) {
+                    // Priorizar service role key para bypass RLS no painel admin
+                    const serviceKey = data.data.SUPABASE_SERVICE_ROLE_KEY1?.trim() || 
+                                       data.data.SUPABASE_SERVICE_ROLE_KEY?.trim();
+                    
+                    const anonKey = data.data.SUPABASE_KEY1?.trim() || 
+                                   data.data.SUPABASE_KEY;
+                    
+                    // Não logar disponibilidade de chaves para evitar exposição
+                    
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: serviceKey || anonKey // Usar service role se disponível, senão anon
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            
+            // Definir variáveis globais
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            
+            // Configurar Supabase
+            supabase = window.supabase.createClient(keys.url, keys.key);
+            
+            console.log('Supabase inicializado com sucesso');
+            return supabase;
+        }
+
+        // Função para carregar alunos
+        async function loadStudents() {
+            try {
+                console.log('Carregando alunos...');
+                console.log('Supabase client:', supabase);
+                
+                // Primeiro, vamos testar uma consulta simples
+                const { data: simpleData, error: simpleError } = await supabase
+                    .from('alunos')
+                    .select('*')
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado da consulta simples:', { data: simpleData, error: simpleError });
+
+                if (simpleError) {
+                    console.error('Erro na consulta simples:', simpleError);
+                    showEmptyState('Erro ao carregar alunos: ' + simpleError.message);
+                    return;
+                }
+
+                if (!simpleData || simpleData.length === 0) {
+                    console.log('Nenhum aluno encontrado na consulta simples');
+                    showEmptyState('Nenhum aluno encontrado');
+                    return;
+                }
+
+                console.log('Consulta simples funcionou:', simpleData);
+
+                // Agora vamos tentar a consulta com joins
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select(`
+                        *,
+                        escolas:escola_id(nome),
+                        turmas:turma_id(nome),
+                        series:serie_id(nome)
+                    `)
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado da consulta com joins:', { data, error });
+
+                if (error) {
+                    console.error('Erro na consulta com joins:', error);
+                    // Usar dados simples se a consulta com joins falhar
+                    students = simpleData || [];
+                } else {
+                    students = data || [];
+                }
+
+                console.log('Alunos carregados:', students);
+                renderStudents(students);
+                updateStudentsCount(students.length);
+
+            } catch (error) {
+                console.error('Erro ao carregar alunos:', error);
+                showEmptyState('Erro ao carregar alunos: ' + error.message);
+            }
+        }
+
+        // Função para carregar escolas
+        async function loadSchools() {
+            try {
+                console.log('🏫 Carregando escolas...');
+                console.log('🔑 Usando chave:', supabase.supabaseKey ? 'Configurada' : 'Não configurada');
+                
+                // Teste de conexão primeiro
+                const { data: testData, error: testError } = await supabase
+                    .from('escolas')
+                    .select('id')
+                    .limit(1);
+                
+                console.log('🧪 Teste de conexão escolas:', { testData, testError });
+                
+                if (testError) {
+                    console.error('❌ Erro no teste de conexão:', testError);
+                    console.log('🔍 Detalhes do erro:', {
+                        message: testError.message,
+                        details: testError.details,
+                        hint: testError.hint,
+                        code: testError.code
+                    });
+                    return;
+                }
+                
+                const { data, error } = await supabase
+                    .from('escolas')
+                    .select('id, nome')
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado escolas:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar escolas:', error);
+                    console.log('🔍 Detalhes do erro:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    schools = data;
+                    populateSelect('escolaId', schools, 'nome');
+                    populateSelect('filterSchool', schools, 'nome');
+                    console.log(`✅ ${data.length} escolas carregadas`);
+                } else {
+                    console.log('⚠️ Nenhuma escola encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar escolas:', error);
+            }
+        }
+
+        // Função para carregar séries
+        async function loadSeries() {
+            try {
+                console.log('📚 Carregando séries...');
+                const { data, error } = await supabase
+                    .from('series')
+                    .select('id, nome')
+                    .order('nome');
+
+                console.log('Resultado séries:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar séries:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    series = data;
+                    populateSelect('serieId', series, 'nome');
+                    populateSelect('filterSeries', series, 'nome');
+                    console.log(`✅ ${data.length} séries carregadas`);
+                } else {
+                    console.log('⚠️ Nenhuma série encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar séries:', error);
+            }
+        }
+
+        // Função para carregar turmas por escola
+        async function loadTurmasBySchool() {
+            const escolaId = document.getElementById('escolaId').value;
+            const turmaSelect = document.getElementById('turmaId');
+            
+            console.log('🏫 Carregando turmas para escola:', escolaId);
+            
+            // Limpar turmas
+            turmaSelect.innerHTML = '<option value="">Selecione uma turma</option>';
+            
+            if (!escolaId) {
+                console.log('⚠️ Nenhuma escola selecionada');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('turmas')
+                    .select('id, nome')
+                    .eq('escola_id', escolaId)
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado turmas:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar turmas:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    data.forEach(turma => {
+                        const option = document.createElement('option');
+                        option.value = turma.id;
+                        option.textContent = turma.nome;
+                        turmaSelect.appendChild(option);
+                    });
+                    console.log(`✅ ${data.length} turmas carregadas`);
+                } else {
+                    console.log('⚠️ Nenhuma turma encontrada para esta escola');
+                }
+
+                // Carregar dispositivos da escola também
+                await loadDevicesForStudent(escolaId);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar turmas:', error);
+            }
+        }
+
+        // Função para carregar todas as turmas para filtros
+        async function loadAllTurmas() {
+            try {
+                console.log('🎓 Carregando todas as turmas para filtros...');
+                const { data, error } = await supabase
+                    .from('turmas')
+                    .select('id, nome')
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado todas as turmas:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar todas as turmas:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    populateSelect('filterClass', data, 'nome');
+                    console.log(`✅ ${data.length} turmas carregadas para filtros`);
+                } else {
+                    console.log('⚠️ Nenhuma turma encontrada para filtros');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar todas as turmas:', error);
+            }
+        }
+
+        // Função para carregar dispositivos da escola do aluno
+        async function loadDevicesForStudent(escolaId) {
+            try {
+                console.log('📱 Carregando dispositivos da escola:', escolaId);
+                
+                if (!escolaId) {
+                    console.log('⚠️ Nenhuma escola selecionada');
+                    document.getElementById('deviceSelect').innerHTML = '<option value="">Selecione uma escola primeiro</option>';
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('dispositivos')
+                    .select('id, nome, ip, status')
+                    .eq('escola_id', escolaId)
+                    .is('soft_delete', null)
+                    .order('nome');
+
+                console.log('Resultado dispositivos:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar dispositivos:', error);
+                    return;
+                }
+
+                devices = data || [];
+                
+                // Popular select de dispositivos
+                const deviceSelect = document.getElementById('deviceSelect');
+                deviceSelect.innerHTML = '<option value="">Selecione um dispositivo...</option>';
+                
+                if (devices.length > 0) {
+                    devices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.id;
+                        option.textContent = `${device.nome} (${device.ip})`;
+                        deviceSelect.appendChild(option);
+                    });
+                    console.log(`✅ ${devices.length} dispositivos carregados`);
+                } else {
+                    console.log('⚠️ Nenhum dispositivo encontrado para esta escola');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dispositivos:', error);
+            }
+        }
+
+        // Função para carregar dispositivos do aluno
+        async function loadStudentDevices(alunoId) {
+            try {
+                console.log('📱 Carregando dispositivos do aluno:', alunoId);
+                
+                if (!alunoId) {
+                    studentDevices = [];
+                    renderStudentDevices();
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('aluno_dispositivo')
+                    .select(`
+                        id,
+                        id_do_aluno_no_dispositivo,
+                        numero_de_quem_cadastrou,
+                        device_id,
+                        id_dispositivo
+                    `)
+                    .eq('aluno', alunoId);
+
+                console.log('Resultado dispositivos do aluno:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar dispositivos do aluno:', error);
+                    return;
+                }
+
+                studentDevices = data || [];
+                await renderStudentDevices();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dispositivos do aluno:', error);
+            }
+        }
+
+        // Função para renderizar dispositivos do aluno
+        async function renderStudentDevices() {
+            const devicesList = document.getElementById('devicesList');
+            
+            if (studentDevices.length === 0) {
+                devicesList.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.875rem; text-align: center; padding: 1rem;">Nenhum dispositivo associado</p>';
+                return;
+            }
+
+            // Buscar dados dos dispositivos
+            const deviceIds = studentDevices.map(rel => rel.id_dispositivo);
+            const { data: devicesData, error: devicesError } = await supabase
+                .from('dispositivos')
+                .select('id, nome, ip, status')
+                .in('id', deviceIds);
+
+            if (devicesError) {
+                console.error('❌ Erro ao carregar dados dos dispositivos:', devicesError);
+                devicesList.innerHTML = '<p style="color: var(--error-color); font-size: 0.875rem; text-align: center; padding: 1rem;">Erro ao carregar dispositivos</p>';
+                return;
+            }
+
+            // Criar mapa de dispositivos por ID
+            const devicesMap = {};
+            devicesData.forEach(device => {
+                devicesMap[device.id] = device;
+            });
+
+            devicesList.innerHTML = studentDevices.map(relation => {
+                const device = devicesMap[relation.id_dispositivo];
+                if (!device) {
+                    return `
+                        <div class="device-item">
+                            <div class="device-info">
+                                <div class="device-name">Dispositivo não encontrado</div>
+                                <div class="device-details">ID: ${relation.id_do_aluno_no_dispositivo}</div>
+                            </div>
+                            <div class="device-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeDevice(${relation.id})">
+                                    🗑️ Remover
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="device-item">
+                        <div class="device-info">
+                            <div class="device-name">${device.nome}</div>
+                            <div class="device-details">
+                                IP: ${device.ip} | ID no dispositivo: ${relation.id_do_aluno_no_dispositivo}
+                            </div>
+                        </div>
+                        <div class="device-actions">
+                            <button class="btn btn-danger btn-sm" onclick="removeDevice(${relation.id})">
+                                🗑️ Remover
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Função para adicionar dispositivo ao aluno
+        async function addDevice() {
+            const deviceSelect = document.getElementById('deviceSelect');
+            const deviceId = deviceSelect.value;
+            const deviceIdNumber = parseInt(deviceId);
+            
+            if (!deviceId) {
+                alert('Selecione um dispositivo');
+                return;
+            }
+
+            if (Number.isNaN(deviceIdNumber)) {
+                alert('ID do dispositivo inválido. Selecione novamente.');
+                return;
+            }
+
+            if (!currentStudentId) {
+                alert('Salve o aluno primeiro antes de adicionar dispositivos');
+                return;
+            }
+
+            // Verificar se o dispositivo já está associado (checar estado local)
+            const alreadyAssociatedLocal = studentDevices.some(rel => rel.id_dispositivo == deviceIdNumber);
+            if (alreadyAssociatedLocal) {
+                alert('Este dispositivo já está associado ao aluno');
+                return;
+            }
+
+            try {
+                // Obter dados do usuário logado
+                const whatsappUser = JSON.parse(localStorage.getItem('whatsapp_user') || '{}');
+
+                // Verificar existência no banco antes de inserir
+                const { data: existingRel, error: existError } = await supabase
+                    .from('aluno_dispositivo')
+                    .select('id')
+                    .eq('aluno', currentStudentId)
+                    .eq('id_dispositivo', deviceIdNumber)
+                    .limit(1);
+                if (existError) {
+                    console.error('❌ Erro ao verificar relação aluno_dispositivo:', existError);
+                    alert('Erro ao verificar relação aluno-dispositivo: ' + existError.message);
+                    return;
+                }
+                if (existingRel && existingRel.length > 0) {
+                    alert('Este dispositivo já está associado ao aluno (base de dados).');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('aluno_dispositivo')
+                    .insert([{
+                        id_dispositivo: deviceIdNumber,
+                        aluno: currentStudentId,
+                        escola: document.getElementById('escolaId').value,
+                        id_do_aluno_no_dispositivo: 'AUTO', // Valor padrão
+                        numero_de_quem_cadastrou: whatsappUser.whatsapp || 'N/A'
+                    }]);
+
+                if (error) {
+                    console.error('❌ Erro ao associar dispositivo:', error);
+                    if (String(error.message || '').toLowerCase().includes('permission')) {
+                        alert('Permissão negada ao criar vínculo aluno-dispositivo. Confirme que o usuário logado é "admin" e está ativo.');
+                    } else {
+                        alert('Erro ao associar dispositivo: ' + error.message);
+                    }
+                    return;
+                }
+
+                console.log('✅ Dispositivo associado com sucesso');
+                
+                // Recarregar dispositivos do aluno
+                await loadStudentDevices(currentStudentId);
+                
+                // Limpar campos
+                deviceSelect.value = '';
+                
+            } catch (error) {
+                console.error('❌ Erro ao adicionar dispositivo:', error);
+                alert('Erro ao adicionar dispositivo');
+            }
+        }
+
+        // Função para remover dispositivo do aluno
+        async function removeDevice(relationId) {
+            if (!confirm('Tem certeza que deseja remover este dispositivo do aluno?')) {
+                return;
+            }
+
+            console.log('🗑️ Removendo dispositivo:', relationId);
+
+            // Tentar duas vezes automaticamente
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    console.log(`🔄 Tentativa ${attempt} de remoção...`);
+                    
+                    const { data, error } = await supabase
+                        .from('aluno_dispositivo')
+                        .delete()
+                        .eq('id', relationId);
+
+                    if (error) {
+                        console.log(`⚠️ Erro na tentativa ${attempt}:`, error.message);
+                        
+                        if (attempt === 2) {
+                            // Só mostra erro na segunda tentativa
+                            console.error('❌ Erro ao remover:', error);
+                            alert('Erro ao remover dispositivo: ' + error.message);
+                            return;
+                        }
+                        
+                        // Aguardar 5 segundos antes da segunda tentativa
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        continue;
+                    }
+
+                    console.log('✅ Dispositivo removido com sucesso');
+                    
+                    // Recarregar dispositivos do aluno
+                    await loadStudentDevices(currentStudentId);
+                    return; // Sucesso, sair da função
+                    
+                } catch (error) {
+                    console.log(`⚠️ Erro na tentativa ${attempt}:`, error.message);
+                    
+                    if (attempt === 2) {
+                        // Só mostra erro na segunda tentativa
+                        console.error('❌ Erro ao remover dispositivo:', error);
+                        alert('Erro ao remover dispositivo');
+                        return;
+                    }
+                    
+                    // Aguardar 5 segundos antes da segunda tentativa
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+            }
+        }
+
+        // Função para popular selects
+        function populateSelect(selectId, data, textField) {
+            const select = document.getElementById(selectId);
+            if (!select) {
+                console.warn(`⚠️ Select ${selectId} não encontrado`);
+                return;
+            }
+            
+            // Limpar opções existentes (exceto a primeira)
+            const firstOption = select.querySelector('option');
+            select.innerHTML = '';
+            if (firstOption) {
+                select.appendChild(firstOption);
+            }
+            
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item[textField];
+                    select.appendChild(option);
+                });
+                console.log(`✅ ${data.length} opções adicionadas ao ${selectId}`);
+            } else {
+                console.warn(`⚠️ Nenhum dado para popular ${selectId}`);
+            }
+        }
+
+        // Função para carregar estados do IBGE
+        async function loadEstados() {
+            try {
+                console.log('🇧🇷 Carregando estados do IBGE...');
+                const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const estados = await response.json();
+                console.log(`✅ ${estados.length} estados carregados`);
+                
+                // Ordenar por nome
+                estados.sort((a, b) => a.nome.localeCompare(b.nome));
+                
+                // Popular select de estado
+                const estadoSelect = document.getElementById('estado');
+                if (estadoSelect) {
+                    estadoSelect.innerHTML = '<option value="">Selecione um estado</option>';
+                    estados.forEach(estado => {
+                        const option = document.createElement('option');
+                        option.value = estado.sigla;
+                        option.textContent = estado.nome;
+                        estadoSelect.appendChild(option);
+                    });
+                }
+                
+                return estados;
+            } catch (error) {
+                console.error('❌ Erro ao carregar estados:', error);
+                return [];
+            }
+        }
+
+        // Função para carregar cidades do IBGE por estado
+        async function loadCidades(estadoSigla) {
+            try {
+                if (!estadoSigla) {
+                    console.log('⚠️ Nenhum estado selecionado');
+                    return;
+                }
+                
+                console.log(`🏙️ Carregando cidades do estado: ${estadoSigla}`);
+                const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSigla}/municipios`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const cidades = await response.json();
+                console.log(`✅ ${cidades.length} cidades carregadas`);
+                
+                // Ordenar por nome
+                cidades.sort((a, b) => a.nome.localeCompare(b.nome));
+                
+                // Popular select de cidade
+                const cidadeSelect = document.getElementById('cidade');
+                if (cidadeSelect) {
+                    cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
+                    cidades.forEach(cidade => {
+                        const option = document.createElement('option');
+                        option.value = cidade.nome;
+                        option.textContent = cidade.nome;
+                        cidadeSelect.appendChild(option);
+                    });
+                }
+                
+                return cidades;
+            } catch (error) {
+                console.error('❌ Erro ao carregar cidades:', error);
+                return [];
+            }
+        }
+
+        // Função para normalizar telefone (remove formatação)
+        function normalizePhone(phone) {
+            return phone.replace(/\D/g, '');
+        }
+
+        // Função para formatar telefone (aplicar máscara)
+        function formatPhone(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            
+            // Limitar a 11 dígitos (DDD + 9 dígitos)
+            if (cleaned.length > 11) {
+                return phone; // Retorna o valor atual se exceder 11 dígitos
+            }
+            
+            if (cleaned.length <= 2) {
+                return cleaned;
+            } else if (cleaned.length <= 7) {
+                return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+            } else {
+                return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+            }
+        }
+
+        // Função para aplicar máscara de telefone
+        function applyPhoneMask(input) {
+            // Aplicar máscara no input
+            input.addEventListener('input', function(e) {
+                const value = e.target.value.replace(/\D/g, '');
+                e.target.value = formatPhone(value);
+            });
+
+            // Prevenir entrada de caracteres não numéricos
+            input.addEventListener('keypress', function(e) {
+                const char = String.fromCharCode(e.which);
+                if (!/[0-9]/.test(char)) {
+                    e.preventDefault();
+                }
+            });
+
+            // Limitar comprimento máximo
+            input.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 11) {
+                        e.target.value = formatPhone(value.slice(0, 11));
+                    } else {
+                        e.target.value = formatPhone(value);
+                    }
+                }, 0);
+            });
+        }
+
+        // Função para inicializar máscaras de telefone
+        function initializePhoneMasks() {
+            const phoneInputs = [
+                'telefoneResponsavel1', 
+                'telefoneResponsavel2'
+            ];
+            
+            phoneInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    // Aplicar máscara
+                    applyPhoneMask(input);
+                    
+                    // Aplicar máscara no valor atual se já tiver algum
+                    if (input.value) {
+                        input.value = formatPhone(input.value);
+                    }
+                    
+                    // Adicionar placeholder visual melhorado
+                    input.addEventListener('focus', function() {
+                        if (!this.value) {
+                            this.placeholder = '(11) 99999-9999';
+                        }
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        if (!this.value) {
+                            this.placeholder = '(11) 99999-9999';
+                        }
+                    });
+                }
+            });
+        }
+
+        // Função para mostrar loading em botão
+        function setButtonLoading(button, loading = true) {
+            if (loading) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+                button.dataset.originalText = button.textContent;
+                button.textContent = '';
+            } else {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+        }
+
+        // Função para gerenciar loading de múltiplos botões
+        function setButtonsLoading(buttonIds, loading = true) {
+            buttonIds.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    setButtonLoading(button, loading);
+                }
+            });
+        }
+
+        // Função para renderizar alunos
+        function renderStudents(studentsData) {
+            const tbody = document.getElementById('studentsTableBody');
+            
+            if (!studentsData || studentsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <p>Nenhum aluno encontrado</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = studentsData.map(student => `
+                <tr>
+                    <td>
+                        ${student.foto_url ? 
+                            `<img src="${student.foto_url}" alt="${student.nome}" class="student-photo clickable-photo" onclick="editStudentPhoto('${student.id}', '${student.nome.replace(/'/g, "\\'")}')">` :
+                            `<div class="student-photo-placeholder clickable-photo" onclick="editStudentPhoto('${student.id}', '${student.nome.replace(/'/g, "\\'")}')">
+                                ${student.nome.charAt(0).toUpperCase()}
+                                <div class="photo-edit-overlay">📷</div>
+                            </div>`
+                        }
+                    </td>
+                    <td><strong>${student.nome}</strong></td>
+                    <td>${student.matricula || '-'}</td>
+                    <td>${student.escolas?.nome || student.escola_nome || '-'}</td>
+                    <td>${student.turmas?.nome || student.turma_nome || '-'}</td>
+                    <td>${student.series?.nome || student.serie_nome || '-'}</td>
+
+                    <td>${student.nome_responsavel_1 || '-'}</td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-secondary btn-sm" onclick="editStudent('${student.id}')">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.id}', '${student.nome}')">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Função para mostrar estado vazio
+        function showEmptyState(message) {
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>${message}</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Função para atualizar contador
+        function updateStudentsCount(count, total = null) {
+            const countElement = document.getElementById('studentsCount');
+            if (total !== null && total !== count) {
+                countElement.textContent = `${count} de ${total} aluno${total !== 1 ? 's' : ''} (filtrado)`;
+            } else {
+                countElement.textContent = `${count} aluno${count !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // Função para filtrar alunos
+        function filterStudents() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const filterSchool = document.getElementById('filterSchool').value;
+            const filterClass = document.getElementById('filterClass').value;
+            const filterSeries = document.getElementById('filterSeries').value;
+            const filterPhoto = document.getElementById('filterPhoto').value;
+
+            const filtered = students.filter(student => {
+                const matchName = !searchName || student.nome.toLowerCase().includes(searchName);
+                const matchSchool = !filterSchool || student.escola_id === filterSchool;
+                const matchClass = !filterClass || student.turma_id === filterClass;
+                const matchSeries = !filterSeries || student.serie_id === filterSeries;
+                
+                let matchPhoto = true;
+                if (filterPhoto === 'com') {
+                    matchPhoto = student.foto_url && student.foto_url.trim() !== '';
+                } else if (filterPhoto === 'sem') {
+                    matchPhoto = !student.foto_url || student.foto_url.trim() === '';
+                }
+
+                return matchName && matchSchool && matchClass && matchSeries && matchPhoto;
+            });
+
+            renderStudents(filtered);
+            
+            // Verificar se há filtros aplicados
+            const hasFilters = searchName || filterSchool || filterClass || filterSeries || filterPhoto !== 'todas';
+            
+            if (hasFilters) {
+                updateStudentsCount(filtered.length, students.length);
+            } else {
+                updateStudentsCount(filtered.length);
+            }
+        }
+
+        // Função para abrir modal
+        function openModal(mode, studentId = null) {
+            const modal = document.getElementById('studentModal');
+            const title = document.getElementById('modalTitle');
+            
+            if (mode === 'add') {
+                title.textContent = 'Novo Aluno';
+                clearForm();
+            } else if (mode === 'edit') {
+                title.textContent = 'Editar Aluno';
+                loadStudentData(studentId);
+            }
+            
+            currentStudentId = studentId;
+            modal.classList.add('show');
+        }
+
+        // Função para fechar modal
+        function closeModal() {
+            const modal = document.getElementById('studentModal');
+            modal.classList.remove('show');
+            clearForm();
+            currentStudentId = null;
+        }
+
+        // Função para limpar formulário
+        function clearForm() {
+            document.getElementById('studentForm').reset();
+            document.getElementById('studentId').value = '';
+            document.getElementById('photoPreview').innerHTML = '📷';
+            document.getElementById('photoPreview').className = 'photo-placeholder';
+            
+            // Verificar se há escola selecionada no localStorage e pré-preencher estado e cidade
+            try {
+                const selectedSchool = localStorage.getItem('selectedSchoolForStudents');
+                if (selectedSchool) {
+                    const schoolData = JSON.parse(selectedSchool);
+                    if (schoolData.estado) {
+                        document.getElementById('estado').value = schoolData.estado;
+                        // Carregar cidades do estado
+                        loadCidades(schoolData.estado).then(() => {
+                            if (schoolData.cidade) {
+                                document.getElementById('cidade').value = schoolData.cidade;
+                            }
+                        });
+                    }
+                    if (schoolData.id) {
+                        document.getElementById('escolaId').value = schoolData.id;
+                        // Carregar turmas da escola
+                        loadTurmasBySchool();
+                    }
+                    console.log('✅ Dados da escola aplicados ao formulário:', schoolData.nome);
+                }
+            } catch (error) {
+                console.log('ℹ️ Nenhuma escola pré-selecionada encontrada');
+            }
+            
+            // Limpar dados faciais
+            document.getElementById('facialMetricsSection').style.display = 'none';
+            document.getElementById('faceQualityScore').textContent = '-';
+            document.getElementById('faceQualityScore').className = 'metric-value';
+            document.getElementById('processingStatus').textContent = 'Aguardando foto...';
+            document.getElementById('processingStatus').className = 'metric-value';
+            document.getElementById('faceDetectionDate').textContent = '-';
+            document.getElementById('faceDetectionDate').className = 'metric-value';
+            document.getElementById('faceModelVersion').textContent = '-';
+            document.getElementById('faceModelVersion').className = 'metric-value';
+            
+            // Limpar dados globais
+            window.currentFaceData = null;
+            
+            // Limpar dispositivos
+            studentDevices = [];
+            document.getElementById('devicesList').innerHTML = '<p style="color: var(--text-secondary); font-size: 0.875rem; text-align: center; padding: 1rem;">Nenhum dispositivo associado</p>';
+            document.getElementById('deviceSelect').innerHTML = '<option value="">Selecione um dispositivo...</option>';
+            
+        }
+
+        // Função para carregar dados do aluno
+        async function loadStudentData(studentId) {
+            try {
+                const student = students.find(s => s.id === studentId);
+                if (!student) return;
+
+                // Preencher campos do formulário
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('nome').value = student.nome || '';
+                document.getElementById('matricula').value = student.matricula || '';
+                document.getElementById('dataNascimento').value = student.data_nascimento || '';
+                document.getElementById('sexo').value = student.sexo || '';
+
+                document.getElementById('escolaId').value = student.escola_id || '';
+                document.getElementById('serieId').value = student.serie_id || '';
+                document.getElementById('cidade').value = student.cidade || '';
+                document.getElementById('estado').value = student.estado || '';
+                document.getElementById('bairro').value = student.bairro || '';
+                document.getElementById('nomeResponsavel1').value = student.nome_responsavel_1 || '';
+                document.getElementById('telefoneResponsavel1').value = student.telefone_responsavel_1 || '';
+                document.getElementById('responsavel2').value = student.responsavel_2 || '';
+                document.getElementById('telefoneResponsavel2').value = student.telefone_responsavel_2 || '';
+
+                // Flags de envio de WhatsApp
+                const envio1El = document.getElementById('envio1');
+                const envio2El = document.getElementById('envio2');
+                if (envio1El) envio1El.checked = !!student.envio1;
+                if (envio2El) envio2El.checked = !!student.envio2;
+
+                // Carregar turmas da escola e selecionar a turma do aluno
+                if (student.escola_id) {
+                    await loadTurmasBySchool();
+                    document.getElementById('turmaId').value = student.turma_id || '';
+                }
+
+                // Carregar cidades do estado selecionado
+                if (student.estado) {
+                    await loadCidades(student.estado);
+                    document.getElementById('cidade').value = student.cidade || '';
+                }
+
+                // Mostrar foto se existir
+                if (student.foto_url) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = `<img src="${student.foto_url}" alt="Foto" class="photo-preview">`;
+                    preview.className = '';
+                }
+
+                // Carregar dados faciais existentes
+                loadExistingFaceData(student);
+
+                // Carregar dispositivos do aluno
+                await loadStudentDevices(student.id);
+
+
+            } catch (error) {
+                console.error('Erro ao carregar dados do aluno:', error);
+                alert('Erro ao carregar dados do aluno');
+            }
+        }
+
+        // Função para preview da foto
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="photo-preview">`;
+                preview.className = '';
+                
+                // Mostrar seção de métricas (sem processar ainda)
+                document.getElementById('facialMetricsSection').style.display = 'block';
+                document.getElementById('processingStatus').textContent = 'Aguardando salvamento...';
+                document.getElementById('processingStatus').className = 'metric-value';
+                document.getElementById('faceQualityScore').textContent = '-';
+                document.getElementById('faceQualityScore').className = 'metric-value';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Função para salvar aluno
+        async function saveStudent() {
+            const saveButton = document.querySelector('button[onclick="saveStudent()"]');
+            
+            try {
+                // Mostrar loading no botão
+                setButtonLoading(saveButton, true);
+                
+                const form = document.getElementById('studentForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+
+                // Validar telefones antes de salvar
+                const telefone1 = document.getElementById('telefoneResponsavel1').value;
+                const telefone2 = document.getElementById('telefoneResponsavel2').value;
+                
+                // Validar telefones dos responsáveis se preenchidos
+                if (telefone1 && normalizePhone(telefone1).length < 10) {
+                    alert('Telefone do Responsável 1 deve ter pelo menos 10 dígitos');
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+                
+                if (telefone2 && normalizePhone(telefone2).length < 10) {
+                    alert('Telefone do Responsável 2 deve ter pelo menos 10 dígitos');
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+
+                const studentData = {
+                    nome: document.getElementById('nome').value,
+                    matricula: document.getElementById('matricula').value || null,
+                    data_nascimento: document.getElementById('dataNascimento').value || null,
+                    sexo: document.getElementById('sexo').value || null,
+
+                    escola_id: document.getElementById('escolaId').value || null,
+                    serie_id: document.getElementById('serieId').value || null,
+                    turma_id: document.getElementById('turmaId').value || null,
+                    cidade: document.getElementById('cidade').value || null,
+                    estado: document.getElementById('estado').value || null,
+                    bairro: document.getElementById('bairro').value || null,
+                    nome_responsavel_1: document.getElementById('nomeResponsavel1').value || null,
+                    telefone_responsavel_1: telefone1 || null,
+                    responsavel_2: document.getElementById('responsavel2').value || null,
+                    telefone_responsavel_2: telefone2 || null,
+                    envio1: document.getElementById('envio1').checked || false,
+                    envio2: document.getElementById('envio2').checked || false,
+                };
+
+                // Upload da foto se selecionada
+                const photoInput = document.getElementById('photoInput');
+                if (photoInput.files[0]) {
+                    const photoUrl = await uploadPhotoToStorage(photoInput.files[0]);
+                    if (photoUrl) {
+                        studentData.foto_url = photoUrl;
+                        // Tentar processar reconhecimento facial (opcional)
+                        try {
+                            const faceData = await processFaceRecognitionAutomatically(photoUrl);
+                            if (faceData) {
+                                studentData.face_descriptor = faceData.face_descriptor;
+                                studentData.face_quality_score = faceData.face_quality_score;
+                                studentData.face_detection_date = new Date().toISOString();
+                                studentData.face_model_version = 'face-api-v1.0';
+                            }
+                        } catch (error) {
+                            console.log('⚠️ Reconhecimento facial falhou, continuando sem dados faciais:', error.message);
+                            // Continuar salvamento sem dados faciais
+                        }
+                    }
+                }
+
+                let result;
+                if (currentStudentId) {
+                    // Atualizar aluno existente
+                    result = await supabase
+                        .from('alunos')
+                        .update(studentData)
+                        .eq('id', currentStudentId);
+                } else {
+                    // Criar novo aluno
+                    result = await supabase
+                        .from('alunos')
+                        .insert([studentData]);
+                }
+
+                if (result.error) {
+                    console.error('Erro ao salvar aluno:', result.error);
+                    alert('Erro ao salvar aluno: ' + result.error.message);
+                    return;
+                }
+
+                alert('Aluno salvo com sucesso!');
+                closeModal();
+                reloadStudentsWithFilters();
+
+            } catch (error) {
+                console.error('Erro ao salvar aluno:', error);
+                alert('Erro ao salvar aluno');
+            } finally {
+                // Remover loading do botão
+                setButtonLoading(saveButton, false);
+            }
+        }
+
+        // Função para sanitizar nome do arquivo
+        function sanitizeFileName(fileName) {
+            // Remover caracteres especiais e acentos
+            return fileName
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+                .replace(/[^a-zA-Z0-9._-]/g, '_') // Substitui caracteres especiais por _
+                .replace(/_+/g, '_') // Remove underscores duplicados
+                .replace(/^_|_$/g, ''); // Remove underscores do início e fim
+        }
+
+        // Função para upload de foto para Supabase Storage
+        async function uploadPhotoToStorage(file) {
+            try {
+                // Sanitizar nome do arquivo
+                const sanitizedName = sanitizeFileName(file.name);
+                const fileName = `aluno_${Date.now()}_${sanitizedName}`;
+                
+                console.log('📤 Fazendo upload:', fileName);
+                
+                const { data, error } = await supabase.storage
+                    .from('fotos')
+                    .upload(fileName, file);
+
+                if (error) {
+                    console.error('Erro no upload:', error);
+                    return null;
+                }
+
+                // Obter URL pública
+                const { data: urlData } = supabase.storage
+                    .from('fotos')
+                    .getPublicUrl(fileName);
+
+                console.log('✅ Upload concluído:', urlData.publicUrl);
+                return urlData.publicUrl;
+
+            } catch (error) {
+                console.error('Erro no upload da foto:', error);
+                return null;
+            }
+        }
+
+        // Função para inicializar Face-API
+        async function initializeFaceAPI() {
+            try {
+                console.log('🤖 Inicializando Face-API...');
+                
+                // Usar o face-api-loader
+                if (window.faceAPILoader) {
+                    await window.faceAPILoader.loadModels();
+                    console.log('✅ Face-API carregado com sucesso!');
+                    return true;
+                } else {
+                    // Fallback para carregamento direto - usar caminho absoluto
+                    const modelsPath = '/models/face-api/weights';
+                    await Promise.all([
+                        faceapi.nets.tinyFaceDetector.loadFromUri(modelsPath),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath),
+                        faceapi.nets.faceRecognitionNet.loadFromUri(modelsPath)
+                    ]);
+                    console.log('✅ Face-API carregado com sucesso!');
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar Face-API:', error);
+                return false;
+            }
+        }
+
+        // Função para processar reconhecimento facial automaticamente
+        async function processFaceRecognitionAutomatically(imageSrc) {
+            try {
+                console.log('🤖 Processando reconhecimento facial...');
+                
+                // Mostrar seção de métricas
+                document.getElementById('facialMetricsSection').style.display = 'block';
+                document.getElementById('processingStatus').textContent = 'Processando...';
+                document.getElementById('processingStatus').className = 'metric-value warning';
+                
+                // Verificar se Face-API está disponível
+                if (typeof faceapi === 'undefined') {
+                    throw new Error('Face-API não carregado');
+                }
+                
+                // Inicializar Face-API se necessário
+                if (window.faceAPILoader && !window.faceAPILoader.isLoaded()) {
+                    const initialized = await initializeFaceAPI();
+                    if (!initialized) {
+                        throw new Error('Falha ao inicializar Face-API');
+                    }
+                } else if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+                    const initialized = await initializeFaceAPI();
+                    if (!initialized) {
+                        throw new Error('Falha ao inicializar Face-API');
+                    }
+                }
+                
+                // Criar elemento de imagem temporário
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                return new Promise((resolve, reject) => {
+                    img.onload = async () => {
+                        try {
+                            // Usar face-api-loader se disponível
+                            let detection = null;
+                            
+                            if (window.faceAPILoader) {
+                                detection = await window.faceAPILoader.detectSingleFace(img, {
+                                    inputSize: 416,
+                                    scoreThreshold: 0.1
+                                });
+                            } else {
+                                // Fallback para detecção direta
+                                detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({
+                                    inputSize: 416,
+                                    scoreThreshold: 0.1
+                                }))
+                                .withFaceLandmarks()
+                                .withFaceDescriptor();
+                            }
+                            
+                            if (!detection) {
+                                throw new Error('Nenhuma face detectada na imagem');
+                            }
+                            
+                            // Validar qualidade da face
+                            const quality = validateFaceQuality(detection);
+                            if (!quality.isValid) {
+                                throw new Error(quality.reason);
+                            }
+                            
+                            const qualityScore = quality.confidence;
+                            
+                            // Atualizar interface
+                            document.getElementById('faceQualityScore').textContent = `${(qualityScore * 100).toFixed(1)}%`;
+                            document.getElementById('faceQualityScore').className = qualityScore > 0.7 ? 'metric-value success' : 
+                                                                                qualityScore > 0.5 ? 'metric-value warning' : 'metric-value error';
+                            
+                            document.getElementById('processingStatus').textContent = 'Processamento concluído!';
+                            document.getElementById('processingStatus').className = 'metric-value success';
+                            
+                            // Atualizar data de detecção e versão do modelo
+                            const now = new Date();
+                            document.getElementById('faceDetectionDate').textContent = now.toLocaleString('pt-BR');
+                            document.getElementById('faceDetectionDate').className = 'metric-value success';
+                            document.getElementById('faceModelVersion').textContent = 'face-api-v1.0';
+                            document.getElementById('faceModelVersion').className = 'metric-value success';
+                            
+                            // Armazenar dados para salvar
+                            window.currentFaceData = {
+                                face_descriptor: Array.from(detection.descriptor),
+                                face_quality_score: qualityScore
+                            };
+                            
+                            console.log('✅ Reconhecimento facial concluído:', {
+                                quality: qualityScore,
+                                descriptor: detection.descriptor ? 'Gerado' : 'Não gerado'
+                            });
+                            
+                            resolve({
+                                face_descriptor: Array.from(detection.descriptor),
+                                face_quality_score: qualityScore
+                            });
+                            
+                        } catch (error) {
+                            console.error('❌ Erro no processamento facial:', error);
+                            document.getElementById('processingStatus').textContent = 'Erro: ' + error.message;
+                            document.getElementById('processingStatus').className = 'metric-value error';
+                            reject(error);
+                        }
+                    };
+                    
+                    img.onerror = () => {
+                        const error = new Error('Erro ao carregar imagem');
+                        document.getElementById('processingStatus').textContent = 'Erro ao carregar imagem';
+                        document.getElementById('processingStatus').className = 'metric-value error';
+                        reject(error);
+                    };
+                    
+                    img.src = imageSrc;
+                });
+                
+            } catch (error) {
+                console.error('❌ Erro no processamento facial:', error);
+                document.getElementById('processingStatus').textContent = 'Erro: ' + error.message;
+                document.getElementById('processingStatus').className = 'metric-value error';
+                throw error;
+            }
+        }
+
+        // Validar qualidade da face (mesma lógica do diretor)
+        function validateFaceQuality(detection) {
+            if (!detection || !detection.detection || !detection.landmarks) {
+                return {
+                    isValid: false,
+                    reason: 'Dados de detecção incompletos'
+                };
+            }
+            
+            const { detection: faceDetection } = detection;
+            const { width, height } = faceDetection.box;
+            const minSize = 50;
+            
+            if (width < minSize || height < minSize) {
+                return {
+                    isValid: false,
+                    reason: 'Face muito pequena'
+                };
+            }
+            
+            if (faceDetection.score < 0.5) {
+                return {
+                    isValid: false,
+                    reason: 'Baixa confiança na detecção'
+                };
+            }
+            
+            return {
+                isValid: true,
+                confidence: faceDetection.score
+            };
+        }
+
+        // Função para carregar dados faciais existentes
+        function loadExistingFaceData(student) {
+            try {
+                console.log('📸 Carregando dados faciais existentes...');
+                
+                // Mostrar seção de métricas se houver dados faciais
+                if (student.face_descriptor || student.face_quality_score) {
+                    document.getElementById('facialMetricsSection').style.display = 'block';
+                    
+                    // Exibir qualidade da face se disponível
+                    if (student.face_quality_score !== null && student.face_quality_score !== undefined) {
+                        const qualityPercent = (student.face_quality_score * 100).toFixed(1);
+                        document.getElementById('faceQualityScore').textContent = `${qualityPercent}%`;
+                        document.getElementById('faceQualityScore').className = student.face_quality_score > 0.7 ? 'metric-value success' : 
+                                                                                student.face_quality_score > 0.5 ? 'metric-value warning' : 'metric-value error';
+                    } else {
+                        document.getElementById('faceQualityScore').textContent = '-';
+                        document.getElementById('faceQualityScore').className = 'metric-value';
+                    }
+                    
+                    // Status do processamento
+                    if (student.face_descriptor) {
+                        document.getElementById('processingStatus').textContent = 'Dados faciais cadastrados';
+                        document.getElementById('processingStatus').className = 'metric-value success';
+                        
+                        // Data de detecção
+                        if (student.face_detection_date) {
+                            document.getElementById('faceDetectionDate').textContent = new Date(student.face_detection_date).toLocaleString('pt-BR');
+                            document.getElementById('faceDetectionDate').className = 'metric-value success';
+                        } else {
+                            document.getElementById('faceDetectionDate').textContent = 'Data não disponível';
+                            document.getElementById('faceDetectionDate').className = 'metric-value warning';
+                        }
+                        
+                        // Versão do modelo
+                        if (student.face_model_version) {
+                            document.getElementById('faceModelVersion').textContent = student.face_model_version;
+                            document.getElementById('faceModelVersion').className = 'metric-value success';
+                        } else {
+                            document.getElementById('faceModelVersion').textContent = 'Versão não disponível';
+                            document.getElementById('faceModelVersion').className = 'metric-value warning';
+                        }
+                    } else {
+                        document.getElementById('processingStatus').textContent = 'Sem dados faciais';
+                        document.getElementById('processingStatus').className = 'metric-value warning';
+                        document.getElementById('faceDetectionDate').textContent = '-';
+                        document.getElementById('faceDetectionDate').className = 'metric-value';
+                        document.getElementById('faceModelVersion').textContent = '-';
+                        document.getElementById('faceModelVersion').className = 'metric-value';
+                    }
+                } else {
+                    // Ocultar seção se não houver dados
+                    document.getElementById('facialMetricsSection').style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados faciais:', error);
+            }
+        }
+
+        // Função para editar aluno
+        function editStudent(studentId) {
+            openModal('edit', studentId);
+        }
+
+        // Função para excluir aluno
+        async function deleteStudent(studentId, studentName) {
+            if (!confirm(`Tem certeza que deseja excluir o aluno "${studentName}"?`)) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('alunos')
+                    .update({ soft_delete: true })
+                    .eq('id', studentId);
+
+                if (error) {
+                    console.error('Erro ao excluir aluno:', error);
+                    alert('Erro ao excluir aluno: ' + error.message);
+                    return;
+                }
+
+                alert('Aluno excluído com sucesso!');
+                reloadStudentsWithFilters();
+
+            } catch (error) {
+                console.error('Erro ao excluir aluno:', error);
+                alert('Erro ao excluir aluno');
+            }
+        }
+
+        // Dropdown menu functions
+        function toggleDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (!userMenu.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('studentModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Logout function
+        function logout() {
+            redirectToLogin();
+        }
+
+        // Função para testar conexão com Supabase
+        async function testSupabaseConnection() {
+            try {
+                console.log('🔍 Testando conexão com Supabase...');
+                
+                // Teste básico de conexão
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('id, nome')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('❌ Erro na conexão:', error);
+                    return false;
+                }
+                
+                console.log('✅ Conexão com Supabase OK');
+                console.log('📊 Dados de teste:', data);
+                
+                // Testar também as outras tabelas
+                console.log('🧪 Testando acesso às outras tabelas...');
+                
+                const { data: escolasTest, error: escolasError } = await supabase
+                    .from('escolas')
+                    .select('id, nome')
+                    .eq('soft_delete', false)
+                    .limit(1);
+                console.log('🏫 Teste escolas:', { data: escolasTest, error: escolasError });
+                
+                const { data: seriesTest, error: seriesError } = await supabase
+                    .from('series')
+                    .select('id, nome')
+                    .limit(1);
+                console.log('📚 Teste séries:', { data: seriesTest, error: seriesError });
+                
+                const { data: turmasTest, error: turmasError } = await supabase
+                    .from('turmas')
+                    .select('id, nome')
+                    .eq('soft_delete', false)
+                    .limit(1);
+                console.log('🎓 Teste turmas:', { data: turmasTest, error: turmasError });
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro ao testar conexão:', error);
+                return false;
+            }
+        }
+
+        // Função para verificar autenticação
+        async function checkAuthentication() {
+            try {
+                // Verificar se há usuário logado via WhatsApp
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                const user = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', user);
+                console.log('📊 Dados do usuário:', {
+                    nome: user.nome,
+                    tipo_usuario: user.tipo_usuario,
+                    status: user.status,
+                    whatsapp: user.whatsapp
+                });
+                
+                // Verificar se o usuário é admin
+                if (user.tipo_usuario !== 'admin') {
+                    console.log('❌ Usuário não é administrador:', user.tipo_usuario);
+                    alert('Acesso negado. Apenas administradores podem acessar esta área.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                // Verificar status - ser mais flexível
+                if (user.status && user.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', user.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                console.log('✅ Usuário autorizado:', user.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+        
+        // Função para redirecionar para login
+        function redirectToLogin() {
+            // Limpar dados de sessão
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('whatsapp_user');
+            sessionStorage.clear();
+            
+            // Redirecionar para login
+            window.location.href = '../login.html';
+        }
+        
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Inicializando aplicação de alunos...');
+            
+            try {
+                await initializeSupabase();
+                
+                // Verificar autenticação e autorização
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                // Testar conexão
+                const connectionOk = await testSupabaseConnection();
+                if (!connectionOk) {
+                    showEmptyState('Erro de conexão com o banco de dados');
+                    return;
+                }
+                
+                // Carregar dados iniciais
+                await Promise.all([
+                    loadSchools(),
+                    loadSeries(),
+                    loadAllTurmas(),
+                    loadEstados(),
+                    loadStudents()
+                ]);
+                
+                // Inicializar máscaras de telefone
+                initializePhoneMasks();
+                
+                console.log('Aplicação inicializada com sucesso');
+            } catch (error) {
+                console.error('Erro ao inicializar aplicação:', error);
+                showEmptyState('Erro ao carregar dados');
+            }
+        });
+
+        // Função para comprimir imagem
+        async function compressImage(file, maxSizeKB = 500, quality = 0.8) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Calcular dimensões mantendo proporção
+                    let { width, height } = img;
+                    const maxDimension = 1200; // Máximo de 1200px na maior dimensão
+                    
+                    if (width > height && width > maxDimension) {
+                        height = (height * maxDimension) / width;
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = (width * maxDimension) / height;
+                        height = maxDimension;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Desenhar imagem redimensionada
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Função recursiva para ajustar qualidade até atingir o tamanho desejado
+                    function tryCompress(currentQuality) {
+                        canvas.toBlob((blob) => {
+                            const sizeKB = blob.size / 1024;
+                            
+                            if (sizeKB <= maxSizeKB || currentQuality <= 0.1) {
+                                // Criar novo arquivo com o blob comprimido
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                // Reduzir qualidade e tentar novamente
+                                tryCompress(currentQuality - 0.1);
+                            }
+                        }, 'image/jpeg', currentQuality);
+                    }
+                    
+                    tryCompress(quality);
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // Função para recarregar alunos preservando filtros
+        async function reloadStudentsWithFilters() {
+            await loadStudents();
+            // Reaplicar filtros após carregar os dados
+            filterStudents();
+        }
+
+        // Função para excluir apenas a foto do aluno (bucket + limpar campo)
+        async function deleteStudentPhoto() {
+            try {
+                const studentId = document.getElementById('studentId').value;
+                const studentName = document.getElementById('nome').value || '';
+                if (!studentId) {
+                    alert('Abra o aluno em modo de edição para excluir a foto.');
+                    return;
+                }
+
+                const student = students.find(s => s.id === studentId);
+                const photoUrl = student && student.foto_url ? student.foto_url : null;
+                if (!photoUrl) {
+                    alert('Este aluno não possui foto cadastrada.');
+                    return;
+                }
+
+                // Extrair nome do arquivo do URL público
+                const fileName = photoUrl.split('/').pop();
+                if (!fileName) {
+                    alert('Não foi possível identificar o arquivo da foto.');
+                    return;
+                }
+
+                // Mostrar loading
+                const loadingToast = document.createElement('div');
+                loadingToast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--primary-color);
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                    z-index: 9999;
+                    box-shadow: var(--shadow-lg);
+                `;
+                loadingToast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 16px; height: 16px; border: 2px solid #ffffff40; border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        Excluindo foto de ${studentName}...
+                    </div>
+                `;
+                document.body.appendChild(loadingToast);
+
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+
+                // Remover do bucket
+                const { error: removeError } = await supabase.storage
+                    .from('fotos_alunos')
+                    .remove([fileName]);
+                if (removeError) throw removeError;
+
+                // Limpar campo no banco
+                const { error: updateError } = await supabase
+                    .from('alunos')
+                    .update({ foto_url: null })
+                    .eq('id', studentId);
+                if (updateError) throw updateError;
+
+                // Atualizar UI
+                if (document.body.contains(loadingToast)) document.body.removeChild(loadingToast);
+                const successToast = document.createElement('div');
+                successToast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                    z-index: 9999;
+                    box-shadow: var(--shadow-lg);
+                `;
+                successToast.textContent = `Foto de ${studentName || 'aluno'} excluída com sucesso!`;
+                document.body.appendChild(successToast);
+                setTimeout(() => { if (document.body.contains(successToast)) document.body.removeChild(successToast); }, 2500);
+
+                // Reset do preview e métricas
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = '📷';
+                preview.className = 'photo-placeholder';
+                document.getElementById('facialMetricsSection').style.display = 'none';
+                document.getElementById('faceQualityScore').textContent = '-';
+                document.getElementById('processingStatus').textContent = 'Aguardando foto...';
+                document.getElementById('faceDetectionDate').textContent = '-';
+                document.getElementById('faceModelVersion').textContent = '-';
+
+                // Recarregar lista preservando filtros
+                await reloadStudentsWithFilters();
+
+            } catch (error) {
+                console.error('Erro ao excluir foto:', error);
+                const errorToast = document.createElement('div');
+                errorToast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #ef4444;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                    z-index: 9999;
+                    box-shadow: var(--shadow-lg);
+                `;
+                errorToast.textContent = `Erro ao excluir foto: ${error.message}`;
+                document.body.appendChild(errorToast);
+                setTimeout(() => { if (document.body.contains(errorToast)) document.body.removeChild(errorToast); }, 3000);
+            }
+        }
+
+        // Função para editar foto do aluno
+        async function editStudentPhoto(studentId, studentName) {
+            try {
+                // Criar input de arquivo temporário
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+                
+                fileInput.onchange = async function(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    // Validar tipo de arquivo
+                    if (!file.type.startsWith('image/')) {
+                        alert('Por favor, selecione apenas arquivos de imagem.');
+                        return;
+        }
+
+        // Função para editar foto do aluno
+
+                    // Validar tamanho (máximo 10MB antes da compressão)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('A imagem deve ter no máximo 10MB.');
+                        return;
+                    }
+                    
+                    // Mostrar loading para compressão
+                    const loadingToast = document.createElement('div');
+                    loadingToast.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: var(--primary-color);
+                        color: white;
+                        padding: 1rem;
+                        border-radius: 0.5rem;
+                        z-index: 9999;
+                        box-shadow: var(--shadow-lg);
+                    `;
+                    loadingToast.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 16px; height: 16px; border: 2px solid #ffffff40; border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            Comprimindo foto de ${studentName}...
+                        </div>
+                    `;
+                    document.body.appendChild(loadingToast);
+                    
+                    // Adicionar animação de loading
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    try {
+                        // Comprimir imagem antes do upload
+                        const compressedFile = await compressImage(file, 500);
+                        
+                        // Atualizar feedback para upload
+                        loadingToast.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 16px; height: 16px; border: 2px solid #ffffff40; border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                Enviando foto de ${studentName}... (${Math.round(compressedFile.size / 1024)}KB)
+                            </div>
+                        `;
+                        
+                        // Upload da imagem comprimida para o bucket
+                        const fileName = `aluno_${studentId}_${Date.now()}.jpg`;
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('fotos_alunos')
+                            .upload(fileName, compressedFile, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+                        
+                        if (uploadError) {
+                            throw uploadError;
+                        }
+                        
+                        // Obter URL pública da imagem
+                        const { data: urlData } = supabase.storage
+                            .from('fotos_alunos')
+                            .getPublicUrl(fileName);
+                        
+                        const photoUrl = urlData.publicUrl;
+                        
+                        // Atualizar URL da foto no banco de dados
+                        const { error: updateError } = await supabase
+                            .from('alunos')
+                            .update({ foto_url: photoUrl })
+                            .eq('id', studentId);
+                        
+                        if (updateError) {
+                            throw updateError;
+                        }
+                        
+                        // Remover loading e mostrar sucesso
+                        document.body.removeChild(loadingToast);
+                        
+                        const successToast = document.createElement('div');
+                        successToast.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #10b981;
+                            color: white;
+                            padding: 1rem;
+                            border-radius: 0.5rem;
+                            z-index: 9999;
+                            box-shadow: var(--shadow-lg);
+                        `;
+                        successToast.textContent = `Foto de ${studentName} atualizada com sucesso!`;
+                        document.body.appendChild(successToast);
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(successToast);
+                        }, 3000);
+                        
+                        // Recarregar lista de alunos para mostrar nova foto preservando filtros
+                        await reloadStudentsWithFilters();
+                        
+                    } catch (error) {
+                        console.error('Erro ao atualizar foto:', error);
+                        
+                        // Remover loading
+                        if (document.body.contains(loadingToast)) {
+                            document.body.removeChild(loadingToast);
+                        }
+                        
+                        // Mostrar erro
+                        const errorToast = document.createElement('div');
+                        errorToast.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #ef4444;
+                            color: white;
+                            padding: 1rem;
+                            border-radius: 0.5rem;
+                            z-index: 9999;
+                            box-shadow: var(--shadow-lg);
+                        `;
+                        errorToast.textContent = `Erro ao atualizar foto: ${error.message}`;
+                        document.body.appendChild(errorToast);
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(errorToast);
+                        }, 5000);
+                    }
+                    
+                    // Limpar input
+                    document.body.removeChild(fileInput);
+                };
+                
+                // Adicionar ao DOM e clicar
+                document.body.appendChild(fileInput);
+                fileInput.click();
+                
+            } catch (error) {
+                console.error('Erro ao abrir seletor de arquivo:', error);
+                alert('Erro ao abrir seletor de arquivo. Tente novamente.');
+            }
+        }
+    </script>
+    
+    <!-- PWA Scripts -->
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <script src="../js/pwa.js"></script>
+    
+    <!-- PWA Status Bar -->
+    <div class="pwa-status-bar"></div>
+</body>
+</html>

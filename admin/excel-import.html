@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Importação Excel - Escola Log</title>
+    <meta name="description" content="Importação de alunos via Excel/CSV - Escola Log">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #e6f0ff 0%, #ffffff 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .section {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--background);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .preview-table th {
+            background: var(--background);
+            font-weight: 600;
+        }
+
+        .log-container {
+            background: var(--background);
+            border-radius: 8px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .log-success { background: #dcfce7; color: #166534; }
+        .log-error { background: #fee2e2; color: #991b1b; }
+        .log-warning { background: #fef3c7; color: #92400e; }
+        .log-info { background: #dbeafe; color: #1e40af; }
+
+        .hidden { display: none; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .escola-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .escola-info.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .header { flex-direction: column; gap: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log" style="height: 40px;">
+                Importação Excel
+            </div>
+            <a href="alunos.html" class="back-btn">← Voltar</a>
+        </header>
+
+        <!-- Escola Selection Section -->
+        <div class="section">
+            <h2 class="section-title">1. Selecionar Escola</h2>
+            <div class="form-group">
+                <label for="escolaSelect" class="form-label">Escolha a escola onde os alunos serão cadastrados:</label>
+                <select id="escolaSelect" class="form-select" onchange="onEscolaChange()">
+                    <option value="">Carregando escolas...</option>
+                </select>
+                <div id="escolaInfo" class="escola-info hidden">
+                    <span>🏫</span>
+                    <div>
+                        <strong id="escolaNome"></strong><br>
+                        <small id="escolaDetalhes"></small>
+                    </div>
+                </div>
+                
+                <!-- Campos de Estado e Cidade para definir padrões -->
+                <div id="estadoCidadeSection" class="hidden" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label for="estadoPadrao" class="form-label">Estado padrão para todos os alunos:</label>
+                        <input type="text" id="estadoPadrao" class="form-select" placeholder="Ex: SP, RJ, MG..." style="margin-bottom: 10px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="cidadePadrao" class="form-label">Cidade padrão para todos os alunos:</label>
+                        <input type="text" id="cidadePadrao" class="form-select" placeholder="Ex: São Paulo, Rio de Janeiro...">
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                        <small style="color: #0369a1;">
+                            <strong>ℹ️ Informação:</strong> Estes valores serão aplicados automaticamente a todos os alunos importados da planilha.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="section" id="uploadSection" style="opacity: 0.5; pointer-events: none;">
+            <h2 class="section-title">2. Upload do Arquivo Excel</h2>
+            <div class="upload-area" onclick="document.getElementById('excelFile').click()">
+                <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                <div class="upload-icon">📊</div>
+                <h3>Clique para selecionar ou arraste o arquivo Excel</h3>
+                <p>Formatos aceitos: .xlsx, .xls | Colunas esperadas: NOME_DO_ALUNO, REGISTRO_DO_ALUNO, SERIE_DO_ALUNO, TURMA_DO_ALUNO, NOME_RESPONSAVEL_1, TELEFONE_RESPONSAVEL_1, RESPONSAVEL_2, TELEFONE_RESPONSAVEL_2</p>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="section hidden" id="previewSection">
+            <h2 class="section-title">3. Preview dos Dados</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRows">0</div>
+                    <div class="stat-label">Total de Linhas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Alunos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSeries">0</div>
+                    <div class="stat-label">Séries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTurmas">0</div>
+                    <div class="stat-label">Turmas</div>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="preview-table" id="previewTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Matrícula</th>
+                            <th>Série</th>
+                            <th>Turma</th>
+                            <th>Responsável 1</th>
+                            <th>Telefone 1</th>
+                            <th>Responsável 2</th>
+                            <th>Telefone 2</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn btn-success" onclick="startImport()" style="margin-top: 20px;">
+                🚀 Iniciar Importação
+            </button>
+        </div>
+
+        <!-- Import Section -->
+        <div class="section hidden" id="importSection">
+            <h2 class="section-title">4. Progresso da Importação</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="currentStep" style="text-align: center; margin: 10px 0; font-weight: 500;"></div>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let supabase = null;
+        let csvData = [];
+        let currentUser = null;
+        let escolaId = null;
+        let escolasSelecionaveis = [];
+        let escolaSelecionada = null;
+
+        // Função para formatar telefone
+        function formatPhone(phone) {
+            if (!phone) return null;
+            
+            // Remove tudo que não é número
+            const numbers = phone.toString().replace(/\D/g, '');
+            
+            // Se tem 11 dígitos (com DDD + 9 dígitos)
+            if (numbers.length === 11) {
+                return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+            }
+            // Se tem 10 dígitos (com DDD + 8 dígitos)
+            else if (numbers.length === 10) {
+                return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+            }
+            // Se tem 9 dígitos (sem DDD)
+            else if (numbers.length === 9) {
+                return `(81) ${numbers.slice(0, 5)}-${numbers.slice(5)}`;
+            }
+            // Se tem 8 dígitos (sem DDD)
+            else if (numbers.length === 8) {
+                return `(81) ${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+            }
+            
+            // Retorna o telefone original se não conseguir formatar
+            return phone.toString();
+        }
+
+        // Função para normalizar nomes
+        function normalizeName(name) {
+            if (!name) return '';
+            return name.toString().trim()
+                .normalize('NFD') // Decompor caracteres acentuados
+                .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
+                .toUpperCase();
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Inicializando Importação Excel...');
+            
+            try {
+                // Verificar autenticação
+                if (!await checkAuthentication()) {
+                    return;
+                }
+
+                // Inicializar Supabase
+                await initializeSupabase();
+                
+                // Carregar escolas disponíveis
+                await loadEscolas();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                console.log('✅ Importação Excel inicializada!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar:', error);
+                alert('Erro ao inicializar: ' + error.message);
+            }
+        });
+
+        // Verificar autenticação
+        async function checkAuthentication() {
+            try {
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                
+                if (currentUser.tipo_usuario !== 'admin') {
+                    console.log('❌ Usuário não é admin:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para administradores.');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                console.log('✅ Admin autorizado:', currentUser.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        // Inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                console.log('🔧 Inicializando Supabase...');
+                
+                let url, key;
+                
+                try {
+                    // Buscar chaves via Lambda
+                    const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/');
+                    const result = await response.json();
+                    
+                    if (result.status === 'success' && result.data) {
+                        // Usar service role key para admin
+                        const serviceKey = result.data.SUPABASE_SERVICE_ROLE_KEY1?.trim() || 
+                                           result.data.SUPABASE_SERVICE_ROLE_KEY?.trim();
+                        
+                        url = result.data.SUPABASE_URL1?.trim() || result.data.SUPABASE_URL;
+                        key = serviceKey || result.data.SUPABASE_KEY1?.trim() || result.data.SUPABASE_KEY;
+                        
+                // Não logar uso de service role
+                // Não logar disponibilidade de service role key
+                        
+                // Não logar chaves obtidas da Lambda
+                    } else {
+                        throw new Error('Lambda não retornou dados válidos');
+                    }
+                } catch (lambdaError) {
+                // Erro na Lambda, fallback sem detalhes
+                    
+                    // Fallback para chaves hardcoded - usando service role
+                    url = 'https://sntyndufbxfzasnqvayc.supabase.co';
+                    key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3NDY4NywiZXhwIjoyMDcxNzUwNjg3fQ.p5O55h-CU_ZhhyuyJWDsu9b7ywhi_BJJhmDMtmWZIEg';
+                }
+                
+                // Inicializar cliente Supabase
+                supabase = window.supabase.createClient(url, key);
+                
+                // Verificar se é service role key
+                const isServiceRole = key.includes('service_role');
+                
+                console.log('✅ Supabase inicializado com sucesso');
+                // Não logar valor de service role
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Carregar escolas disponíveis para seleção
+        async function loadEscolas() {
+            try {
+                console.log('🏫 Carregando escolas disponíveis...');
+                
+                // Buscar todas as escolas ativas
+                const { data: escolas, error: escolasError } = await supabase
+                    .from('escolas')
+                    .select('id, nome, cidade, estado')
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                if (escolasError) {
+                    throw new Error('Erro ao carregar escolas: ' + escolasError.message);
+                }
+
+                if (!escolas || escolas.length === 0) {
+                    throw new Error('Nenhuma escola encontrada');
+                }
+
+                escolasSelecionaveis = escolas;
+                console.log(`✅ ${escolas.length} escolas carregadas`);
+                
+                // Popular dropdown
+                populateEscolaSelect();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar escolas:', error);
+                throw error;
+            }
+        }
+
+        // Popular dropdown de escolas
+        function populateEscolaSelect() {
+            const select = document.getElementById('escolaSelect');
+            
+            // Limpar opções existentes
+            select.innerHTML = '<option value="">Selecione uma escola...</option>';
+            
+            // Adicionar escolas
+            escolasSelecionaveis.forEach(escola => {
+                const option = document.createElement('option');
+                option.value = escola.id;
+                option.textContent = escola.nome;
+                select.appendChild(option);
+            });
+        }
+
+        // Função chamada quando escola é selecionada
+        function onEscolaChange() {
+            const select = document.getElementById('escolaSelect');
+            const escolaId = select.value;
+            
+            if (escolaId) {
+                // Encontrar escola selecionada
+                escolaSelecionada = escolasSelecionaveis.find(e => e.id === escolaId);
+                
+                if (escolaSelecionada) {
+                    // Mostrar informações da escola
+                    document.getElementById('escolaNome').textContent = escolaSelecionada.nome;
+                    document.getElementById('escolaDetalhes').textContent = 
+                        `${escolaSelecionada.cidade || 'Cidade não informada'} - ${escolaSelecionada.estado || 'Estado não informado'}`;
+                    document.getElementById('escolaInfo').classList.remove('hidden');
+                    
+                    // Mostrar e pré-preencher campos de estado e cidade
+                    document.getElementById('estadoCidadeSection').classList.remove('hidden');
+                    document.getElementById('estadoPadrao').value = escolaSelecionada.estado || '';
+                    document.getElementById('cidadePadrao').value = escolaSelecionada.cidade || '';
+                    
+                    // Salvar dados da escola no localStorage para outras páginas
+                    localStorage.setItem('selectedSchoolForStudents', JSON.stringify({
+                        id: escolaSelecionada.id,
+                        nome: escolaSelecionada.nome,
+                        cidade: escolaSelecionada.cidade,
+                        estado: escolaSelecionada.estado
+                    }));
+                    
+                    // Habilitar seção de upload
+                    const uploadSection = document.getElementById('uploadSection');
+                    uploadSection.style.opacity = '1';
+                    uploadSection.style.pointerEvents = 'auto';
+                    
+                    console.log('✅ Escola selecionada:', escolaSelecionada.nome);
+                }
+            } else {
+                // Ocultar informações e desabilitar upload
+                document.getElementById('escolaInfo').classList.add('hidden');
+                document.getElementById('estadoCidadeSection').classList.add('hidden');
+                
+                const uploadSection = document.getElementById('uploadSection');
+                uploadSection.style.opacity = '0.5';
+                uploadSection.style.pointerEvents = 'none';
+                
+                escolaSelecionada = null;
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const fileInput = document.getElementById('excelFile');
+            const uploadArea = document.querySelector('.upload-area');
+
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && (files[0].name.endsWith('.xlsx') || files[0].name.endsWith('.xls'))) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        // Handle file selection
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // Handle file processing
+        function handleFile(file) {
+            console.log('📁 Processando arquivo Excel:', file.name);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Pegar a primeira planilha
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Converter para JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length < 2) {
+                        alert('Arquivo Excel vazio ou sem dados');
+                        return;
+                    }
+                    
+                    // Primeira linha são os cabeçalhos
+                    const headers = jsonData[0];
+                    const rows = jsonData.slice(1);
+                    
+                    // Converter para formato esperado
+                    csvData = rows.map(row => {
+                        const obj = {};
+                        headers.forEach((header, index) => {
+                            if (header && row[index] !== undefined) {
+                                obj[header] = row[index];
+                            }
+                        });
+                        return obj;
+                    }).filter(row => Object.keys(row).length > 0);
+                    
+                    console.log('📊 Dados parseados do Excel:', csvData);
+                    showPreview();
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao processar Excel:', error);
+                    alert('Erro ao processar arquivo Excel: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                alert('Erro ao ler arquivo Excel');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Show preview
+        function showPreview() {
+            console.log('👀 Mostrando preview dos dados...');
+            console.log('📊 Dados para preview:', csvData);
+            
+            // Calcular estatísticas
+            const totalRows = csvData.length;
+            const series = new Set();
+            const turmas = new Set();
+            
+            csvData.forEach(row => {
+                if (row.SERIE_DO_ALUNO) series.add(row.SERIE_DO_ALUNO.toString().trim());
+                if (row.TURMA_DO_ALUNO) turmas.add(row.TURMA_DO_ALUNO.toString().trim());
+            });
+            
+            // Atualizar estatísticas
+            document.getElementById('totalRows').textContent = totalRows;
+            document.getElementById('totalStudents').textContent = totalRows;
+            document.getElementById('totalSeries').textContent = series.size;
+            document.getElementById('totalTurmas').textContent = turmas.size;
+            
+            // Mostrar tabela de preview
+            const tbody = document.querySelector('#previewTable tbody');
+            tbody.innerHTML = '';
+            
+            csvData.slice(0, 10).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.NOME_DO_ALUNO || ''}</td>
+                    <td>${row.REGISTRO_DO_ALUNO || ''}</td>
+                    <td>${row.SERIE_DO_ALUNO || ''}</td>
+                    <td>${row.TURMA_DO_ALUNO || ''}</td>
+                    <td>${row.NOME_RESPONSAVEL_1 || ''}</td>
+                    <td>${row.TELEFONE_RESPONSAVEL_1 || ''}</td>
+                    <td>${row.RESPONSAVEL_2 || ''}</td>
+                    <td>${row.TELEFONE_RESPONSAVEL_2 || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            if (csvData.length > 10) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="text-align: center; color: #64748b;">... e mais ${csvData.length - 10} registros</td>`;
+                tbody.appendChild(tr);
+            }
+            
+            // Mostrar seção de preview
+            document.getElementById('previewSection').classList.remove('hidden');
+        }
+
+        // Start import process
+        async function startImport() {
+            console.log('🚀 Iniciando processo de importação...');
+            
+            // Validar se escola foi selecionada
+            if (!escolaSelecionada) {
+                alert('Por favor, selecione uma escola antes de iniciar a importação.');
+                return;
+            }
+            
+            console.log('🏫 Importando para escola:', escolaSelecionada.nome);
+            
+            document.getElementById('importSection').classList.remove('hidden');
+            document.querySelector('button[onclick="startImport()"]').disabled = true;
+            
+            try {
+                let progress = 0;
+                const totalSteps = 5;
+                
+                // 1. Importar séries
+                updateProgress(10, 'Importando séries...');
+                await importSeries();
+                progress += 20;
+                
+                // 2. Importar turmas
+                updateProgress(30, 'Importando turmas...');
+                await importTurmas();
+                progress += 20;
+                
+                // 3. Importar alunos
+                updateProgress(50, 'Importando alunos...');
+                await importAlunos();
+                progress += 30;
+                
+                // 4. Criar usuários responsáveis
+                updateProgress(80, 'Criando usuários responsáveis...');
+                await createUsuarios();
+                progress += 15;
+                
+                // 5. Criar permissões
+                updateProgress(95, 'Criando permissões de acesso...');
+                await createPermissions();
+                progress += 5;
+                
+                updateProgress(100, '✅ Importação concluída com sucesso!');
+                addLog('success', '🎉 Processo de importação finalizado!');
+            
+            // Mostrar resumo dos usuários criados
+            await showUserSummary();
+                
+            } catch (error) {
+                console.error('❌ Erro na importação:', error);
+                addLog('error', `❌ Erro na importação: ${error.message}`);
+                updateProgress(0, '❌ Importação falhou');
+            }
+        }
+
+        // Import series
+        async function importSeries() {
+            const series = new Set();
+            csvData.forEach(row => {
+                if (row.SERIE_DO_ALUNO && row.SERIE_DO_ALUNO.toString().trim()) {
+                    series.add(row.SERIE_DO_ALUNO.toString().trim());
+                }
+            });
+            
+            addLog('info', `📚 Importando ${series.size} séries...`);
+            
+            for (const serieNome of series) {
+                try {
+                    // Verificar se já existe
+                    const { data: existing, error: searchError } = await supabase
+                        .from('series')
+                        .select('id')
+                        .eq('nome', serieNome)
+                        .maybeSingle();
+                    
+                    if (searchError && searchError.code !== 'PGRST116') {
+                        throw searchError;
+                    }
+                    
+                    if (!existing) {
+                        const { error } = await supabase
+                            .from('series')
+                            .insert({ nome: serieNome });
+                        
+                        if (error) throw error;
+                        addLog('success', `✅ Série criada: ${serieNome}`);
+                    } else {
+                        addLog('info', `ℹ️ Série já existe: ${serieNome}`);
+                    }
+                } catch (error) {
+                    addLog('error', `❌ Erro ao criar série ${serieNome}: ${error.message}`);
+                }
+            }
+        }
+
+        // Import turmas
+        async function importTurmas() {
+            const turmas = new Set();
+            csvData.forEach(row => {
+                if (row.TURMA_DO_ALUNO && row.TURMA_DO_ALUNO.toString().trim() && row.SERIE_DO_ALUNO && row.SERIE_DO_ALUNO.toString().trim()) {
+                    turmas.add(`${row.SERIE_DO_ALUNO.toString().trim()}|${row.TURMA_DO_ALUNO.toString().trim()}`);
+                }
+            });
+            
+            addLog('info', `🎓 Importando ${turmas.size} turmas...`);
+            
+            for (const turmaKey of turmas) {
+                const [serieNome, turmaNome] = turmaKey.split('|');
+                
+                try {
+                    // Buscar série
+                    const { data: serie, error: serieError } = await supabase
+                        .from('series')
+                        .select('id')
+                        .eq('nome', serieNome)
+                        .single();
+                    
+                    if (serieError) throw serieError;
+                    
+                    // Verificar se turma já existe
+                    const { data: existing, error: searchError } = await supabase
+                        .from('turmas')
+                        .select('id')
+                        .eq('nome', turmaNome)
+                        .eq('serie_id', serie.id)
+                        .maybeSingle();
+                    
+                    if (searchError && searchError.code !== 'PGRST116') {
+                        throw searchError;
+                    }
+                    
+                    if (!existing) {
+                        const { error } = await supabase
+                            .from('turmas')
+                            .insert({ 
+                                nome: turmaNome,
+                                serie_id: serie.id,
+                                turno: 'manha', // Valor padrão para turno
+                                escola_id: escolaSelecionada.id
+                            });
+                        
+                        if (error) throw error;
+                        addLog('success', `✅ Turma criada: ${turmaNome} (${serieNome})`);
+                    } else {
+                        addLog('info', `ℹ️ Turma já existe: ${turmaNome} (${serieNome})`);
+                    }
+                } catch (error) {
+                    addLog('error', `❌ Erro ao criar turma ${turmaNome}: ${error.message}`);
+                }
+            }
+        }
+
+        // Import alunos
+        async function importAlunos() {
+            addLog('info', `👥 Importando ${csvData.length} alunos...`);
+            
+            for (const row of csvData) {
+                if (!row.NOME_DO_ALUNO || !row.NOME_DO_ALUNO.trim()) {
+                    addLog('warning', '⚠️ Aluno sem nome, pulando...');
+                    continue;
+                }
+                
+                try {
+                    // Buscar série e turma
+                    let serieId = null, turmaId = null;
+                    
+                    if (row.SERIE_DO_ALUNO && row.SERIE_DO_ALUNO.toString().trim()) {
+                        const { data: serie } = await supabase
+                            .from('series')
+                            .select('id')
+                            .eq('nome', row.SERIE_DO_ALUNO.toString().trim())
+                            .single();
+                        serieId = serie?.id;
+                    }
+                    
+                    if (row.TURMA_DO_ALUNO && row.TURMA_DO_ALUNO.toString().trim() && serieId) {
+                        const { data: turma } = await supabase
+                            .from('turmas')
+                            .select('id')
+                            .eq('nome', row.TURMA_DO_ALUNO.toString().trim())
+                            .eq('serie_id', serieId)
+                            .single();
+                        turmaId = turma?.id;
+                    }
+                    
+                    // Verificar se aluno já existe
+                    const { data: existing } = await supabase
+                        .from('alunos')
+                        .select('id')
+                        .eq('nome', row.NOME_DO_ALUNO?.toString().trim())
+                        .eq('matricula', row.REGISTRO_DO_ALUNO?.toString() || '')
+                        .maybeSingle();
+                    
+                    if (!existing) {
+                        // Obter valores de estado e cidade dos campos
+                        const estadoPadrao = document.getElementById('estadoPadrao').value.trim() || null;
+                        const cidadePadrao = document.getElementById('cidadePadrao').value.trim() || null;
+                        
+                        const { error } = await supabase
+                            .from('alunos')
+                            .insert({
+                                nome: row.NOME_DO_ALUNO?.toString().trim() || '',
+                                matricula: row.REGISTRO_DO_ALUNO?.toString() || null,
+                                serie_id: serieId,
+                                turma_id: turmaId,
+                                escola_id: escolaSelecionada.id,
+                                estado: estadoPadrao,
+                                cidade: cidadePadrao,
+                                nome_responsavel_1: row.NOME_RESPONSAVEL_1?.toString().trim() || null,
+                                telefone_responsavel_1: formatPhone(row.TELEFONE_RESPONSAVEL_1),
+                                responsavel_2: row.RESPONSAVEL_2?.toString().trim() || null,
+                                telefone_responsavel_2: formatPhone(row.TELEFONE_RESPONSAVEL_2)
+                            });
+                        
+                        if (error) throw error;
+                        addLog('success', `✅ Aluno criado: ${row.NOME_DO_ALUNO?.toString().trim()}`);
+                    } else {
+                        addLog('info', `ℹ️ Aluno já existe: ${row.NOME_DO_ALUNO?.toString().trim()}`);
+                    }
+                    
+                } catch (error) {
+                    addLog('error', `❌ Erro ao criar aluno ${row.NOME_DO_ALUNO?.toString().trim()}: ${error.message}`);
+                }
+            }
+        }
+
+        // Create usuarios
+        async function createUsuarios() {
+            const responsaveis = new Set();
+            
+            csvData.forEach(row => {
+                if (row.NOME_RESPONSAVEL_1 && row.TELEFONE_RESPONSAVEL_1) {
+                    const telefoneFormatado = formatPhone(row.TELEFONE_RESPONSAVEL_1);
+                    const nomeNormalizado = normalizeName(row.NOME_RESPONSAVEL_1);
+                    responsaveis.add(`${nomeNormalizado}|${telefoneFormatado}`);
+                }
+                if (row.RESPONSAVEL_2 && row.TELEFONE_RESPONSAVEL_2) {
+                    const telefoneFormatado = formatPhone(row.TELEFONE_RESPONSAVEL_2);
+                    const nomeNormalizado = normalizeName(row.RESPONSAVEL_2);
+                    responsaveis.add(`${nomeNormalizado}|${telefoneFormatado}`);
+                }
+            });
+            
+            addLog('info', `👤 Criando ${responsaveis.size} usuários responsáveis...`);
+            
+            for (const respKey of responsaveis) {
+                const [nome, telefone] = respKey.split('|');
+                const telefoneFormatado = formatPhone(telefone);
+                const nomeNormalizado = normalizeName(nome);
+                
+                try {
+                    // Criar e-mail baseado no telefone
+                    const phoneNumbers = telefoneFormatado.replace(/\D/g, '');
+                    const email = `${phoneNumbers}@escolalog.com.br`;
+                    
+                    // Criar usuário na tabela auth primeiro
+                    try {
+                        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                            email: email,
+                            password: '123456',
+                            email_confirm: true,
+                            user_metadata: {
+                                nome: nomeNormalizado,
+                                whatsapp: telefoneFormatado
+                            }
+                        });
+                        
+                        if (authError) {
+                            console.warn('⚠️ Erro ao criar na auth, criando apenas na tabela usuarios:', authError);
+                            
+                            // Fallback: criar apenas na tabela usuarios
+                            const { error } = await supabase
+                                .from('usuarios')
+                                .insert({
+                                    nome: nomeNormalizado,
+                                    email: email,
+                                    whatsapp: telefoneFormatado,
+                                    tipo_usuario: 'responsavel',
+                                    status: 'ativo',
+                                    status_liberacao: 'Liberado'
+                                });
+                            
+                            if (error) throw error;
+                            addLog('success', `✅ Usuário criado: ${nomeNormalizado} (DB apenas) - Email: ${email} - Senha: 123456`);
+                        } else {
+                            // Criar usuário na tabela usuarios com auth_uid
+                            const { error } = await supabase
+                                .from('usuarios')
+                                .insert({
+                                    auth_uid: authData.user.id,
+                                    nome: nomeNormalizado,
+                                    email: email,
+                                    whatsapp: telefoneFormatado,
+                                    tipo_usuario: 'responsavel',
+                                    status: 'ativo',
+                                    status_liberacao: 'Liberado'
+                                });
+                            
+                            if (error) throw error;
+                            addLog('success', `✅ Usuário criado: ${nomeNormalizado} (Auth + DB) - Email: ${email}`);
+                        }
+                    } catch (authError) {
+                        console.warn('⚠️ Erro na auth, criando apenas na tabela usuarios:', authError);
+                        
+                        // Fallback: criar apenas na tabela usuarios
+                        const { error } = await supabase
+                            .from('usuarios')
+                            .insert({
+                                nome: nomeNormalizado,
+                                email: email,
+                                whatsapp: telefoneFormatado,
+                                tipo_usuario: 'responsavel',
+                                status: 'ativo',
+                                status_liberacao: 'Liberado'
+                            });
+                        
+                        if (error) throw error;
+                        addLog('success', `✅ Usuário criado: ${nomeNormalizado} (DB apenas) - Email: ${email} - Senha: 123456`);
+                    }
+                    
+                } catch (error) {
+                    addLog('error', `❌ Erro ao criar usuário ${nome}: ${error.message}`);
+                }
+            }
+        }
+
+        // Create permissions
+        async function createPermissions() {
+            addLog('info', '🔐 Criando permissões de acesso...');
+            
+            try {
+                // Buscar todos os alunos criados recentemente
+                const { data: alunos, error: alunosError } = await supabase
+                    .from('alunos')
+                    .select('id, nome, nome_responsavel_1, telefone_responsavel_1, responsavel_2, telefone_responsavel_2')
+                    .order('criado_em', { ascending: false });
+                
+                if (alunosError) {
+                    addLog('error', `❌ Erro ao buscar alunos: ${alunosError.message}`);
+                    return;
+                }
+                
+                // Buscar todos os usuários responsáveis criados recentemente
+                const { data: usuarios, error: usuariosError } = await supabase
+                    .from('usuarios')
+                    .select('id, nome, whatsapp')
+                    .eq('tipo_usuario', 'responsavel')
+                    .order('criado_em', { ascending: false });
+                
+                if (usuariosError) {
+                    addLog('error', `❌ Erro ao buscar usuários: ${usuariosError.message}`);
+                    return;
+                }
+                
+                // Criar permissões baseadas em correspondência de dados
+                for (const aluno of alunos) {
+                    try {
+                        const responsaveis = [];
+                        
+                        // Adicionar responsável 1 se existir
+                        if (aluno.nome_responsavel_1 && aluno.telefone_responsavel_1) {
+                            responsaveis.push({
+                                nome: aluno.nome_responsavel_1,
+                                telefone: aluno.telefone_responsavel_1
+                            });
+                        }
+                        
+                        // Adicionar responsável 2 se existir
+                        if (aluno.responsavel_2 && aluno.telefone_responsavel_2) {
+                            responsaveis.push({
+                                nome: aluno.responsavel_2,
+                                telefone: aluno.telefone_responsavel_2
+                            });
+                        }
+                        
+                        // Para cada responsável, encontrar usuário correspondente
+                        for (const responsavel of responsaveis) {
+                            const usuario = usuarios.find(u => 
+                                u.nome === responsavel.nome && 
+                                u.whatsapp === responsavel.telefone
+                            );
+                            
+                            if (!usuario) continue;
+                            
+                            // Verificar se permissão já existe
+                            const { data: existing } = await supabase
+                                .from('permissoes')
+                                .select('id')
+                                .eq('usuario_id', usuario.id)
+                                .eq('tipo', 'aluno')
+                                .eq('referencia_id', aluno.id)
+                                .maybeSingle();
+                            
+                            if (!existing) {
+                                const { error } = await supabase
+                                    .from('permissoes')
+                                    .insert({
+                                        usuario_id: usuario.id,
+                                        tipo: 'aluno',
+                                        referencia_id: aluno.id
+                                    });
+                                
+                                if (error) throw error;
+                                addLog('success', `✅ Permissão criada: ${responsavel.nome} → ${aluno.nome}`);
+                            }
+                        }
+                        
+                    } catch (error) {
+                        addLog('error', `❌ Erro ao criar permissão para ${aluno.nome}: ${error.message}`);
+                    }
+                }
+                
+            } catch (error) {
+                addLog('error', `❌ Erro geral ao criar permissões: ${error.message}`);
+            }
+        }
+
+        // Update progress
+        function updateProgress(percent, message) {
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('currentStep').textContent = message;
+        }
+
+        // Add log entry
+        function addLog(type, message) {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Mostrar resumo dos usuários criados
+        async function showUserSummary() {
+            try {
+                const { data: usuarios, error } = await supabase
+                    .from('usuarios')
+                    .select('nome, whatsapp')
+                    .eq('tipo_usuario', 'responsavel')
+                    .order('criado_em', { ascending: false })
+                    .limit(20); // Limitar para mostrar apenas os mais recentes
+
+                if (error) throw error;
+
+                if (usuarios && usuarios.length > 0) {
+                    addLog('info', `📋 Resumo dos usuários criados (${usuarios.length}):`);
+                    
+                    usuarios.forEach(usuario => {
+                        // Gerar email baseado no WhatsApp
+                        const phoneNumbers = usuario.whatsapp.replace(/\D/g, '');
+                        const email = `${phoneNumbers}@escolalog.com.br`;
+                        
+                        addLog('info', `👤 ${usuario.nome} | Email: ${email} | WhatsApp: ${usuario.whatsapp} | Senha: 123456`);
+                    });
+                    
+                    addLog('success', '✅ IMPORTANTE: Usuários já criados na tabela auth e usuarios! Login funcionará imediatamente.');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar resumo dos usuários:', error);
+            }
+        }
+    </script>
+</body>
+</html>

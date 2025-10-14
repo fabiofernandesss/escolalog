@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saudação - Escola Log</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon.jpg">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon.jpg">
+    <link rel="apple-touch-icon" href="img/metatag.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 20px;
+            min-height: auto;
+        }
+        
+        .camera-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .status-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .status-title {
+            color: white;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.active {
+            background: #10b981;
+        }
+        
+        .status-dot.inactive {
+            background: #ef4444;
+        }
+        
+        .greeting-display {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .greeting-text {
+            color: white;
+            font-size: 24px;
+            font-weight: 500;
+            line-height: 1.4;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .greeting-placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            font-style: italic;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .auto-status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .auto-status .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .auto-status .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .auto-status .status-dot.active {
+            background: #10b981;
+        }
+        
+        .voice-controls {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .voice-controls h4 {
+            color: white;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .voice-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .voice-setting {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .voice-setting label {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .voice-setting select,
+        .voice-setting input[type="range"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .voice-setting select option {
+            background: #333;
+            color: white;
+        }
+        
+        .voice-setting input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        .voice-setting input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .voice-setting input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .voice-setting span {
+            color: #fbbf24;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .voice-settings {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .detection-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .detection-info h4 {
+            margin-bottom: 10px;
+            color: #fbbf24;
+        }
+        
+        .detection-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+            }
+            
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 10px;
+            }
+            
+            .camera-container {
+                height: 300px;
+            }
+            
+            .greeting-text {
+                font-size: 20px;
+            }
+            
+            .voice-settings {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px 0;
+            }
+            
+            .container {
+                padding: 5px;
+                gap: 15px;
+            }
+            
+            .camera-section,
+            .status-section {
+                padding: 15px;
+            }
+            
+            .camera-container {
+                height: 250px;
+            }
+            
+            .greeting-text {
+                font-size: 18px;
+            }
+            
+            .voice-controls {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Seção da Câmera -->
+        <div class="camera-section">
+            <div class="camera-container">
+                <video id="cameraVideo" autoplay muted></video>
+                <div class="camera-overlay" id="cameraOverlay">
+                    <div>
+                        <h3>🤖 Sistema Automático</h3>
+                        <p>Iniciando reconhecimento facial automático...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="auto-status">
+                    <div class="status-indicator">
+                        <div class="status-dot active" id="autoStatusDot"></div>
+                        <span id="autoStatusText">Sistema automático ativo</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detection-info" id="detectionInfo" style="display: none;">
+                <h4>📊 Estatísticas de Detecção</h4>
+                <div class="detection-stats">
+                    <div class="stat-item">
+                        <span>Alunos detectados:</span>
+                        <span id="detectedCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Última detecção:</span>
+                        <span id="lastDetection">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Status da câmera:</span>
+                        <span id="cameraStatus">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Dimensões do vídeo:</span>
+                        <span id="videoDimensions">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Saudações na fila:</span>
+                        <span id="queueCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Status da fala:</span>
+                        <span id="speakingStatus">Parada</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Próximo reload:</span>
+                        <span id="nextReload">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Detecções realizadas:</span>
+                        <span id="detectionCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Status do sistema:</span>
+                        <span id="systemHealth">Normal</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Controles de Voz -->
+            <div class="voice-controls" id="voiceControls" style="display: none;">
+                <h4>🎤 Configurações de Voz</h4>
+                <div class="voice-settings">
+                    <div class="voice-setting">
+                        <label for="voiceSelect">Voz:</label>
+                        <select id="voiceSelect" onchange="updateVoiceSettings()">
+                            <option value="auto">Automática</option>
+                        </select>
+                    </div>
+                    <div class="voice-setting">
+                        <label for="voiceRate">Velocidade:</label>
+                        <input type="range" id="voiceRate" min="0.5" max="2.0" step="0.1" value="1.4" onchange="updateVoiceSettings()">
+                        <span id="rateValue">1.4x</span>
+                    </div>
+                    <div class="voice-setting">
+                        <label for="voicePitch">Tonalidade:</label>
+                        <input type="range" id="voicePitch" min="0.5" max="2.0" step="0.1" value="0.6" onchange="updateVoiceSettings()">
+                        <span id="pitchValue">0.6x</span>
+                    </div>
+                    <div class="voice-setting">
+                        <label for="voiceVolume">Volume:</label>
+                        <input type="range" id="voiceVolume" min="0.1" max="1.0" step="0.1" value="1.0" onchange="updateVoiceSettings()">
+                        <span id="volumeValue">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Seção de Status e Saudação -->
+        <div class="status-section">
+            <h2 class="status-title">🎯 Reconhecimento Facial</h2>
+            
+            <div class="status-indicator">
+                <div class="status-dot inactive" id="statusDot"></div>
+                <span id="statusText">Sistema inativo</span>
+            </div>
+            
+            <div class="greeting-display">
+                <div class="greeting-placeholder" id="greetingPlaceholder">
+                    Aguardando detecção de alunos...
+                </div>
+                <div class="greeting-text" id="greetingText" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
+    <script>
+        // Configuração do Supabase
+        const supabaseUrl = 'https://sntyndufbxfzasnqvayc.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Variáveis globais
+        let currentStream = null;
+        let isRecognizing = false;
+        let detectedCount = 0;
+        let detectionHistory = [];
+        const MAX_DETECTIONS = 50;
+        
+        // Fila de saudações
+        let greetingQueue = [];
+        let isSpeaking = false;
+        
+        // Sistema de recarregamento automático
+        let reloadTimer = null;
+        const RELOAD_INTERVAL = 2 * 60 * 1000; // 2 minutos em millisegundos
+        
+        // Sistema de monitoramento de atividade
+        let lastDetectionTime = 0;
+        let detectionCount = 0;
+        let isSystemStuck = false;
+        const STUCK_THRESHOLD = 30 * 1000; // 30 segundos sem atividade
+        const MAX_DETECTIONS_BEFORE_RESET = 50; // Reset após 50 detecções
+        
+        // Lista de saudações (carregada do arquivo JSON)
+        let greetings = [];
+        
+        // Carregar saudações do arquivo JSON
+        async function loadGreetings() {
+            try {
+                const response = await fetch('saudacoes.json');
+                const data = await response.json();
+                greetings = data.saudacoes;
+                console.log(`✅ ${greetings.length} saudações carregadas`);
+            } catch (error) {
+                console.error('❌ Erro ao carregar saudações:', error);
+                // Fallback para saudações básicas
+                greetings = [
+                    "Olá, {nome}! Que bom te ver por aqui! 😊",
+                    "Oi, {nome}! Tenha um ótimo dia! 🌟",
+                    "Hey, {nome}! Como está? 😄",
+                    "Salve, {nome}! Tudo bem? 👋",
+                    "E aí, {nome}! Beleza? 🤙"
+                ];
+            }
+        }
+        
+        // Gerenciar histórico de detecções (apenas para estatísticas)
+        function loadDetectionHistory() {
+            try {
+                const stored = localStorage.getItem('faceDetectionHistory');
+                if (stored) {
+                    detectionHistory = JSON.parse(stored);
+                    console.log(`📚 Histórico carregado: ${detectionHistory.length} detecções`);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar histórico:', error);
+                detectionHistory = [];
+            }
+        }
+        
+        function saveDetectionHistory() {
+            try {
+                localStorage.setItem('faceDetectionHistory', JSON.stringify(detectionHistory));
+            } catch (error) {
+                console.error('❌ Erro ao salvar histórico:', error);
+            }
+        }
+        
+        function addDetection(studentId, studentName) {
+            const now = Date.now();
+            detectionHistory.push({
+                studentId,
+                studentName,
+                timestamp: now
+            });
+            
+            // Limpar histórico se exceder o limite
+            if (detectionHistory.length > MAX_DETECTIONS) {
+                detectionHistory = detectionHistory.slice(-MAX_DETECTIONS);
+            }
+            
+            saveDetectionHistory();
+            console.log(`📝 Detecção registrada: ${studentName} (${detectionHistory.length}/${MAX_DETECTIONS})`);
+        }
+        
+        // Sistema de fila de saudações
+        function addToGreetingQueue(studentName, greeting) {
+            greetingQueue.push({
+                studentName,
+                greeting,
+                timestamp: Date.now()
+            });
+            console.log(`📝 Saudação adicionada à fila: ${studentName}`);
+            updateQueueStatus();
+            processGreetingQueue();
+        }
+        
+        function updateQueueStatus() {
+            document.getElementById('queueCount').textContent = greetingQueue.length;
+            document.getElementById('speakingStatus').textContent = isSpeaking ? 'Falando' : 'Parada';
+        }
+        
+        function updateMainStatus(status, isActive = true) {
+            document.getElementById('statusDot').className = isActive ? 'status-dot active' : 'status-dot inactive';
+            document.getElementById('statusText').textContent = status;
+        }
+        
+        // Sistema de monitoramento de atividade
+        function updateActivity() {
+            lastDetectionTime = Date.now();
+            detectionCount++;
+            
+            // Atualizar indicadores visuais
+            document.getElementById('detectionCount').textContent = detectionCount;
+            document.getElementById('systemHealth').textContent = isSystemStuck ? 'Travado' : 'Normal';
+            
+            // Verificar se precisa resetar após muitas detecções
+            if (detectionCount >= MAX_DETECTIONS_BEFORE_RESET) {
+                console.log(`🔄 Reset preventivo após ${detectionCount} detecções`);
+                resetSystem();
+                return;
+            }
+            
+            // Verificar se o sistema está travado
+            checkSystemHealth();
+        }
+        
+        function checkSystemHealth() {
+            const now = Date.now();
+            const timeSinceLastActivity = now - lastDetectionTime;
+            
+            if (timeSinceLastActivity > STUCK_THRESHOLD && !isSystemStuck) {
+                console.log('⚠️ Sistema pode estar travado - verificando...');
+                isSystemStuck = true;
+                updateMainStatus('Sistema travado - Reiniciando...', false);
+                
+                // Tentar resetar o sistema
+                setTimeout(() => {
+                    if (isSystemStuck) {
+                        console.log('🔄 Sistema travado confirmado - reiniciando...');
+                        resetSystem();
+                    }
+                }, 5000);
+            }
+        }
+        
+        function resetSystem() {
+            console.log('🔄 Reiniciando sistema...');
+            updateMainStatus('Reiniciando sistema...', false);
+            
+            // Parar reconhecimento atual
+            isRecognizing = false;
+            
+            // Limpar fila de saudações
+            greetingQueue = [];
+            isSpeaking = false;
+            
+            // Parar fala atual
+            if (speechSynthesis) {
+                speechSynthesis.cancel();
+            }
+            
+            // Parar câmera atual
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            // Resetar contadores
+            detectionCount = 0;
+            lastDetectionTime = 0;
+            isSystemStuck = false;
+            
+            // Atualizar indicadores visuais
+            document.getElementById('detectionCount').textContent = '0';
+            document.getElementById('systemHealth').textContent = 'Reiniciando';
+            updateQueueStatus();
+            
+            // Limpar timers
+            stopAutoReload();
+            stopHealthMonitoring();
+            
+            // Reiniciar após um delay
+            setTimeout(async () => {
+                console.log('🚀 Reiniciando sistema...');
+                updateMainStatus('Iniciando sistema...', true);
+                await startAutoRecognition();
+            }, 3000);
+        }
+        
+        // Sistema de recarregamento automático
+        function startAutoReload() {
+            if (reloadTimer) {
+                clearTimeout(reloadTimer);
+            }
+            
+            const startTime = Date.now();
+            
+            // Atualizar countdown a cada segundo
+            const countdownInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, RELOAD_INTERVAL - elapsed);
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                
+                document.getElementById('nextReload').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+            
+            reloadTimer = setTimeout(() => {
+                console.log('🔄 Recarregando página automaticamente (2 minutos)...');
+                showGreeting('🔄 Recarregando sistema...', false);
+                
+                // Aguardar um pouco para mostrar a mensagem
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }, RELOAD_INTERVAL);
+            
+            console.log(`⏰ Recarregamento automático agendado para ${RELOAD_INTERVAL / 1000} segundos`);
+        }
+        
+        function stopAutoReload() {
+            if (reloadTimer) {
+                clearTimeout(reloadTimer);
+                reloadTimer = null;
+                console.log('⏹️ Recarregamento automático cancelado');
+            }
+        }
+        
+        // Monitoramento de saúde do sistema
+        let healthMonitorInterval = null;
+        
+        function startHealthMonitoring() {
+            if (healthMonitorInterval) {
+                clearInterval(healthMonitorInterval);
+            }
+            
+            healthMonitorInterval = setInterval(() => {
+                const now = Date.now();
+                const timeSinceLastActivity = now - lastDetectionTime;
+                
+                // Se não há atividade há mais de 30 segundos e não está travado
+                if (timeSinceLastActivity > STUCK_THRESHOLD && !isSystemStuck && isRecognizing) {
+                    console.log('⚠️ Sistema pode estar travado - verificando...');
+                    isSystemStuck = true;
+                    updateMainStatus('Sistema travado - Reiniciando...', false);
+                    document.getElementById('systemHealth').textContent = 'Travado';
+                    
+                    // Tentar resetar o sistema
+                    setTimeout(() => {
+                        if (isSystemStuck) {
+                            console.log('🔄 Sistema travado confirmado - reiniciando...');
+                            resetSystem();
+                        }
+                    }, 5000);
+                }
+            }, 10000); // Verificar a cada 10 segundos
+            
+            console.log('🏥 Monitoramento de saúde iniciado');
+        }
+        
+        function stopHealthMonitoring() {
+            if (healthMonitorInterval) {
+                clearInterval(healthMonitorInterval);
+                healthMonitorInterval = null;
+                console.log('⏹️ Monitoramento de saúde parado');
+            }
+        }
+        
+        function processGreetingQueue() {
+            if (isSpeaking || greetingQueue.length === 0) {
+                updateQueueStatus();
+                return;
+            }
+            
+            const nextGreeting = greetingQueue.shift();
+            if (nextGreeting) {
+                isSpeaking = true;
+                showGreeting(nextGreeting.greeting, true);
+                speakGreeting(nextGreeting.greeting);
+                console.log(`🎤 Processando saudação: ${nextGreeting.studentName}`);
+                updateQueueStatus();
+            }
+        }
+        
+        // Inicializar Face-API
+        async function initializeFaceAPI() {
+            try {
+                console.log('🤖 Inicializando Face-API...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('models/face-api/weights');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('models/face-api/weights');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('models/face-api/weights');
+                
+                // Carregar SSD MobileNet também para usar como fallback
+                try {
+                    await faceapi.nets.ssdMobilenetv1.loadFromUri('models/face-api/weights');
+                    console.log('✅ SSD MobileNet carregado com sucesso!');
+                } catch (ssdError) {
+                    console.log('⚠️ SSD MobileNet não disponível, usando apenas TinyFaceDetector');
+                }
+                
+                console.log('✅ Face-API carregado com sucesso!');
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao carregar Face-API:', error);
+                return false;
+            }
+        }
+        
+        
+        // Iniciar reconhecimento automático
+        async function startAutoRecognition() {
+            try {
+                console.log('🚀 Iniciando sistema automático de reconhecimento...');
+                
+                // Inicializar Face-API
+                const faceAPILoaded = await initializeFaceAPI();
+                if (!faceAPILoaded) {
+                    console.error('❌ Erro ao carregar Face-API');
+                    showGreeting('❌ Erro ao carregar sistema de reconhecimento', false);
+                    return;
+                }
+                
+                // Solicitar acesso à câmera
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = currentStream;
+                
+                // Aguardar a câmera inicializar completamente
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        console.log(`📐 Câmera inicializada: ${video.videoWidth}x${video.videoHeight}`);
+                        resolve();
+                    };
+                });
+                
+                // Esconder overlay da câmera
+                document.getElementById('cameraOverlay').style.display = 'none';
+                
+                // Atualizar interface
+                document.getElementById('autoStatusDot').className = 'status-dot active';
+                document.getElementById('autoStatusText').textContent = 'Sistema automático ativo - Detectando...';
+                document.getElementById('detectionInfo').style.display = 'block';
+                document.getElementById('voiceControls').style.display = 'block';
+                
+                // Atualizar status principal
+                updateMainStatus('Sistema ativo - Detectando...', true);
+                
+                // Atualizar informações de debug
+                document.getElementById('cameraStatus').textContent = 'Ativa';
+                document.getElementById('videoDimensions').textContent = `${video.videoWidth}x${video.videoHeight}`;
+                
+                isRecognizing = true;
+                
+                // Aguardar um pouco mais antes de iniciar o reconhecimento
+                setTimeout(() => {
+                    console.log('🔍 Iniciando loop de reconhecimento...');
+                    recognizeFaces();
+                }, 2000);
+                
+                console.log('✅ Sistema automático iniciado com sucesso!');
+                
+                // Iniciar recarregamento automático
+                startAutoReload();
+                
+                // Iniciar monitoramento de saúde do sistema
+                startHealthMonitoring();
+                
+            } catch (error) {
+                console.error('❌ Erro ao iniciar reconhecimento automático:', error);
+                showGreeting('❌ Erro ao acessar a câmera: ' + error.message, false);
+                document.getElementById('autoStatusText').textContent = 'Erro no sistema';
+                document.getElementById('autoStatusDot').className = 'status-dot inactive';
+                
+                // Atualizar status principal em caso de erro
+                updateMainStatus('Erro no sistema', false);
+            }
+        }
+        
+        
+        // Variável para cache dos alunos
+        let studentsCache = [];
+        let lastStudentsUpdate = 0;
+        
+        // Loop de reconhecimento
+        async function recognizeFaces() {
+            if (!isRecognizing) return;
+            
+            try {
+                const video = document.getElementById('cameraVideo');
+                
+                // Verificar se o vídeo está pronto
+                if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+                    console.log('⚠️ Vídeo não está pronto, aguardando...');
+                    setTimeout(recognizeFaces, 1000);
+                    return;
+                }
+                
+                console.log(`🔍 Verificando faces... (${video.videoWidth}x${video.videoHeight})`);
+                
+                // Atualizar atividade do sistema
+                updateActivity();
+                
+                // Atualizar status para mostrar que está detectando
+                updateMainStatus('Detectando faces...', true);
+                
+                // Detectar faces com múltiplas tentativas e configurações mais sensíveis
+                let detections = [];
+                
+                try {
+                    // Tentativa 1: TinyFaceDetector com configurações mais sensíveis
+                    detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+                        inputSize: 320,
+                        scoreThreshold: 0.1
+                    })).withFaceLandmarks().withFaceDescriptors();
+                    
+                    console.log(`🔍 Tentativa 1 (TinyFaceDetector): ${detections.length} face(s) detectada(s)`);
+                } catch (error) {
+                    console.log('⚠️ Tentativa 1 falhou:', error.message);
+                }
+                
+                // Se não detectou, tentar com configurações ainda mais sensíveis
+                if (detections.length === 0) {
+                    try {
+                        detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+                            inputSize: 224,
+                            scoreThreshold: 0.05
+                        })).withFaceLandmarks().withFaceDescriptors();
+                        
+                        console.log(`🔍 Tentativa 2 (TinyFaceDetector sensível): ${detections.length} face(s) detectada(s)`);
+                    } catch (error) {
+                        console.log('⚠️ Tentativa 2 falhou:', error.message);
+                    }
+                }
+                
+                // Se ainda não detectou, tentar com SSD MobileNet (se estiver carregado)
+                if (detections.length === 0) {
+                    try {
+                        // Verificar se SSD MobileNet está carregado
+                        if (faceapi.nets.ssdMobilenetv1.isLoaded) {
+                            detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({
+                                minConfidence: 0.1
+                            })).withFaceLandmarks().withFaceDescriptors();
+                            
+                            console.log(`🔍 Tentativa 3 (SSD MobileNet): ${detections.length} face(s) detectada(s)`);
+                        } else {
+                            console.log('⚠️ SSD MobileNet não carregado, pulando tentativa 3');
+                        }
+                    } catch (error) {
+                        console.log('⚠️ Tentativa 3 falhou:', error.message);
+                    }
+                }
+                
+                if (detections.length > 0) {
+                    console.log(`🔍 ${detections.length} face(s) detectada(s)`);
+                    
+                    // Carregar alunos apenas se necessário (cache por 30 segundos)
+                    const now = Date.now();
+                    if (studentsCache.length === 0 || (now - lastStudentsUpdate) > 30000) {
+                        console.log('🔄 Atualizando cache de alunos...');
+                        studentsCache = await getStudents();
+                        lastStudentsUpdate = now;
+                    }
+                    
+                    if (studentsCache.length === 0) {
+                        console.log('⚠️ Nenhum aluno com dados faciais encontrado');
+                        showGreeting('Nenhum aluno cadastrado com reconhecimento facial', false);
+                        setTimeout(recognizeFaces, 5000);
+                        return;
+                    }
+                    
+                    console.log(`📚 Comparando com ${studentsCache.length} alunos cadastrados...`);
+                    
+                    for (const detection of detections) {
+                        console.log('🔍 Processando detecção...');
+                        const recognizedStudent = await findMatchingStudent(detection, studentsCache);
+                        
+                        if (recognizedStudent) {
+                            console.log('✅ Aluno reconhecido:', recognizedStudent.nome);
+                            
+                            // Registrar detecção
+                            addDetection(recognizedStudent.id, recognizedStudent.nome);
+                            
+                            // Atualizar estatísticas
+                            detectedCount++;
+                            document.getElementById('detectedCount').textContent = detectedCount;
+                            document.getElementById('lastDetection').textContent = new Date().toLocaleTimeString();
+                            
+                            // Adicionar à fila de saudações
+                            const greeting = getRandomGreeting(recognizedStudent.nome);
+                            addToGreetingQueue(recognizedStudent.nome, greeting);
+                            
+                            console.log(`🎉 Saudação adicionada à fila para ${recognizedStudent.nome}`);
+                        } else {
+                            console.log('❌ Nenhum aluno correspondente encontrado');
+                        }
+                    }
+                } else {
+                    // Atualizar status quando não há faces
+                    updateMainStatus('Aguardando faces...', true);
+                    
+                    // Mostrar mensagem quando não há faces detectadas
+                    if (document.getElementById('greetingText').style.display === 'none') {
+                        showGreeting('Posicione-se em frente à câmera para ser reconhecido', false);
+                    }
+                }
+                
+                // Continuar loop
+                setTimeout(recognizeFaces, 1000);
+                
+            } catch (error) {
+                console.error('❌ Erro no reconhecimento:', error);
+                showGreeting('Erro no sistema de reconhecimento', false);
+                setTimeout(recognizeFaces, 2000);
+            }
+        }
+        
+        // Buscar alunos no banco
+        async function getStudents() {
+            try {
+                console.log('🔍 Buscando alunos com dados faciais...');
+                const { data, error } = await supabase
+                    .from('alunos')
+                    .select('id, nome, face_descriptor, face_quality_score')
+                    .not('face_descriptor', 'is', null)
+                    .not('soft_delete', 'is', true);
+                
+                if (error) throw error;
+                
+                console.log(`✅ ${data?.length || 0} alunos encontrados com dados faciais`);
+                
+                // Debug: verificar formato dos dados
+                if (data && data.length > 0) {
+                    console.log('🔍 Debug - Primeiro aluno:', {
+                        id: data[0].id,
+                        nome: data[0].nome,
+                        descriptorType: typeof data[0].face_descriptor,
+                        descriptorLength: Array.isArray(data[0].face_descriptor) ? data[0].face_descriptor.length : 'N/A',
+                        qualityScore: data[0].face_quality_score
+                    });
+                }
+                
+                return data || [];
+            } catch (error) {
+                console.error('❌ Erro ao buscar alunos:', error);
+                return [];
+            }
+        }
+        
+        // Encontrar aluno correspondente
+        async function findMatchingStudent(detection, students) {
+            if (!detection.descriptor || students.length === 0) {
+                console.log('❌ Nenhum aluno ou descritor disponível');
+                return null;
+            }
+            
+            console.log(`🔍 Comparando com ${students.length} alunos...`);
+            
+            let bestMatch = null;
+            let bestDistance = 0.4; // Threshold de similaridade (40% - MUITO mais restritivo)
+            
+            for (const student of students) {
+                if (!student.face_descriptor) {
+                    console.log(`⚠️ Aluno ${student.nome} sem descritor facial`);
+                    continue;
+                }
+                
+                try {
+                    // O face_descriptor pode vir como array ou string JSON
+                    let studentDescriptor = student.face_descriptor;
+                    
+                    // Se for string, tentar fazer parse
+                    if (typeof studentDescriptor === 'string') {
+                        try {
+                            studentDescriptor = JSON.parse(studentDescriptor);
+                        } catch (parseError) {
+                            console.log(`⚠️ Erro ao fazer parse do descritor para ${student.nome}:`, parseError);
+                            continue;
+                        }
+                    }
+                    
+                    if (!Array.isArray(studentDescriptor) || studentDescriptor.length === 0) {
+                        console.log(`⚠️ Descritor inválido para ${student.nome} (tipo: ${typeof studentDescriptor}, length: ${studentDescriptor?.length})`);
+                        continue;
+                    }
+                    
+                    // Verificar se o descritor tem o tamanho correto (128 valores)
+                    if (studentDescriptor.length !== 128) {
+                        console.log(`⚠️ Descritor com tamanho incorreto para ${student.nome} (${studentDescriptor.length} valores, esperado 128)`);
+                        continue;
+                    }
+                    
+                    const distance = faceapi.euclideanDistance(detection.descriptor, studentDescriptor);
+                    console.log(`📊 ${student.nome}: distância = ${distance.toFixed(4)} (descritor: ${studentDescriptor.length} valores)`);
+                    
+                    // Só aceitar se a distância for menor que 0.4 (alta similaridade)
+                    if (distance < bestDistance && distance < 0.4) {
+                        bestDistance = distance;
+                        bestMatch = student;
+                        console.log(`✅ Novo melhor match: ${student.nome} (distância: ${distance.toFixed(4)})`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Erro ao comparar com ${student.nome}:`, error);
+                }
+            }
+            
+            if (bestMatch) {
+                console.log(`🎯 Aluno reconhecido: ${bestMatch.nome} (distância: ${bestDistance.toFixed(4)})`);
+            } else {
+                console.log('❌ Nenhum aluno reconhecido (similaridade insuficiente)');
+            }
+            
+            return bestMatch;
+        }
+        
+        // Obter saudação aleatória
+        function getRandomGreeting(nome) {
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            return randomGreeting.replace('{nome}', nome);
+        }
+        
+        // Mostrar saudação na tela
+        function showGreeting(text, isGreeting = true) {
+            const placeholder = document.getElementById('greetingPlaceholder');
+            const greetingText = document.getElementById('greetingText');
+            
+            if (isGreeting) {
+                placeholder.style.display = 'none';
+                greetingText.style.display = 'block';
+                greetingText.textContent = text;
+            } else {
+                placeholder.style.display = 'block';
+                greetingText.style.display = 'none';
+                placeholder.textContent = text;
+            }
+        }
+        
+        // Carregar configurações de voz do localStorage
+        function loadVoiceSettings() {
+            try {
+                const settings = JSON.parse(localStorage.getItem('voiceSettings') || '{}');
+                
+                // Aplicar configurações salvas ou usar padrões
+                document.getElementById('voiceRate').value = settings.rate || 1.4;
+                document.getElementById('voicePitch').value = settings.pitch || 0.6;
+                document.getElementById('voiceVolume').value = settings.volume || 1.0;
+                
+                // Se não há configuração salva, usar valores padrão
+                if (!settings.rate || !settings.pitch || !settings.volume) {
+                    saveVoiceSettings(); // Salvar os valores padrão
+                }
+                
+                // Atualizar labels
+                updateVoiceLabels();
+                
+                console.log('🎤 Configurações de voz carregadas:', settings);
+            } catch (error) {
+                console.error('❌ Erro ao carregar configurações de voz:', error);
+                // Usar valores padrão em caso de erro
+                document.getElementById('voiceRate').value = 1.4;
+                document.getElementById('voicePitch').value = 0.6;
+                document.getElementById('voiceVolume').value = 1.0;
+                updateVoiceLabels();
+            }
+        }
+        
+        // Salvar configurações de voz no localStorage
+        function saveVoiceSettings() {
+            try {
+                const settings = {
+                    rate: parseFloat(document.getElementById('voiceRate').value),
+                    pitch: parseFloat(document.getElementById('voicePitch').value),
+                    volume: parseFloat(document.getElementById('voiceVolume').value),
+                    voice: document.getElementById('voiceSelect').value
+                };
+                
+                localStorage.setItem('voiceSettings', JSON.stringify(settings));
+                console.log('💾 Configurações de voz salvas:', settings);
+            } catch (error) {
+                console.error('❌ Erro ao salvar configurações de voz:', error);
+            }
+        }
+        
+        // Atualizar labels dos controles
+        function updateVoiceLabels() {
+            document.getElementById('rateValue').textContent = document.getElementById('voiceRate').value + 'x';
+            document.getElementById('pitchValue').textContent = document.getElementById('voicePitch').value + 'x';
+            document.getElementById('volumeValue').textContent = Math.round(document.getElementById('voiceVolume').value * 100) + '%';
+        }
+        
+        // Atualizar configurações de voz
+        function updateVoiceSettings() {
+            updateVoiceLabels();
+            saveVoiceSettings();
+            console.log('🎤 Configurações atualizadas e salvas');
+        }
+        
+        // Carregar vozes disponíveis
+        function loadAvailableVoices() {
+            const voiceSelect = document.getElementById('voiceSelect');
+            const voices = speechSynthesis.getVoices();
+            
+            // Limpar opções existentes (exceto "Automática")
+            voiceSelect.innerHTML = '<option value="auto">Automática</option>';
+            
+            // Procurar especificamente pela voz do Google do Brasil
+            const googleBrazilVoice = voices.find(voice => 
+                voice.name.includes('Google') && 
+                (voice.lang.startsWith('pt-BR') || voice.lang.includes('pt-BR'))
+            );
+            
+            if (googleBrazilVoice) {
+                const option = document.createElement('option');
+                option.value = googleBrazilVoice.name;
+                option.textContent = `🇧🇷 ${googleBrazilVoice.name} (${googleBrazilVoice.lang}) - RECOMENDADA`;
+                option.selected = true; // Selecionar automaticamente
+                voiceSelect.appendChild(option);
+                console.log('🎤 Voz do Google do Brasil encontrada e selecionada:', googleBrazilVoice.name);
+            }
+            
+            // Adicionar outras vozes em português
+            const portugueseVoices = voices.filter(voice => 
+                (voice.lang.startsWith('pt') || 
+                voice.lang.includes('Portuguese') ||
+                voice.lang.includes('pt-BR') ||
+                voice.lang.includes('pt-PT')) &&
+                voice !== googleBrazilVoice
+            );
+            
+            // Adicionar outras vozes em português
+            portugueseVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = `🇧🇷 ${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+            
+            console.log(`🎤 ${portugueseVoices.length + (googleBrazilVoice ? 1 : 0)} vozes em português carregadas`);
+        }
+        
+        // Reproduzir áudio da saudação
+        function speakGreeting(text) {
+            if ('speechSynthesis' in window) {
+                // Parar qualquer fala anterior
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-BR';
+                
+                // Aplicar configurações salvas
+                utterance.rate = parseFloat(document.getElementById('voiceRate').value);
+                utterance.pitch = parseFloat(document.getElementById('voicePitch').value);
+                utterance.volume = parseFloat(document.getElementById('voiceVolume').value);
+                
+                // Selecionar voz
+                const selectedVoice = document.getElementById('voiceSelect').value;
+                if (selectedVoice !== 'auto') {
+                    const voices = speechSynthesis.getVoices();
+                    const voice = voices.find(v => v.name === selectedVoice);
+                    if (voice) {
+                        utterance.voice = voice;
+                        console.log('🎤 Usando voz selecionada:', voice.name);
+                    }
+                }
+                
+                // Evento para quando a fala terminar
+                utterance.onend = function() {
+                    console.log('🎤 Fala concluída');
+                    isSpeaking = false;
+                    updateQueueStatus();
+                    processGreetingQueue(); // Processar próxima saudação
+                };
+                
+                speechSynthesis.speak(utterance);
+                console.log(`🎤 Reproduzindo: "${text}" (Rate: ${utterance.rate}, Pitch: ${utterance.pitch}, Volume: ${utterance.volume})`);
+            }
+        }
+        
+        // Verificar se há alunos com dados faciais
+        async function checkStudentsWithFacialData() {
+            try {
+                const students = await getStudents();
+                studentsCache = students; // Carregar no cache
+                
+                if (students.length === 0) {
+                    showGreeting('⚠️ Nenhum aluno cadastrado com reconhecimento facial. Cadastre alunos primeiro na tela de gestão.', false);
+                    document.getElementById('autoStatusText').textContent = 'Nenhum aluno cadastrado';
+                    document.getElementById('autoStatusDot').className = 'status-dot inactive';
+                    
+                    // Atualizar status principal
+                    updateMainStatus('Nenhum aluno cadastrado', false);
+                } else {
+                    showGreeting(`✅ ${students.length} aluno(s) cadastrado(s) com reconhecimento facial. Sistema automático ativo.`, false);
+                    console.log(`📚 ${students.length} alunos carregados no cache:`, students.map(s => s.nome));
+                }
+            } catch (error) {
+                console.error('❌ Erro ao verificar alunos:', error);
+                showGreeting('Erro ao carregar dados dos alunos', false);
+                document.getElementById('autoStatusText').textContent = 'Erro ao carregar alunos';
+                document.getElementById('autoStatusDot').className = 'status-dot inactive';
+                
+                // Atualizar status principal em caso de erro
+                updateMainStatus('Erro ao carregar alunos', false);
+            }
+        }
+        
+        // Função para testar detecção manual (para debug)
+        window.testDetection = async function() {
+            try {
+                const video = document.getElementById('cameraVideo');
+                if (!video || video.videoWidth === 0) {
+                    console.log('⚠️ Vídeo não está pronto');
+                    return;
+                }
+                
+                console.log('🧪 Teste manual de detecção...');
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+                    inputSize: 320,
+                    scoreThreshold: 0.1
+                })).withFaceLandmarks().withFaceDescriptors();
+                
+                console.log(`🧪 Resultado: ${detections.length} face(s) detectada(s)`);
+                
+                if (detections.length > 0 && studentsCache.length > 0) {
+                    const recognizedStudent = await findMatchingStudent(detections[0], studentsCache);
+                    if (recognizedStudent) {
+                        console.log('✅ Aluno reconhecido:', recognizedStudent.nome);
+                        showGreeting(`✅ Reconhecido: ${recognizedStudent.nome}`, false);
+                    } else {
+                        console.log('❌ Nenhum aluno correspondente');
+                        showGreeting('❌ Nenhum aluno correspondente', false);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+            }
+        };
+        
+        // Função para testar dados dos alunos (para debug)
+        window.testStudentData = async function() {
+            try {
+                console.log('🧪 Testando dados dos alunos...');
+                const students = await getStudents();
+                
+                if (students.length === 0) {
+                    console.log('❌ Nenhum aluno encontrado');
+                    return;
+                }
+                
+                console.log(`📚 ${students.length} alunos encontrados:`);
+                students.forEach((student, index) => {
+                    console.log(`${index + 1}. ${student.nome}:`, {
+                        id: student.id,
+                        descriptorType: typeof student.face_descriptor,
+                        descriptorLength: Array.isArray(student.face_descriptor) ? student.face_descriptor.length : 'N/A',
+                        qualityScore: student.face_quality_score
+                    });
+                });
+            } catch (error) {
+                console.error('❌ Erro ao testar dados:', error);
+            }
+        };
+        
+        // Limpar recursos ao sair da página
+        window.addEventListener('beforeunload', () => {
+            console.log('🧹 Limpando recursos...');
+            stopAutoReload();
+            stopHealthMonitoring();
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            if (isSpeaking) {
+                speechSynthesis.cancel();
+            }
+        });
+        
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📱 Página de saudação carregada');
+            
+            // Carregar dados iniciais
+            await loadGreetings();
+            loadDetectionHistory();
+            loadVoiceSettings();
+            await checkStudentsWithFacialData();
+            
+            // Carregar vozes disponíveis
+            loadAvailableVoices();
+            
+            // Aguardar vozes carregarem (alguns navegadores demoram)
+            setTimeout(() => {
+                loadAvailableVoices();
+            }, 1000);
+            
+            // Evento para carregar vozes quando estiverem disponíveis
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadAvailableVoices;
+            }
+            
+            // Iniciar sistema automático após um pequeno delay
+            setTimeout(async () => {
+                console.log('🚀 Iniciando sistema automático...');
+                await startAutoRecognition();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

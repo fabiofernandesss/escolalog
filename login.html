@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Login - Escola Log</title>
+    <meta name="description" content="Faça login no Escola Log para acessar o sistema de monitoramento escolar.">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/login.html">
+    <meta property="og:title" content="Login - Escola Log">
+    <meta property="og:description" content="Faça login no Escola Log para acessar o sistema de monitoramento escolar.">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/login.html">
+    <meta name="twitter:title" content="Login - Escola Log">
+    <meta name="twitter:description" content="Faça login no Escola Log para acessar o sistema de monitoramento escolar.">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS Variables -->
+    <style>
+        :root {
+            --brand-blue: 210 100% 50%;
+            --brand-green: 142 76% 36%;
+            --neutral-600: 220 9% 46%;
+            --background: 0 0% 100%;
+            --card: 0 0% 100%;
+            --muted: 210 40% 98%;
+            --border: 214 32% 91%;
+            --input: 214 32% 91%;
+            --primary: 210 100% 50%;
+            --primary-foreground: 0 0% 100%;
+            --destructive: 0 84% 60%;
+            --destructive-foreground: 0 0% 100%;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted)));
+        }
+        
+        .card-bg {
+            background: hsl(var(--card) / 0.95);
+            backdrop-filter: blur(8px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-blue) / 0.8));
+            color: hsl(var(--primary-foreground));
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, hsl(var(--brand-blue) / 0.9), hsl(var(--brand-blue) / 0.7));
+        }
+        
+        .input-field {
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+        }
+        
+        .otp-input {
+            width: 3rem;
+            height: 3rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border: 2px solid hsl(var(--border));
+            border-radius: 0.5rem;
+            background: hsl(var(--background));
+        }
+        
+        .otp-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            max-width: 400px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast-success {
+            background: hsl(var(--brand-green));
+            color: white;
+        }
+        
+        .toast-error {
+            background: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+        
+        .spinner {
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Animações de bolinhas flutuantes */
+        .floating-bubbles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 15s infinite linear;
+        }
+        
+        .bubble:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 197, 253, 0.2));
+            left: 10%;
+            animation-delay: 0s;
+            animation-duration: 20s;
+        }
+        
+        .bubble:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(110, 231, 183, 0.2));
+            left: 20%;
+            animation-delay: 2s;
+            animation-duration: 18s;
+        }
+        
+        .bubble:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(196, 181, 253, 0.15));
+            left: 35%;
+            animation-delay: 4s;
+            animation-duration: 22s;
+        }
+        
+        .bubble:nth-child(4) {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(252, 211, 77, 0.2));
+            left: 50%;
+            animation-delay: 6s;
+            animation-duration: 16s;
+        }
+        
+        .bubble:nth-child(5) {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(252, 165, 165, 0.15));
+            left: 65%;
+            animation-delay: 8s;
+            animation-duration: 19s;
+        }
+        
+        .bubble:nth-child(6) {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 197, 253, 0.15));
+            left: 80%;
+            animation-delay: 10s;
+            animation-duration: 21s;
+        }
+        
+        .bubble:nth-child(7) {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(110, 231, 183, 0.18));
+            left: 15%;
+            animation-delay: 12s;
+            animation-duration: 17s;
+        }
+        
+        .bubble:nth-child(8) {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(196, 181, 253, 0.18));
+            left: 75%;
+            animation-delay: 14s;
+            animation-duration: 23s;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Animação de pulso suave para o logo */
+        .logo-pulse {
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <!-- Bolinhas flutuantes -->
+    <div class="floating-bubbles">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <div class="w-full max-w-md space-y-6">
+        <!-- Logo -->
+        <div class="flex flex-col items-center space-y-2">
+            <img src="img/logo-horizonal.png" alt="Escola Log" class="h-12 logo-pulse">
+            <p class="text-gray-600 text-sm">
+                Sistema de monitoramento escolar
+            </p>
+        </div>
+
+        <!-- Card -->
+        <div class="card-bg shadow-lg border-0 rounded-lg p-6">
+            <!-- Phone Step -->
+            <div id="phone-step" class="space-y-6">
+                <div class="text-center pb-4">
+                    <h1 class="text-xl font-semibold mb-2">Entrar com WhatsApp</h1>
+                    <p class="text-gray-600 text-sm">
+                        Digite seu número para receber o código
+                    </p>
+                </div>
+                
+                <form id="phone-form" class="space-y-6">
+                    <div class="space-y-2">
+                        <label for="whatsapp" class="block text-sm font-medium text-gray-700">
+                            WhatsApp
+                        </label>
+                        <input 
+                            type="tel" 
+                            id="whatsapp" 
+                            name="whatsapp"
+                            placeholder="(00) 00000-0000"
+                            class="input-field w-full h-12 px-3 rounded-md"
+                            required
+                        >
+                        <p class="text-xs text-gray-500">
+                            Digite o número cadastrado no sistema
+                        </p>
+                        <div id="phone-error" class="text-sm text-red-600 hidden"></div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        id="phone-submit"
+                        class="btn-primary w-full h-12 rounded-md font-medium transition-colors"
+                    >
+                        <span id="phone-submit-text">Continuar</span>
+                        <span id="phone-loading" class="hidden flex items-center justify-center">
+                            <div class="spinner mr-2"></div>
+                            Enviando código...
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Code Step -->
+            <div id="code-step" class="space-y-6 hidden">
+                <div class="text-center space-y-2">
+                    <div class="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold">Verificação WhatsApp</h3>
+                    <p class="text-sm text-gray-600">
+                        Olá, <span id="user-name"></span>! Digite o código de 4 dígitos enviado para
+                        <span id="phone-display" class="font-medium"></span>
+                    </p>
+                </div>
+
+                <form id="code-form" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 text-center">
+                            Código de Verificação
+                        </label>
+                        <div class="flex justify-center space-x-2">
+                            <input type="text" maxlength="1" class="otp-input" data-index="0">
+                            <input type="text" maxlength="1" class="otp-input" data-index="1">
+                            <input type="text" maxlength="1" class="otp-input" data-index="2">
+                            <input type="text" maxlength="1" class="otp-input" data-index="3">
+                        </div>
+                        <div id="code-error" class="text-sm text-red-600 text-center hidden"></div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button 
+                            type="submit" 
+                            id="code-submit"
+                            class="btn-primary w-full h-12 rounded-md font-medium transition-colors"
+                        >
+                            <span id="code-submit-text">Verificar Código</span>
+                            <span id="code-loading" class="hidden flex items-center justify-center">
+                                <div class="spinner mr-2"></div>
+                                Verificando...
+                            </span>
+                        </button>
+                        
+                        <button
+                            type="button"
+                            id="back-button"
+                            class="w-full h-12 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Voltar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        let SUPABASE_URL = '';
+        let SUPABASE_ANON_KEY = '';
+        
+        // Estado da aplicação
+        let currentStep = 'phone';
+        let phoneNumber = '';
+        let userName = '';
+        
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Evitar logging da resposta da Lambda para não expor chaves
+                
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            SUPABASE_URL = keys.url;
+            SUPABASE_ANON_KEY = keys.key;
+            console.log('Supabase inicializado com sucesso');
+        }
+        
+        // Elementos DOM
+        const phoneStep = document.getElementById('phone-step');
+        const codeStep = document.getElementById('code-step');
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        const whatsappInput = document.getElementById('whatsapp');
+        const otpInputs = document.querySelectorAll('.otp-input');
+        
+        // Função para mostrar toast
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Mostrar toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Remover toast após 5 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Função para normalizar telefone
+        function normalizePhone(phone) {
+            return phone.replace(/\D/g, '');
+        }
+        
+        // Função para formatar telefone
+        function formatPhone(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
+            if (match) {
+                return `(${match[1]}) ${match[2]}-${match[3]}`;
+            }
+            return phone;
+        }
+        
+        // Aplicar máscara no input de telefone
+        whatsappInput.addEventListener('input', function(e) {
+            const value = e.target.value.replace(/\D/g, '');
+            e.target.value = formatPhone(value);
+        });
+        
+        // Configurar inputs OTP
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        // Função para enviar código WhatsApp
+        async function sendWhatsAppCode(phone) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/whatsapp-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'send',
+                        phone: normalizePhone(phone)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                return data;
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Função para verificar código
+        async function verifyCode(phone, code) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/whatsapp-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'verify',
+                        phone: normalizePhone(phone),
+                        code: code
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                return data;
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Função para mudar para step de código
+        function goToCodeStep(phone, name) {
+            phoneStep.classList.add('hidden');
+            codeStep.classList.remove('hidden');
+            document.getElementById('user-name').textContent = name;
+            document.getElementById('phone-display').textContent = formatPhone(phone);
+            phoneNumber = phone;
+            userName = name;
+            currentStep = 'code';
+            
+            // Focar no primeiro input OTP
+            otpInputs[0].focus();
+        }
+        
+        // Função para voltar ao step de telefone
+        function goToPhoneStep() {
+            codeStep.classList.add('hidden');
+            phoneStep.classList.remove('hidden');
+            currentStep = 'phone';
+            
+            // Limpar inputs OTP
+            otpInputs.forEach(input => input.value = '');
+            
+            // Limpar erros
+            document.getElementById('code-error').classList.add('hidden');
+        }
+        
+        // Função para redirecionar usuário
+        function redirectUser(user) {
+            const userTypeRoutes = {
+                'admin': 'admin/dashboard.html',
+                'prefeito': 'prefeito/menu.html', 
+                'secretario': 'secretario/menu.html',
+                'diretor': 'diretor/menu.html',
+                'professor': 'professor/menu.html',
+                'responsavel': 'responsavel/menu.html'
+            };
+            
+            const route = userTypeRoutes[user.tipo_usuario] || 'dashboard.html';
+            
+            // Salvar dados do usuário
+            localStorage.setItem('whatsapp_user', JSON.stringify(user));
+            
+            // Redirecionar
+            window.location.href = route;
+        }
+        
+        // Event listener para formulário de telefone
+        phoneForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phone = whatsappInput.value;
+            const phoneError = document.getElementById('phone-error');
+            const submitBtn = document.getElementById('phone-submit');
+            const submitText = document.getElementById('phone-submit-text');
+            const loading = document.getElementById('phone-loading');
+            
+            // Validação básica
+            if (!phone || normalizePhone(phone).length < 10) {
+                phoneError.textContent = 'WhatsApp deve ter pelo menos 10 dígitos';
+                phoneError.classList.remove('hidden');
+                return;
+            }
+            
+            // Limpar erro
+            phoneError.classList.add('hidden');
+            
+            // Mostrar loading
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            loading.classList.remove('hidden');
+            
+            try {
+                const result = await sendWhatsAppCode(phone);
+                
+                showToast(`Olá ${result.userName}! Código de verificação enviado para ${formatPhone(phone)}`);
+                goToCodeStep(phone, result.userName);
+                
+            } catch (error) {
+                let errorMessage = error.message;
+                
+                if (errorMessage.includes('Telefone não cadastrado') || errorMessage.includes('Phone not found')) {
+                    errorMessage = `O número ${formatPhone(phone)} não está cadastrado no sistema. Entre em contato com a administração da escola para realizar seu cadastro.`;
+                } else if (errorMessage.includes('não autorizado') || errorMessage.includes('not authorized')) {
+                    errorMessage = 'Seu acesso não foi liberado ainda. Entre em contato com a administração da escola.';
+                } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network')) {
+                    errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                }
+                
+                phoneError.textContent = errorMessage;
+                phoneError.classList.remove('hidden');
+                showToast(errorMessage, 'error');
+                
+            } finally {
+                // Esconder loading
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        });
+        
+        // Event listener para formulário de código
+        codeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const code = Array.from(otpInputs).map(input => input.value).join('');
+            const codeError = document.getElementById('code-error');
+            const submitBtn = document.getElementById('code-submit');
+            const submitText = document.getElementById('code-submit-text');
+            const loading = document.getElementById('code-loading');
+            
+            // Validação básica
+            if (code.length !== 4) {
+                codeError.textContent = 'Código deve ter 4 dígitos';
+                codeError.classList.remove('hidden');
+                return;
+            }
+            
+            // Limpar erro
+            codeError.classList.add('hidden');
+            
+            // Mostrar loading
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            loading.classList.remove('hidden');
+            
+            try {
+                const result = await verifyCode(phoneNumber, code);
+                
+                if (result.user) {
+                    showToast(`Login realizado com sucesso! Bem-vindo, ${result.user.nome}!`);
+                    
+                    // Aguardar um pouco para mostrar o toast
+                    setTimeout(() => {
+                        redirectUser(result.user);
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                let errorMessage = error.message;
+                
+                if (errorMessage.includes('inválido') || errorMessage.includes('invalid') || errorMessage.includes('expired')) {
+                    errorMessage = 'Código incorreto ou expirado. Verifique o código recebido no WhatsApp e tente novamente.';
+                } else if (errorMessage.includes('não autorizado') || errorMessage.includes('not authorized')) {
+                    errorMessage = 'Seu acesso foi removido. Entre em contato com a administração da escola.';
+                } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network')) {
+                    errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                } else if (!errorMessage || errorMessage === 'undefined') {
+                    errorMessage = 'Código incorreto. Verifique o código recebido no WhatsApp e tente novamente.';
+                }
+                
+                codeError.textContent = errorMessage;
+                codeError.classList.remove('hidden');
+                showToast(errorMessage, 'error');
+                
+                // Limpar campos OTP
+                otpInputs.forEach(input => input.value = '');
+                otpInputs[0].focus();
+                
+            } finally {
+                // Esconder loading
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        });
+        
+        // Event listener para botão voltar
+        document.getElementById('back-button').addEventListener('click', goToPhoneStep);
+        
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Inicializando aplicação de login...');
+            
+            try {
+                await initializeSupabase();
+                console.log('Aplicação de login inicializada com sucesso');
+            } catch (error) {
+                console.error('Erro ao inicializar aplicação:', error);
+            }
+        });
+        
+        // Verificar se já existe usuário logado
+        const existingUser = localStorage.getItem('whatsapp_user');
+        if (existingUser) {
+            try {
+                const user = JSON.parse(existingUser);
+                redirectUser(user);
+            } catch (error) {
+                localStorage.removeItem('whatsapp_user');
+            }
+        }
+    </script>
+    
+    <!-- PWA Scripts -->
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <script src="../js/pwa.js"></script>
+    
+    <!-- PWA Status Bar -->
+    <div class="pwa-status-bar"></div>
+</body>
+</html>

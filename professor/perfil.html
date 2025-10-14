@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Perfil do Professor</title>
+    <meta name="theme-color" content="#10b981">
+
+    <link rel="manifest" href="../manifest.json">
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+            color: #1e293b; 
+            line-height: 1.6; 
+            min-height: 100vh; 
+            padding: 16px 20px; 
+        }
+        .header { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .logo { display: flex; align-items: center; }
+        .logo img { height: 48px; max-width: 100%; }
+        .page-title { 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: #1e293b; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin: 0; 
+        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .user-info { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 8px 12px; 
+            background: rgba(59, 130, 246, 0.1); 
+            border-radius: 12px; 
+            border: 1px solid rgba(59, 130, 246, 0.2); 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+        }
+        .user-info:hover { background: rgba(59, 130, 246, 0.15); transform: translateY(-1px); }
+        .user-avatar { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            background: #3b82f6; 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 600; 
+            font-size: 16px; 
+        }
+        .back-btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 38px; 
+            height: 38px; 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            text-decoration: none; 
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
+        }
+        .back-btn:hover { 
+            background: #2563eb; 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); 
+        }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); overflow: hidden; }
+        .section { padding: 20px; border-top: 1px solid #f1f5f9; }
+        .section:first-child { border-top: none; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        input { padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; background: #fafbfc; }
+        input:focus { outline: none; border-color: #10b981; background: #ffffff; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+        .actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+        .btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 600; }
+        .btn.primary { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; }
+        .btn:disabled { opacity: .7; cursor: not-allowed; }
+        .status { margin-top: 10px; font-size: 13px; color: #64748b; }
+        .user-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #3b82f6); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
+        .header-actions { margin-left: auto; display: flex; gap: 8px; }
+        .header-btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border: none; 
+            border-radius: 12px; 
+            background: #3b82f6; 
+            cursor: pointer; 
+            color: white; 
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .header-btn:hover { 
+            background: #2563eb; 
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+        @media (max-width: 768px) {
+            .container { margin: 12px; }
+            .row { grid-template-columns: 1fr; }
+            
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header .title { 
+                font-size: 1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .header-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+
+        .user-badge {
+            margin-left: 8px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #1e293b;
+            font-size: 0.8rem;
+        }
+    }
+    </style>
+</head>
+<body data-pwa-ui="off">
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log">
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="menu.html" class="back-btn" aria-label="Voltar">
+                <i data-lucide="arrow-left"></i>
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="section">
+            <div class="row">
+                <div class="field">
+                    <label>Nome</label>
+                    <input id="nome" type="text" placeholder="Seu nome completo">
+                </div>
+                <div class="field">
+                    <label>E-mail</label>
+                    <input id="email" type="email" placeholder="seuemail@exemplo.com" readonly>
+                </div>
+            </div>
+            <div class="row" style="margin-top: 12px;">
+                <div class="field">
+                    <label>WhatsApp</label>
+                    <input id="whatsapp" type="text" placeholder="(00) 00000-0000" readonly>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="resetForm()">Cancelar</button>
+                <button id="saveBtn" class="btn primary" onclick="saveProfile()">Salvar alterações</button>
+            </div>
+            <div id="statusMsg" class="status"></div>
+        </div>
+    </div>
+
+    <script src="../js/pwa.js"></script>
+    <script>
+    let supabase = null;
+    let currentUser = null;
+
+    function goBack() { window.location.href = 'menu.html'; }
+
+    async function getSupabaseKeys() {
+        try {
+            const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                method: 'GET', headers: { 'Content-Type': 'application/json' }, mode: 'cors'
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            if (data.status === 'success' && data.data) {
+                return {
+                    url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                    key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                };
+            }
+            throw new Error('Formato inválido');
+        } catch (error) {
+            return {
+                url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+            };
+        }
+    }
+
+    async function initializeSupabase() {
+        const keys = await getSupabaseKeys();
+        supabase = window.supabase.createClient(keys.url, keys.key);
+    }
+
+    function getSession() {
+        const rawSession = localStorage.getItem('userSession') || localStorage.getItem('whatsapp_user');
+        if (!rawSession) return null;
+        try { return JSON.parse(rawSession); } catch { return null; }
+    }
+
+    function checkAuthentication() {
+        currentUser = getSession();
+        if (!currentUser) { window.location.href = '../login.html'; return false; }
+        const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+        if (!roleRaw.includes('professor')) { window.location.href = '../login.html'; return false; }
+        currentUser.id = currentUser.id || currentUser.usuario_id || currentUser.user_id || currentUser.uid || null;
+        return true;
+    }
+
+    function setBadge() {
+        const badge = document.getElementById('userBadge');
+        if (!badge) return; // evita erro se o elemento não existir
+        const nome = (currentUser?.nome || 'Professor').trim();
+        badge.textContent = nome ? nome[0].toUpperCase() : 'P';
+    }
+
+    async function loadProfile() {
+        const nomeEl = document.getElementById('nome');
+        const emailEl = document.getElementById('email');
+        const waEl = document.getElementById('whatsapp');
+
+        // Prefill com sessão
+        nomeEl.value = currentUser?.nome || '';
+        emailEl.value = currentUser?.email || '';
+        waEl.value = currentUser?.whatsapp || '';
+
+        // Tentar buscar do Supabase (usuarios)
+        if (currentUser?.id) {
+            try {
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .select('id, nome, email, whatsapp, tipo_usuario')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
+                if (!error && data) {
+                    nomeEl.value = data.nome || nomeEl.value;
+                    emailEl.value = data.email || emailEl.value;
+                    waEl.value = data.whatsapp || waEl.value;
+                }
+            } catch (_) {}
+        }
+    }
+
+    function resetForm() { loadProfile(); document.getElementById('statusMsg').textContent = ''; }
+
+    async function saveProfile() {
+        const btn = document.getElementById('saveBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        btn.disabled = true; statusMsg.textContent = 'Salvando...';
+
+        const nome = document.getElementById('nome').value.trim();
+        const payload = { nome };
+
+        try {
+            let updateOk = false;
+            if (currentUser?.id) {
+                const { error } = await supabase
+                    .from('usuarios')
+                    .update(payload)
+                    .eq('id', currentUser.id);
+                if (!error) updateOk = true;
+            }
+
+            // Atualiza sessão local sempre que salvar
+            const updatedSession = Object.assign({}, currentUser, { nome });
+            try { localStorage.setItem('userSession', JSON.stringify(updatedSession)); } catch (_) {}
+            try { localStorage.setItem('whatsapp_user', JSON.stringify(updatedSession)); } catch (_) {}
+            currentUser = updatedSession;
+            setBadge();
+
+            statusMsg.textContent = updateOk ? 'Alterações salvas com sucesso.' : 'Alterações salvas localmente.';
+        } catch (e) {
+            statusMsg.textContent = 'Erro ao salvar: ' + e.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await initializeSupabase();
+            if (!checkAuthentication()) return;
+            setBadge();
+            await loadProfile();
+            lucide.createIcons();
+        } catch (e) {
+            console.error('Erro ao inicializar perfil:', e);
+        }
+    });
+    </script>
+</body>
+</html>

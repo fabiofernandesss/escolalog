@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OlharMais - Visualizar Dispositivo</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml">
+    
+    <!-- Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Toast -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <!-- Supabase Config -->
+    <script src="/config/supabase.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .loading-spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-badge.ativo {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .status-badge.inativo {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-badge.manutencao {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-badge i {
+            margin-right: 0.25rem;
+        }
+        .flex-1.min-w-0 {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Preloader -->
+    <div class="preloader fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Inclui o Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Loading principal -->
+    <div id="mainLoading" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-40 hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- ConteÃºdo Principal -->
+    <main class="transition-all duration-300 p-6 md:p-8 md:ml-64">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-2">
+                <a href="dispositivos.html" class="p-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="ph ph-arrow-left text-gray-800"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800">Visualizar Dispositivo</h1>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <a href="#" id="deleteBtn" class="p-2 text-red-600 bg-red-100 rounded-lg hover:bg-red-200 transition-colors">
+                    <i class="ph ph-trash"></i>
+                </a>
+                <a href="#" id="editBtn" class="p-2 text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
+                    <i class="ph ph-pencil-simple-line"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- ConteÃºdo -->
+        <div class="card p-6 md:p-8 mb-8">
+            <div class="grid grid-cols-1 gap-8">
+                <div class="space-y-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">InformaÃ§Ãµes do Dispositivo</h2>
+                    
+                    <div id="detailsLoading" class="flex justify-center py-8">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <div id="detailsContent" class="hidden">
+                        <!-- ID do Dispositivo -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">ID do Dispositivo</h3>
+                            <p id="cameraId" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        
+                        <!-- IP -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">IP</h3>
+                            <p id="ip" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        
+                        <!-- Escola -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">Escola</h3>
+                            <p id="escola" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">Status</h3>
+                            <div id="statusBadge" class="mt-1">
+                                <span class="status-badge inativo">
+                                    <i class="ph ph-circle-dashed"></i>
+                                    Carregando...
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Credenciais -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Login</h3>
+                                <p id="login" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Senha</h3>
+                                <div class="flex items-center mt-1">
+                                    <p id="senha" class="text-base font-semibold text-gray-800">â€¢ â€¢ â€¢ â€¢ â€¢ â€¢ â€¢ â€¢</p>
+                                    <button id="toggleSenha" class="ml-2 text-blue-600 hover:text-blue-800">
+                                        <i class="ph ph-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data de CriaÃ§Ã£o -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">Data de CriaÃ§Ã£o</h3>
+                            <p id="createdAt" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+
+                        <!-- Monitor -->
+                        <div class="mb-4">
+                            <h3 class="text-sm font-medium text-gray-500">URL do Monitor</h3>
+                            <p id="monitorUrl" class="text-base font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- InformaÃ§Ãµes do Sistema -->
+        <div id="systemInfoContainer" class="card p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">InformaÃ§Ãµes do Sistema</h3>
+                <button id="updateSystemInfo" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                    <i class="ph ph-arrows-clockwise"></i>
+                    <span>Atualizar InformaÃ§Ãµes</span>
+                </button>
+            </div>
+            <div id="systemInfo" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Device ID -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">Device ID</p>
+                        <p id="deviceIdInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                    <!-- VersÃ£o -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">VersÃ£o</p>
+                        <p id="versionInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                    <!-- Serial -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">Serial</p>
+                        <p id="serialInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                    <!-- Uptime -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">Tempo Ativo</p>
+                        <p id="uptimeInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                    <!-- MemÃ³ria RAM -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">MemÃ³ria RAM</p>
+                        <p id="ramInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                    <!-- MemÃ³ria Disco -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-1">MemÃ³ria Disco</p>
+                        <p id="diskInfo" class="font-medium text-gray-800">-</p>
+                    </div>
+                </div>
+                
+                <!-- Monitor -->
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-800 mb-3">ConfiguraÃ§Ã£o do Monitor</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">Hostname</p>
+                            <p id="monitorHostname" class="font-medium text-gray-800">-</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">Porta</p>
+                            <p id="monitorPort" class="font-medium text-gray-800">-</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">Path</p>
+                            <p id="monitorPath" class="font-medium text-gray-800">-</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">Timeout</p>
+                            <p id="monitorTimeout" class="font-medium text-gray-800">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- InformaÃ§Ãµes de Rede -->
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-800 mb-3">InformaÃ§Ãµes de Rede</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">MAC Address</p>
+                            <p id="macInfo" class="font-medium text-gray-800">-</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">IP</p>
+                            <p id="ipInfo" class="font-medium text-gray-800">-</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-1">Hostname</p>
+                            <p id="hostnameInfo" class="font-medium text-gray-800">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de UsuÃ¡rios Cadastrados -->
+        <div id="usersContainer" class="card p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    UsuÃ¡rios Cadastrados <span id="userCount" class="text-gray-500">(0)</span>
+                </h3>
+                <div class="flex gap-2">
+                    <button id="btnImportarLogs" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                        <i class="ph ph-upload"></i>
+                        <span>Importar Logs CSV</span>
+                    </button>
+                    <button id="btnAdicionarGrupo" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 hidden">
+                        <i class="ph ph-users-three"></i>
+                        <span>Adicionar ao Grupo</span>
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                    </button>
+                    <button id="btnCarregarUsuarios" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                        <i class="ph ph-users"></i>
+                        <span>Carregar Alunos</span>
+                        <div id="loadingCarregarUsuarios" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Barra de busca com filtros -->
+            <div id="searchContainer" class="mb-4 hidden">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <div class="relative flex-1">
+                        <input type="text" 
+                               id="searchUsers" 
+                               class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                               placeholder="Buscar por nome ou matrÃ­cula...">
+                        <i class="ph ph-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center cursor-pointer mr-1">
+                            <input type="checkbox" id="filterSemFoto" class="sr-only peer">
+                            <div class="relative w-10 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-2 text-sm font-medium text-gray-700">Apenas sem foto</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lista de usuÃ¡rios -->
+            <div id="usersList" class="space-y-4">
+                <div class="text-center py-4 text-gray-500">
+                    Clique no botÃ£o acima para carregar os alunos cadastrados
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de ImportaÃ§Ã£o de Logs -->
+    <div id="importLogsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Importar Logs CSV</h3>
+                <button onclick="closeImportLogsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <!-- Etapas do processo -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between">
+                    <div id="step1" class="flex items-center text-blue-600">
+                        <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-2">1</div>
+                        <span>Upload do Arquivo</span>
+                    </div>
+                    <div class="flex-1 h-px bg-gray-300 mx-4"></div>
+                    <div id="step2" class="flex items-center text-gray-400">
+                        <div class="w-8 h-8 bg-gray-300 text-white rounded-full flex items-center justify-center text-sm font-medium mr-2">2</div>
+                        <span>Preview dos Dados</span>
+                    </div>
+                    <div class="flex-1 h-px bg-gray-300 mx-4"></div>
+                    <div id="step3" class="flex items-center text-gray-400">
+                        <div class="w-8 h-8 bg-gray-300 text-white rounded-full flex items-center justify-center text-sm font-medium mr-2">3</div>
+                        <span>ImportaÃ§Ã£o</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Etapa 1: Upload do arquivo -->
+            <div id="uploadSection" class="space-y-4">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <i class="ph ph-file-csv text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-lg font-medium text-gray-900 mb-2">Selecione o arquivo CSV de logs</p>
+                    <p class="text-sm text-gray-500 mb-4">Formato esperado: CSV com cabeÃ§alhos dos logs do dispositivo</p>
+                    <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                    <button onclick="document.getElementById('csvFileInput').click()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Escolher Arquivo
+                    </button>
+                </div>
+                
+                <!-- InformaÃ§Ãµes do arquivo -->
+                <div id="fileInfo" class="hidden bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="ph ph-file-csv text-2xl text-green-600 mr-3"></i>
+                            <div>
+                                <p id="fileName" class="font-medium text-gray-900"></p>
+                                <p id="fileSize" class="text-sm text-gray-500"></p>
+                            </div>
+                        </div>
+                        <button id="btnProcessFile" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                            <span>Processar Arquivo</span>
+                            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Etapa 2: Preview dos dados -->
+            <div id="previewSection" class="hidden space-y-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="ph ph-info text-blue-600 mr-2"></i>
+                        <h4 class="font-medium text-blue-900">InformaÃ§Ãµes do Arquivo</h4>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-blue-600 font-medium">Total de registros:</span>
+                            <span id="totalRecords" class="ml-2">0</span>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-medium">Registros vÃ¡lidos:</span>
+                            <span id="validRecords" class="ml-2 text-green-600">0</span>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-medium">Registros com erro:</span>
+                            <span id="invalidRecords" class="ml-2 text-red-600">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabela de preview -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                        <h4 class="font-medium text-gray-900">Preview dos Dados</h4>
+                        <span id="recordsCount" class="text-sm text-gray-600">0 registros</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[500px]">
+                        <table id="previewTable" class="w-full text-sm">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr id="previewHeaders"></tr>
+                            </thead>
+                            <tbody id="previewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Erros encontrados -->
+                <div id="errorsSection" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 class="font-medium text-red-900 mb-2">Erros Encontrados:</h4>
+                    <div id="errorsList" class="text-sm text-red-700 space-y-1 max-h-32 overflow-y-auto"></div>
+                </div>
+                
+                <!-- BotÃµes de aÃ§Ã£o -->
+                <div class="flex justify-between">
+                    <button onclick="voltarUpload()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                        Voltar
+                    </button>
+                    <button id="btnImportData" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                        <span>Importar Dados</span>
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Etapa 3: ImportaÃ§Ã£o -->
+            <div id="importSection" class="hidden space-y-4">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ph ph-database text-2xl text-blue-600"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Importando Dados</h4>
+                    <p class="text-gray-600 mb-4">Aguarde enquanto os logs sÃ£o inseridos no banco de dados...</p>
+                </div>
+                
+                <!-- Barra de progresso -->
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="importProgress" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                
+                <!-- Status da importaÃ§Ã£o -->
+                <div class="text-center">
+                    <p id="importStatus" class="text-sm text-gray-600">Preparando importaÃ§Ã£o...</p>
+                </div>
+                
+                <!-- Resultado da importaÃ§Ã£o -->
+                <div id="importResult" class="hidden bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="ph ph-check-circle text-green-600 mr-2"></i>
+                        <h4 class="font-medium text-green-900">ImportaÃ§Ã£o ConcluÃ­da!</h4>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-green-600 font-medium">Sucessos:</span>
+                            <span id="successCount" class="ml-2">0</span>
+                        </div>
+                        <div>
+                            <span class="text-red-600 font-medium">Erros:</span>
+                            <span id="errorCount" class="ml-2">0</span>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-medium">Total:</span>
+                            <span id="totalProcessed" class="ml-2">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BotÃ£o de fechar -->
+                <div id="closeSection" class="hidden text-center">
+                    <button onclick="closeImportLogsModal()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de EdiÃ§Ã£o -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Editar UsuÃ¡rio</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <form id="editUserForm" class="space-y-4">
+                <input type="hidden" id="editUserId">
+                
+                <!-- Foto -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto</label>
+                    <div class="flex items-center justify-center">
+                        <div class="w-32 h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer overflow-hidden relative">
+                            <img id="editUserPhoto" class="w-full h-full object-cover hidden">
+                            <div id="photoPlaceholder" class="absolute inset-0 flex items-center justify-center">
+                                <i class="ph ph-user text-4xl text-gray-400"></i>
+                            </div>
+                            <input type="file" id="photoInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nome -->
+                <div>
+                    <label for="editUserName" class="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                    <input type="text" id="editUserName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- MatrÃ­cula -->
+                <div>
+                    <label for="editUserRegistration" class="block text-sm font-medium text-gray-700 mb-2">MatrÃ­cula</label>
+                    <input type="text" id="editUserRegistration" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- BotÃµes de AÃ§Ã£o -->
+                <div class="flex justify-between mt-6">
+                    <!-- BotÃ£o Excluir -->
+                    <div>
+                        <button id="btnDeleteUser" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2">
+                            <i class="ph ph-trash"></i>
+                            <span>Excluir</span>
+                        </button>
+                        <button id="btnConfirmDelete" type="button" class="hidden px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                            <i class="ph ph-warning"></i>
+                            <span>Confirmar ExclusÃ£o</span>
+                            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                        </button>
+                    </div>
+                    <!-- BotÃ£o Salvar -->
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                        <span>Salvar</span>
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar cliente Supabase
+        const supabaseClient = createSupabaseClient();
+        let currentDevice = null;
+        let rawSenha = '';
+        
+        // FunÃ§Ã£o para obter sessÃ£o do dispositivo
+        async function getDeviceSession(ipAddress, login, password) {
+            try {
+                const ipAddressWithPort = ipAddress.includes(':') ? ipAddress : `${ipAddress}:80`;
+                
+                const response = await fetch(`http://${ipAddressWithPort}/login.fcgi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        login: login || 'admin',
+                        password: password || 'admin'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao obter sessÃ£o do dispositivo');
+                }
+
+                const data = await response.json();
+                if (!data.session) {
+                    throw new Error('SessÃ£o nÃ£o retornada pelo dispositivo');
+                }
+
+                return data.session;
+            } catch (error) {
+                console.error('Erro ao obter sessÃ£o:', error);
+                throw new Error('NÃ£o foi possÃ­vel conectar ao dispositivo. Verifique as credenciais e o IP.');
+            }
+        }
+        
+        // FunÃ§Ã£o para mostrar toast
+        function showToast(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: type === 'success' ? "#22c55e" : "#ef4444"
+                }
+            }).showToast();
+        }
+        
+        // FunÃ§Ã£o para mostrar loading
+        function showLoading() {
+            document.getElementById('mainLoading').classList.remove('hidden');
+        }
+        
+        // FunÃ§Ã£o para esconder loading
+        function hideLoading() {
+            document.getElementById('mainLoading').classList.add('hidden');
+        }
+        
+        // Inicializar sidebar
+        function initializeSidebar() {
+            fetch('sidebar_admin.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar o sidebar:', error);
+                });
+        }
+        
+        // FunÃ§Ã£o para obter parÃ¢metros da URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        
+        // Carregar dados do dispositivo
+        async function loadDeviceData() {
+            try {
+                const deviceId = getUrlParam('id');
+                if (!deviceId) {
+                    showToast('ID do dispositivo nÃ£o especificado', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'dispositivos.html';
+                    }, 1000);
+                    return;
+                }
+                
+                // Mostrar loading
+                document.getElementById('detailsLoading').classList.remove('hidden');
+                document.getElementById('detailsContent').classList.add('hidden');
+                
+                // Buscar dispositivo no Supabase
+                const { data: device, error } = await supabaseClient
+                    .from('dispositivos')
+                    .select(`
+                        id,
+                        camera_id,
+                        ip,
+                        status,
+                        login,
+                        senha,
+                        created_at,
+                        escola_id,
+                        escolas (
+                            nome
+                        )
+                    `)
+                    .eq('id', deviceId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (!device) {
+                    showToast('Dispositivo nÃ£o encontrado', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'dispositivos.html';
+                    }, 1000);
+                    return;
+                }
+                
+                // Guardar os dados do dispositivo
+                currentDevice = device;
+                
+                // Preencher campos
+                document.getElementById('cameraId').textContent = device.camera_id || '-';
+                document.getElementById('ip').textContent = device.ip || '-';
+                document.getElementById('escola').textContent = device.escolas?.nome || '-';
+                document.getElementById('monitorUrl').textContent = device.monitor || '-';
+                
+                // Armazenar credenciais
+                document.getElementById('login').textContent = device.login || '-';
+                rawSenha = device.senha || '';
+                
+                // Formatar data
+                const createdDate = new Date(device.created_at);
+                document.getElementById('createdAt').textContent = createdDate.toLocaleString('pt-BR');
+                
+                // Status
+                const statusBadge = document.getElementById('statusBadge');
+                let statusHTML = '';
+                
+                switch (device.status?.toUpperCase()) {
+                    case 'ATIVO':
+                        statusHTML = `<span class="status-badge ativo">
+                            <i class="ph ph-check-circle"></i>
+                            Ativo
+                        </span>`;
+                        break;
+                    case 'INATIVO':
+                        statusHTML = `<span class="status-badge inativo">
+                            <i class="ph ph-x-circle"></i>
+                            Inativo
+                        </span>`;
+                        break;
+                    case 'MANUTENCAO':
+                        statusHTML = `<span class="status-badge manutencao">
+                            <i class="ph ph-wrench"></i>
+                            ManutenÃ§Ã£o
+                        </span>`;
+                        break;
+                    default:
+                        statusHTML = `<span class="status-badge inativo">
+                            <i class="ph ph-question"></i>
+                            NÃ£o definido
+                        </span>`;
+                }
+                
+                statusBadge.innerHTML = statusHTML;
+                
+                // Ocultar loading e mostrar conteÃºdo
+                document.getElementById('detailsLoading').classList.add('hidden');
+                document.getElementById('detailsContent').classList.remove('hidden');
+                
+                // Configurar botÃµes de aÃ§Ã£o
+                document.getElementById('editBtn').href = `dispositivos_edit.html?id=${deviceId}`;
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showToast('Erro ao carregar dados do dispositivo', 'error');
+                
+                // Ocultar loading
+                document.getElementById('detailsLoading').classList.add('hidden');
+            }
+        }
+        
+        // Toggle para exibir/ocultar senha
+        function setupPasswordToggle() {
+            const toggleBtn = document.getElementById('toggleSenha');
+            const senhaElem = document.getElementById('senha');
+            let isVisible = false;
+            
+            toggleBtn.addEventListener('click', function() {
+                isVisible = !isVisible;
+                
+                if (isVisible) {
+                    senhaElem.textContent = rawSenha || '-';
+                    toggleBtn.innerHTML = '<i class="ph ph-eye-slash"></i>';
+                } else {
+                    senhaElem.textContent = rawSenha ? 'â€¢ â€¢ â€¢ â€¢ â€¢ â€¢ â€¢ â€¢' : '-';
+                    toggleBtn.innerHTML = '<i class="ph ph-eye"></i>';
+                }
+            });
+        }
+        
+        // Configurar evento de exclusÃ£o
+        function setupDeleteEvent() {
+            document.getElementById('deleteBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (confirm('Tem certeza que deseja excluir este dispositivo? Esta aÃ§Ã£o nÃ£o pode ser desfeita.')) {
+                    deleteDevice();
+                }
+            });
+        }
+        
+        // Excluir dispositivo
+        async function deleteDevice() {
+            if (!currentDevice) return;
+            
+            try {
+                showLoading();
+                
+                const { error } = await supabaseClient
+                    .from('dispositivos')
+                    .delete()
+                    .eq('id', currentDevice.id);
+                
+                if (error) throw error;
+                
+                showToast('Dispositivo excluÃ­do com sucesso');
+                
+                setTimeout(() => {
+                    window.location.href = 'dispositivos.html';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erro ao excluir dispositivo:', error);
+                hideLoading();
+                showToast('Erro ao excluir dispositivo: ' + (error.message || error), 'error');
+            }
+        }
+        
+        // Inicializar quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inicializar sidebar
+                initializeSidebar();
+                
+                // Configurar toggle de senha
+                setupPasswordToggle();
+                
+                // Configurar evento de exclusÃ£o
+                setupDeleteEvent();
+
+                // Configurar evento de atualizar informaÃ§Ãµes do sistema
+                const btnUpdateSystemInfo = document.getElementById('updateSystemInfo');
+                if (btnUpdateSystemInfo) {
+                    btnUpdateSystemInfo.addEventListener('click', updateSystemInfo);
+                }
+                
+                // Carregar dados do dispositivo
+                await loadDeviceData();
+                
+                // Remover preloader
+                const preloader = document.querySelector('.preloader');
+                setTimeout(() => {
+                    preloader.style.opacity = '0';
+                    setTimeout(() => {
+                        preloader.style.display = 'none';
+                    }, 200);
+                }, 500);
+            } catch (error) {
+                console.error('Erro ao inicializar:', error);
+                showToast('Erro ao carregar o sistema. Por favor, recarregue a pÃ¡gina.', 'error');
+            }
+        });
+
+        // FunÃ§Ã£o para obter informaÃ§Ãµes do dispositivo
+        async function getDeviceInfo(ipPorta, session) {
+            try {
+                const response = await fetch(`http://${ipPorta}/system_information.fcgi?session=${session}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: ''
+                });
+
+                return await response.json();
+            } catch (error) {
+                console.error('Erro ao obter informaÃ§Ãµes do dispositivo:', error);
+                throw new Error('NÃ£o foi possÃ­vel obter informaÃ§Ãµes do dispositivo.');
+            }
+        }
+
+        // FunÃ§Ã£o para formatar bytes em formato legÃ­vel
+        function formatBytes(bytes) {
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 Byte';
+            const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+            return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+        }
+
+        // FunÃ§Ã£o para atualizar informaÃ§Ãµes do sistema na UI
+        function updateSystemInfoUI(data) {
+            // Device ID
+            document.getElementById('deviceIdInfo').textContent = data.device_id || '-';
+            
+            // VersÃ£o e Serial
+            document.getElementById('versionInfo').textContent = data.version || '-';
+            document.getElementById('serialInfo').textContent = data.serial || '-';
+            
+            // Uptime
+            const uptime = data.uptime;
+            document.getElementById('uptimeInfo').textContent = uptime ? 
+                `${uptime.days}d ${uptime.hours}h ${uptime.minutes}m ${uptime.seconds}s` : '-';
+            
+            // MemÃ³ria
+            const ram = data.memory?.ram;
+            document.getElementById('ramInfo').textContent = ram ? 
+                `${formatBytes(ram.free)} livre de ${formatBytes(ram.total)}` : '-';
+            
+            const disk = data.memory?.disk;
+            document.getElementById('diskInfo').textContent = disk ? 
+                `${formatBytes(disk.free)} livre de ${formatBytes(disk.total)}` : '-';
+            
+            // Rede
+            const network = data.network;
+            document.getElementById('macInfo').textContent = network?.mac || '-';
+            document.getElementById('ipInfo').textContent = network?.ip || '-';
+            document.getElementById('hostnameInfo').textContent = network?.device_hostname || '-';
+
+            // Monitor
+            const monitor = data.monitor;
+            if (monitor) {
+                document.getElementById('monitorHostname').textContent = monitor.hostname || '-';
+                document.getElementById('monitorPort').textContent = monitor.port || '-';
+                document.getElementById('monitorPath').textContent = monitor.path || '-';
+                document.getElementById('monitorTimeout').textContent = monitor.request_timeout ? `${monitor.request_timeout}ms` : '-';
+            }
+        }
+
+        // FunÃ§Ã£o para atualizar informaÃ§Ãµes do sistema
+        async function updateSystemInfo() {
+            try {
+                showLoading();
+                
+                const session = await getDeviceSession(currentDevice.ip, currentDevice.login, currentDevice.senha);
+                
+                // Buscar informaÃ§Ãµes gerais do sistema
+                const systemInfo = await getDeviceInfo(currentDevice.ip, session);
+                
+                // Buscar configuraÃ§Ã£o do monitor
+                const monitorConfig = await fetch(`http://${currentDevice.ip}/get_configuration.fcgi?session=${session}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        monitor: [
+                            "request_timeout",
+                            "hostname",
+                            "port",
+                            "path"
+                        ]
+                    })
+                }).then(res => res.json());
+
+                // Mesclar as informaÃ§Ãµes
+                const fullSystemInfo = {
+                    ...systemInfo,
+                    monitor: monitorConfig.monitor
+                };
+                
+                // Atualizar UI do sistema
+                updateSystemInfoUI(fullSystemInfo);
+                
+                // Atualizar device_id no banco se necessÃ¡rio
+                if (systemInfo.device_id && systemInfo.device_id !== currentDevice.device_id) {
+                    await supabaseClient
+                        .from('dispositivos')
+                        .update({ device_id: systemInfo.device_id })
+                        .eq('id', currentDevice.id);
+                    
+                    currentDevice.device_id = systemInfo.device_id;
+                }
+                
+                showToast('InformaÃ§Ãµes atualizadas com sucesso!');
+            } catch (error) {
+                console.error('Erro ao atualizar informaÃ§Ãµes:', error);
+                showToast('Erro ao atualizar informaÃ§Ãµes do sistema', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // FunÃ§Ã£o para carregar usuÃ¡rios do dispositivo
+        async function carregarUsuariosDispositivo(ipAddress, login, password) {
+            try {
+                console.log('Carregando usuÃ¡rios do dispositivo:', ipAddress);
+                const ipAddressWithPort = ipAddress.includes(':') ? ipAddress : `${ipAddress}:80`;
+                
+                // Obter nova sessÃ£o
+                const session = await getDeviceSession(ipAddressWithPort, login || 'admin', password || 'admin');
+                console.log('SessÃ£o obtida:', session);
+
+                // Fazer a requisiÃ§Ã£o para listar usuÃ¡rios - sem filtro de imagem
+                const payload = {
+                    object: "users"
+                    // Removido o filtro de image_timestamp != 0
+                };
+
+                const response = await fetch(`http://${ipAddressWithPort}/load_objects.fcgi?session=${session}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao carregar usuÃ¡rios: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Para cada usuÃ¡rio, buscar sua imagem
+                if (data.users && data.users.length > 0) {
+                    for (let user of data.users) {
+                        try {
+                            const imageResponse = await fetch(`http://${ipAddressWithPort}/user_get_image.fcgi?session=${session}&user_id=${user.id}`);
+                            if (imageResponse.ok) {
+                                const imageData = await imageResponse.blob();
+                                user.imageUrl = URL.createObjectURL(imageData);
+                                user.hasFoto = true;
+                            } else {
+                                user.hasFoto = false;
+                            }
+                        } catch (imgError) {
+                            console.warn(`Erro ao carregar imagem do usuÃ¡rio ${user.id}:`, imgError);
+                            user.hasFoto = false;
+                        }
+                    }
+                }
+
+                return { users: data.users || [], session };
+            } catch (error) {
+                console.error('Erro ao carregar usuÃ¡rios do dispositivo:', error);
+                throw error;
+            }
+        }
+
+        // FunÃ§Ã£o para formatar timestamp
+        function formatarData(timestamp) {
+            if (!timestamp || timestamp === 0) return 'NÃ£o disponÃ­vel';
+            return new Date(timestamp * 1000).toLocaleString('pt-BR');
+        }
+
+        // FunÃ§Ã£o para formatar tipo de usuÃ¡rio
+        function formatarTipoUsuario(typeId) {
+            return typeId === 1 ? 'Visitante' : 'UsuÃ¡rio Regular';
+        }
+
+        // FunÃ§Ã£o para exibir usuÃ¡rios na interface
+        function exibirUsuariosDispositivo(users) {
+            const container = document.getElementById('usersList');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        Nenhum usuÃ¡rio cadastrado no dispositivo
+                    </div>
+                `;
+                return;
+            }
+
+            // FunÃ§Ã£o para filtrar usuÃ¡rios
+            function filtrarUsuarios() {
+                const termoBusca = document.getElementById('searchUsers').value.toLowerCase().trim();
+                const apenasUsariosSemFoto = document.getElementById('filterSemFoto').checked;
+                
+                console.log('Filtrando usuÃ¡rios:');
+                console.log('- Termo de busca:', termoBusca);
+                console.log('- Apenas sem foto:', apenasUsariosSemFoto);
+                
+                const usuariosFiltrados = users.filter(user => {
+                    // Filtro por texto (nome, matrÃ­cula ou ID)
+                    const matchesText = !termoBusca || 
+                        (user.name && user.name.toLowerCase().includes(termoBusca)) ||
+                        (user.registration && user.registration.toLowerCase().includes(termoBusca)) ||
+                        (user.id && user.id.toString().includes(termoBusca));
+                    
+                    // Filtro por usuÃ¡rios sem foto
+                    const matchesFoto = !apenasUsariosSemFoto || (apenasUsariosSemFoto && !user.hasFoto);
+                    
+                    console.log(`UsuÃ¡rio ${user.id} - tem foto: ${user.hasFoto}, passa no filtro: ${matchesFoto}`);
+                    
+                    return matchesText && matchesFoto;
+                });
+
+                console.log('Total de usuÃ¡rios:', users.length);
+                console.log('UsuÃ¡rios filtrados:', usuariosFiltrados.length);
+                
+                // Atualizar o contador de usuÃ¡rios
+                document.getElementById('userCount').textContent = `(${usuariosFiltrados.length})`;
+                
+                return usuariosFiltrados;
+            }
+
+            // Remover listeners antigos e criar novos elementos
+            const searchContainer = document.getElementById('searchContainer');
+            searchContainer.innerHTML = `
+                <div class="flex flex-wrap gap-2 items-center">
+                    <div class="relative flex-1">
+                        <input type="text" 
+                               id="searchUsers" 
+                               class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                               placeholder="Buscar por nome ou matrÃ­cula...">
+                        <i class="ph ph-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center cursor-pointer mr-1">
+                            <input type="checkbox" id="filterSemFoto" class="sr-only peer">
+                            <div class="relative w-10 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-2 text-sm font-medium text-gray-700">Apenas sem foto</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            // Adicionar novos listeners
+            document.getElementById('searchUsers').addEventListener('input', () => {
+                console.log('Evento de busca acionado');
+                renderizarUsuarios();
+            });
+            
+            document.getElementById('filterSemFoto').addEventListener('change', (e) => {
+                console.log('Evento de filtro sem foto acionado');
+                console.log('Estado do checkbox:', e.target.checked);
+                renderizarUsuarios();
+            });
+
+            // FunÃ§Ã£o para renderizar usuÃ¡rios
+            function renderizarUsuarios() {
+                console.log('Iniciando renderizaÃ§Ã£o de usuÃ¡rios');
+                const usuariosFiltrados = filtrarUsuarios();
+                
+                container.innerHTML = usuariosFiltrados.length === 0 
+                    ? `<div class="text-center py-4 text-gray-500">Nenhum usuÃ¡rio encontrado com os filtros aplicados</div>`
+                    : `
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${usuariosFiltrados.map(user => `
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                    <div class="p-4">
+                                        <!-- CabeÃ§alho com botÃ£o de editar -->
+                                        <div class="flex items-start space-x-4">
+                                            <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                ${user.imageUrl ? 
+                                                    `<img src="${user.imageUrl}" alt="${user.name || 'UsuÃ¡rio'}" class="w-full h-full object-cover">` :
+                                                    `<div class="w-full h-full flex items-center justify-center">
+                                                        <i class="ph ph-user text-4xl text-gray-400"></i>
+                                                     </div>`
+                                                }
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-start justify-between">
+                                                    <div class="flex-1 min-w-0 pr-2">
+                                                        <h4 class="font-medium text-gray-900 truncate">${user.name || 'Sem nome'}</h4>
+                                                        <p class="text-sm text-gray-500">ID: ${user.id}</p>
+                                                        <p class="text-sm text-gray-500">MatrÃ­cula: ${user.registration || 'N/A'}</p>
+                                                    </div>
+                                                    <button onclick="openEditModal('${user.id}', '${user.name || ''}', '${user.registration || ''}', '${user.imageUrl || ''}')" 
+                                                            class="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                        <i class="ph ph-pencil-simple"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Detalhes adicionais -->
+                                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-500">Tipo:</span>
+                                                <span class="text-gray-900">${formatarTipoUsuario(user.user_type_id)}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-500">Ãšltimo acesso:</span>
+                                                <span class="text-gray-900">${formatarData(user.last_access)}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-500">Status da foto:</span>
+                                                <span class="text-gray-900 ${user.hasFoto ? 'text-green-600' : 'text-red-600'}">${user.hasFoto ? 'Com foto' : 'Sem foto'}</span>
+                                            </div>
+                                            ${user.begin_time ? `
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="text-gray-500">InÃ­cio:</span>
+                                                    <span class="text-gray-900">${formatarData(user.begin_time)}</span>
+                                                </div>
+                                            ` : ''}
+                                            ${user.end_time ? `
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="text-gray-500">Fim:</span>
+                                                    <span class="text-gray-900">${formatarData(user.end_time)}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                
+                console.log('RenderizaÃ§Ã£o concluÃ­da');
+            }
+
+            // FunÃ§Ã£o para renderizar usuÃ¡rios
+            renderizarUsuarios();
+        }
+
+        // VariÃ¡vel global para armazenar a lista de usuÃ¡rios carregados
+        let usuariosCarregados = [];
+
+        // FunÃ§Ã£o para adicionar todos os usuÃ¡rios ao grupo 1 (usando dados jÃ¡ carregados)
+        async function adicionarTodosAoGrupo() {
+            const btnAdicionar = document.getElementById('btnAdicionarGrupo');
+            const loadingSpinner = btnAdicionar.querySelector('.animate-spin');
+            const buttonText = btnAdicionar.querySelector('span');
+            
+            try {
+                // Verificar se temos usuÃ¡rios carregados
+                if (!usuariosCarregados || usuariosCarregados.length === 0) {
+                    showToast('Nenhum usuÃ¡rio carregado. Carregue a lista primeiro.', 'error');
+                    return;
+                }
+
+                // Desabilitar botÃ£o e mostrar loading
+                btnAdicionar.disabled = true;
+                buttonText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+
+                // Obter nova sessÃ£o
+                const session = await getDeviceSession(
+                    currentDevice.ip,
+                    currentDevice.login || 'admin',
+                    currentDevice.senha || 'admin'
+                );
+
+                let successCount = 0;
+                let errorCount = 0;
+                let processedCount = 0;
+
+                // Processar um usuÃ¡rio por vez
+                for (const user of usuariosCarregados) {
+                    try {
+                        const userId = parseInt(user.id);
+                        
+                        // VerificaÃ§Ã£o extra de seguranÃ§a
+                        if (!userId || isNaN(userId)) {
+                            console.error(`ID de usuÃ¡rio invÃ¡lido: ${user.id}`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Verificar se o usuÃ¡rio existe no dispositivo
+                        const checkUserResponse = await fetch(`http://${currentDevice.ip}/load_objects.fcgi?session=${session}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                object: "users",
+                                where: {
+                                    users: {
+                                        id: userId
+                                    }
+                                }
+                            })
+                        });
+
+                        if (!checkUserResponse.ok) {
+                            const errorText = await checkUserResponse.text();
+                            console.error(`Erro ao verificar usuÃ¡rio ${userId}:`, errorText);
+                            errorCount++;
+                            continue;
+                        }
+
+                        const userData = await checkUserResponse.json();
+                        if (!userData.users || userData.users.length === 0) {
+                            console.error(`UsuÃ¡rio ${userId} nÃ£o encontrado no dispositivo`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Verificar se o usuÃ¡rio jÃ¡ estÃ¡ no grupo
+                        const checkGroupResponse = await fetch(`http://${currentDevice.ip}/load_objects.fcgi?session=${session}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                object: "user_groups",
+                                where: {
+                                    user_groups: {
+                                        user_id: userId,
+                                        group_id: 1
+                                    }
+                                }
+                            })
+                        });
+
+                        if (!checkGroupResponse.ok) {
+                            const errorText = await checkGroupResponse.text();
+                            console.error(`Erro ao verificar grupo do usuÃ¡rio ${userId}:`, errorText);
+                            errorCount++;
+                            continue;
+                        }
+
+                        const groupData = await checkGroupResponse.json();
+                        if (groupData.user_groups && groupData.user_groups.length > 0) {
+                            console.log(`UsuÃ¡rio ${userId} jÃ¡ estÃ¡ no grupo 1`);
+                            successCount++;
+                            continue;
+                        }
+
+                        // Tentar adicionar o usuÃ¡rio ao grupo
+                        const response = await fetch(`http://${currentDevice.ip}/create_objects.fcgi?session=${session}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                object: "user_groups",
+                                fields: ["user_id", "group_id"],
+                                values: [{
+                                    user_id: userId,
+                                    group_id: 1
+                                }]
+                            })
+                        });
+
+                        const responseText = await response.text();
+                        console.log(`Resposta para usuÃ¡rio ${userId}:`, responseText);
+
+                        if (response.ok) {
+                            successCount++;
+                            console.log(`UsuÃ¡rio ${userId} adicionado com sucesso ao grupo 1`);
+                        } else {
+                            console.error(`Erro ao adicionar usuÃ¡rio ${userId}:`, responseText);
+                            errorCount++;
+                        }
+
+                        processedCount++;
+                        if (processedCount % 5 === 0 || processedCount === usuariosCarregados.length) {
+                            showToast(`Processando... ${processedCount} de ${usuariosCarregados.length}`, 'success');
+                        }
+
+                        // Pequena pausa entre cada usuÃ¡rio
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                    } catch (error) {
+                        console.error('Erro ao processar usuÃ¡rio:', error);
+                        errorCount++;
+                    }
+                }
+
+                // Mensagem final
+                const message = `ConcluÃ­do: ${successCount} adicionados, ${errorCount} com erro`;
+                showToast(message, errorCount > 0 ? 'error' : 'success');
+
+            } catch (error) {
+                console.error('Erro ao adicionar usuÃ¡rios ao grupo:', error);
+                showToast('Erro ao adicionar usuÃ¡rios ao grupo: ' + error.message, 'error');
+            } finally {
+                // Reabilitar botÃ£o e esconder loading
+                btnAdicionar.disabled = false;
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // FunÃ§Ã£o para carregar usuÃ¡rios quando o botÃ£o for clicado
+        async function carregarUsuariosClick() {
+            const btnCarregar = document.getElementById('btnCarregarUsuarios');
+            const loadingSpinner = document.getElementById('loadingCarregarUsuarios');
+            const btnAdicionarGrupo = document.getElementById('btnAdicionarGrupo');
+            
+            try {
+                // Desabilitar botÃ£o e mostrar loading
+                btnCarregar.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+                
+                // Carregar usuÃ¡rios
+                const { users } = await carregarUsuariosDispositivo(
+                    currentDevice.ip,
+                    currentDevice.login || 'admin',
+                    currentDevice.senha || 'admin'
+                );
+                
+                // Armazenar usuÃ¡rios carregados na variÃ¡vel global
+                usuariosCarregados = users;
+                
+                // Mostrar barra de busca
+                document.getElementById('searchContainer').classList.remove('hidden');
+                
+                // Mostrar botÃ£o de adicionar ao grupo
+                btnAdicionarGrupo.classList.remove('hidden');
+                
+                // Exibir usuÃ¡rios
+                exibirUsuariosDispositivo(users);
+                
+            } catch (error) {
+                console.error('Erro ao carregar usuÃ¡rios:', error);
+                showToast('Erro ao carregar usuÃ¡rios: ' + error.message, 'error');
+                
+                // Esconder botÃ£o de adicionar ao grupo em caso de erro
+                btnAdicionarGrupo.classList.add('hidden');
+            } finally {
+                // Reabilitar botÃ£o e esconder loading
+                btnCarregar.disabled = false;
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // FunÃ§Ãµes para o modal de ediÃ§Ã£o
+        function openEditModal(userId, userName, userRegistration, userImageUrl) {
+            const modal = document.getElementById('editModal');
+            const photoImg = document.getElementById('editUserPhoto');
+            const photoPlaceholder = document.getElementById('photoPlaceholder');
+            
+            // Preencher dados
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUserName').value = userName;
+            document.getElementById('editUserRegistration').value = userRegistration;
+            
+            // Configurar foto
+            if (userImageUrl) {
+                photoImg.src = userImageUrl;
+                photoImg.classList.remove('hidden');
+                photoPlaceholder.classList.add('hidden');
+            } else {
+                photoImg.classList.add('hidden');
+                photoPlaceholder.classList.remove('hidden');
+            }
+            
+            // Mostrar modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        // Configurar preview da foto
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const photoImg = document.getElementById('editUserPhoto');
+                    const photoPlaceholder = document.getElementById('photoPlaceholder');
+                    
+                    photoImg.src = e.target.result;
+                    photoImg.classList.remove('hidden');
+                    photoPlaceholder.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // FunÃ§Ã£o para atualizar aluno no banco de dados
+        async function atualizarAlunoNoBanco(registration, nome, photoFile) {
+            try {
+                console.log('Buscando aluno pelo ID:', registration);
+                
+                // Buscar aluno diretamente pelo ID (o que corresponde ao registration do dispositivo)
+                const { data: aluno, error: searchError } = await supabaseClient
+                    .from('alunos')
+                    .select('id, foto_url')
+                    .eq('id', registration)
+                    .single();
+
+                if (searchError) throw searchError;
+                if (!aluno) {
+                    console.log('Aluno nÃ£o encontrado com ID:', registration);
+                    return;
+                }
+
+                console.log('Aluno encontrado:', aluno);
+
+                // Se houver um arquivo de foto, salvÃ¡-lo no bucket
+                let fotoUrl = aluno.foto_url;
+                if (photoFile) {
+                    try {
+                        // Nome do arquivo no formato: aluno_{id}_{timestamp}.jpg
+                        const fileName = `aluno_${aluno.id}_${Date.now()}.jpg`;
+                        const filePath = `alunos/${fileName}`;
+                        
+                        // Upload da imagem para o bucket (corrigindo para fotos_alunos)
+                        const { data: uploadData, error: uploadError } = await supabaseClient
+                            .storage
+                            .from('fotos_alunos')
+                            .upload(filePath, photoFile, {
+                                contentType: 'image/jpeg',
+                                upsert: true
+                            });
+                        
+                        if (uploadError) throw uploadError;
+                        
+                        // Gerar URL pÃºblica
+                        const { data: publicUrlData } = supabaseClient
+                            .storage
+                            .from('fotos_alunos')
+                            .getPublicUrl(filePath);
+                            
+                        fotoUrl = publicUrlData.publicUrl;
+                        console.log('Foto salva com sucesso no bucket:', fotoUrl);
+                    } catch (uploadError) {
+                        console.error('Erro ao fazer upload da foto:', uploadError);
+                        showToast('Erro ao salvar a foto no bucket: ' + uploadError.message, 'error');
+                    }
+                }
+
+                // Atualizar o nome e a foto do aluno
+                const { error: updateError } = await supabaseClient
+                    .from('alunos')
+                    .update({
+                        nome_completo: nome,
+                        foto_url: fotoUrl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', aluno.id);
+
+                if (updateError) throw updateError;
+
+                console.log('Aluno atualizado com sucesso no banco de dados');
+                showToast('Aluno atualizado com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao atualizar foto do aluno no banco:', error);
+                showToast('Erro ao atualizar foto do aluno: ' + error.message, 'error');
+            }
+        }
+
+        // Atualizar a funÃ§Ã£o editUserForm.addEventListener para incluir a atualizaÃ§Ã£o no banco
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const loadingSpinner = submitButton.querySelector('.animate-spin');
+            const buttonText = submitButton.querySelector('span');
+            
+            try {
+                submitButton.disabled = true;
+                buttonText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                
+                const userId = document.getElementById('editUserId').value;
+                const name = document.getElementById('editUserName').value;
+                const registration = document.getElementById('editUserRegistration').value;
+                const photoInput = document.getElementById('photoInput');
+                
+                // Obter sessÃ£o do dispositivo
+                const session = await getDeviceSession(
+                    currentDevice.ip,
+                    currentDevice.login || 'admin',
+                    currentDevice.senha || 'admin'
+                );
+                
+                // Atualizar dados do usuÃ¡rio no dispositivo
+                const payload = {
+                    object: "users",
+                    values: {
+                        name: name,
+                        registration: registration
+                    },
+                    where: {
+                        users: {
+                            id: parseInt(userId)
+                        }
+                    }
+                };
+
+                console.log('Atualizando dados do usuÃ¡rio:', payload);
+                
+                const response = await fetch(`http://${currentDevice.ip}/modify_objects.fcgi?session=${session}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Erro ao atualizar dados:', errorText);
+                    throw new Error('Erro ao atualizar usuÃ¡rio no dispositivo');
+                }
+
+                // VariÃ¡vel para armazenar o arquivo de imagem para o bucket
+                let photoFileForBucket = null;
+                
+                // Se tem foto nova, enviar para o dispositivo e salvar para o bucket
+                if (photoInput.files.length > 0) {
+                    const photoFile = photoInput.files[0];
+                    photoFileForBucket = photoFile; // Guardar referÃªncia para upload no bucket
+                    
+                    const reader = new FileReader();
+                    
+                    await new Promise((resolve, reject) => {
+                        reader.onload = async function(e) {
+                            try {
+                                const timestamp = Math.floor(Date.now() / 1000);
+                                const url = `http://${currentDevice.ip}/user_set_image.fcgi?user_id=${userId}&timestamp=${timestamp}&match=0&session=${session}`;
+                                
+                                const uploadResponse = await fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/octet-stream'
+                                    },
+                                    body: new Uint8Array(e.target.result)
+                                });
+                                
+                                const responseText = await uploadResponse.text();
+                                let uploadData;
+                                try {
+                                    uploadData = JSON.parse(responseText);
+                                } catch (e) {
+                                    throw new Error(`Resposta invÃ¡lida do servidor: ${responseText}`);
+                                }
+
+                                if (!uploadResponse.ok) {
+                                    throw new Error(`Erro ao fazer upload da imagem: ${uploadResponse.status} - ${responseText}`);
+                                }
+                                
+                                if (uploadData.success === false) {
+                                    const errorMessages = uploadData.errors.map(err => `${err.code}: ${err.message}`).join(', ');
+                                    throw new Error(`Falha no cadastro da imagem: ${errorMessages}`);
+                                }
+                                
+                                resolve();
+                            } catch (error) {
+                                reject(error);
+                            }
+                        };
+                        reader.onerror = () => reject(new Error('Erro ao ler arquivo de imagem'));
+                        reader.readAsArrayBuffer(photoFile);
+                    });
+                }
+                
+                // Atualizar aluno no banco de dados
+                await atualizarAlunoNoBanco(registration, name, photoFileForBucket);
+                
+                showToast('UsuÃ¡rio atualizado com sucesso!');
+                closeEditModal();
+                
+                // Recarregar lista de usuÃ¡rios
+                await carregarUsuariosClick();
+                
+            } catch (error) {
+                console.error('Erro ao atualizar usuÃ¡rio:', error);
+                showToast('Erro ao atualizar usuÃ¡rio: ' + error.message, 'error');
+            } finally {
+                submitButton.disabled = false;
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        });
+
+        // FunÃ§Ã£o para excluir usuÃ¡rio do dispositivo
+        async function excluirUsuarioDispositivo(userId) {
+            const ipAddressWithPort = currentDevice.ip.includes(':') ? currentDevice.ip : `${currentDevice.ip}:80`;
+            let retryCount = 0;
+            const maxRetries = 2;
+
+            while (retryCount <= maxRetries) {
+                try {
+                    // Obter nova sessÃ£o
+                    const session = await getDeviceSession(
+                        currentDevice.ip,
+                        currentDevice.login || 'admin',
+                        currentDevice.senha || 'admin'
+                    );
+
+                    // Excluir usuÃ¡rio do dispositivo usando destroy_objects
+                    const response = await fetch(`http://${ipAddressWithPort}/destroy_objects.fcgi?session=${session}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            object: "users",
+                            where: {
+                                users: {
+                                    id: parseInt(userId)
+                                }
+                            }
+                        })
+                    });
+
+                    // Se a resposta for ok (mesmo sem body), retornamos sucesso
+                    if (response.ok) {
+                        return { success: true };
+                    }
+
+                    // Se nÃ£o for ok, verificamos o tipo de erro
+                    const errorText = await response.text();
+                    console.log('Erro na tentativa', retryCount + 1, ':', errorText);
+                    
+                    // Se for erro de sessÃ£o ou serviÃ§o indisponÃ­vel, tentamos novamente
+                    if (response.status === 503 || 
+                        errorText.includes('offline') || 
+                        errorText.includes('session') || 
+                        errorText.includes('unauthorized')) {
+                        if (retryCount < maxRetries) {
+                            console.log('Tentando novamente com nova sessÃ£o...');
+                            retryCount++;
+                            // Espera um pouco mais a cada tentativa
+                            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                            continue;
+                        }
+                    }
+                    
+                    throw new Error(errorText || 'Erro ao excluir usuÃ¡rio');
+
+                } catch (error) {
+                    console.error(`Tentativa ${retryCount + 1} falhou:`, error);
+                    
+                    if (retryCount < maxRetries && 
+                        (error.message.includes('sessÃ£o') || 
+                         error.message.includes('offline') || 
+                         error.message.includes('503') ||
+                         error.message.includes('unauthorized'))) {
+                        retryCount++;
+                        // Espera um pouco mais a cada tentativa
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                        continue;
+                    }
+                    
+                    throw error;
+                }
+            }
+        }
+
+        // Configurar eventos dos botÃµes de exclusÃ£o
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnDeleteUser = document.getElementById('btnDeleteUser');
+            const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+            
+            if (btnDeleteUser && btnConfirmDelete) {
+                btnDeleteUser.addEventListener('click', function() {
+                    btnDeleteUser.classList.add('hidden');
+                    btnConfirmDelete.classList.remove('hidden');
+                    
+                    // Esconder o botÃ£o de confirmaÃ§Ã£o apÃ³s 3 segundos
+                    setTimeout(() => {
+                        if (!btnConfirmDelete.classList.contains('hidden')) {
+                            btnConfirmDelete.classList.add('hidden');
+                            btnDeleteUser.classList.remove('hidden');
+                        }
+                    }, 3000);
+                });
+
+                btnConfirmDelete.addEventListener('click', async function() {
+                    const loadingSpinner = btnConfirmDelete.querySelector('.animate-spin');
+                    const buttonText = btnConfirmDelete.querySelector('span');
+                    const userId = document.getElementById('editUserId').value;
+
+                    try {
+                        // Mostrar loading
+                        btnConfirmDelete.disabled = true;
+                        buttonText.classList.add('hidden');
+                        loadingSpinner.classList.remove('hidden');
+
+                        // Excluir usuÃ¡rio
+                        await excluirUsuarioDispositivo(userId);
+
+                        // Mostrar mensagem de sucesso
+                        showToast('UsuÃ¡rio excluÃ­do com sucesso do dispositivo! A lista serÃ¡ atualizada no prÃ³ximo carregamento.');
+
+                        // Fechar modal
+                        closeEditModal();
+
+                    } catch (error) {
+                        console.error('Erro ao excluir usuÃ¡rio:', error);
+                        showToast('Erro ao excluir usuÃ¡rio: ' + error.message, 'error');
+                    } finally {
+                        // Restaurar estado do botÃ£o
+                        btnConfirmDelete.disabled = false;
+                        buttonText.classList.remove('hidden');
+                        loadingSpinner.classList.add('hidden');
+                        btnConfirmDelete.classList.add('hidden');
+                        btnDeleteUser.classList.remove('hidden');
+                    }
+                });
+            }
+        });
+
+        // ================================
+        // FUNÃ‡Ã•ES DO MODAL DE IMPORTAÃ‡ÃƒO DE LOGS
+        // ================================
+        
+        let csvData = [];
+        let validRecords = [];
+        let invalidRecords = [];
+        
+        // Abrir modal de importaÃ§Ã£o
+        function openImportLogsModal() {
+            document.getElementById('importLogsModal').classList.remove('hidden');
+            document.getElementById('importLogsModal').classList.add('flex');
+            resetImportModal();
+        }
+        
+        // Fechar modal de importaÃ§Ã£o
+        function closeImportLogsModal() {
+            document.getElementById('importLogsModal').classList.add('hidden');
+            document.getElementById('importLogsModal').classList.remove('flex');
+            resetImportModal();
+        }
+        
+        // Reset do modal
+        function resetImportModal() {
+            // Reset das etapas
+            updateStep(1);
+            
+            // Reset das seÃ§Ãµes
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('importSection').classList.add('hidden');
+            
+            // Reset do arquivo
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('fileInfo').classList.add('hidden');
+            
+            // Reset dos dados
+            csvData = [];
+            validRecords = [];
+            invalidRecords = [];
+        }
+        
+        // Atualizar etapa visual
+        function updateStep(step) {
+            // Reset todas as etapas
+            for (let i = 1; i <= 3; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                if (i <= step) {
+                    stepElement.classList.remove('text-gray-400');
+                    stepElement.classList.add('text-blue-600');
+                    stepElement.querySelector('div').classList.remove('bg-gray-300');
+                    stepElement.querySelector('div').classList.add('bg-blue-600');
+                } else {
+                    stepElement.classList.remove('text-blue-600');
+                    stepElement.classList.add('text-gray-400');
+                    stepElement.querySelector('div').classList.remove('bg-blue-600');
+                    stepElement.querySelector('div').classList.add('bg-gray-300');
+                }
+            }
+        }
+        
+        // Voltar para upload
+        function voltarUpload() {
+            updateStep(1);
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+        }
+        
+        // Processar arquivo CSV
+        async function processCSVFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const csv = e.target.result;
+                        const lines = csv.split('\n').filter(line => line.trim() !== '');
+                        
+                        if (lines.length < 2) {
+                            reject(new Error('Arquivo CSV deve ter pelo menos um cabeÃ§alho e uma linha de dados'));
+                            return;
+                        }
+                        
+                        // Encontrar a linha de cabeÃ§alho (deve conter 'id,time,event...')
+                        let headerLineIndex = -1;
+                        let headers = [];
+                        
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (line.includes('id,time,event,device_id')) {
+                                headerLineIndex = i;
+                                headers = line.split(',').map(h => h.trim());
+                                break;
+                            }
+                        }
+                        
+                        if (headerLineIndex === -1) {
+                            reject(new Error('CabeÃ§alho CSV nÃ£o encontrado. Esperado: id,time,event,device_id,...'));
+                            return;
+                        }
+                        
+                        console.log('CabeÃ§alhos encontrados:', headers);
+                        
+                        // Processar dados
+                        const dataLines = lines.slice(headerLineIndex + 1);
+                        const processedData = [];
+                        const errors = [];
+                        
+                        for (let i = 0; i < dataLines.length; i++) {
+                            const line = dataLines[i].trim();
+                            if (!line) continue;
+                            
+                            const values = line.split(',').map(v => v.trim());
+                            
+                            if (values.length !== headers.length) {
+                                errors.push(`Linha ${i + headerLineIndex + 2}: NÃºmero de campos inconsistente (${values.length} vs ${headers.length})`);
+                                continue;
+                            }
+                            
+                            // Criar objeto com os dados
+                            const record = {};
+                            headers.forEach((header, index) => {
+                                record[header] = values[index];
+                            });
+                            
+                            // Validar campos obrigatÃ³rios
+                            const requiredFields = ['id', 'time', 'event', 'device_id'];
+                            let hasError = false;
+                            
+                            for (const field of requiredFields) {
+                                if (!record[field] || record[field] === '') {
+                                    errors.push(`Linha ${i + headerLineIndex + 2}: Campo obrigatÃ³rio '${field}' estÃ¡ vazio`);
+                                    hasError = true;
+                                }
+                            }
+                            
+                            // Validar tipos
+                            if (!hasError) {
+                                if (isNaN(parseInt(record.time))) {
+                                    errors.push(`Linha ${i + headerLineIndex + 2}: Campo 'time' deve ser um timestamp vÃ¡lido`);
+                                    hasError = true;
+                                }
+                                
+                                if (isNaN(parseInt(record.event))) {
+                                    errors.push(`Linha ${i + headerLineIndex + 2}: Campo 'event' deve ser um nÃºmero`);
+                                    hasError = true;
+                                }
+                            }
+                            
+                            if (!hasError) {
+                                processedData.push(record);
+                            }
+                        }
+                        
+                        resolve({
+                            headers,
+                            data: processedData,
+                            errors,
+                            totalLines: dataLines.length
+                        });
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error('Erro ao ler o arquivo'));
+                reader.readAsText(file);
+            });
+        }
+        
+        // Mostrar preview dos dados
+        function showPreview(csvResult) {
+            updateStep(2);
+            
+            // Esconder upload e mostrar preview
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            // Atualizar estatÃ­sticas
+            document.getElementById('totalRecords').textContent = csvResult.totalLines;
+            document.getElementById('validRecords').textContent = csvResult.data.length;
+            document.getElementById('invalidRecords').textContent = csvResult.errors.length;
+            
+            // Atualizar contador de registros na tabela
+            document.getElementById('recordsCount').textContent = `${csvResult.data.length} registros`;
+            
+            // Aviso para muitos registros
+            if (csvResult.data.length > 1000) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4';
+                warningDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="ph ph-warning text-yellow-600 mr-2"></i>
+                        <span class="text-sm text-yellow-800">
+                            <strong>AtenÃ§Ã£o:</strong> Arquivo com ${csvResult.data.length} registros. 
+                            A visualizaÃ§Ã£o pode ser lenta. Considere dividir o arquivo em partes menores.
+                        </span>
+                    </div>
+                `;
+                document.getElementById('previewSection').insertBefore(warningDiv, document.querySelector('.border.border-gray-200'));
+            }
+            
+            // Mostrar tabela de preview
+            const previewHeaders = document.getElementById('previewHeaders');
+            const previewBody = document.getElementById('previewBody');
+            
+            // Limpar conteÃºdo anterior
+            previewHeaders.innerHTML = '';
+            previewBody.innerHTML = '';
+            
+            // Remover avisos anteriores
+            const existingWarning = document.querySelector('.bg-yellow-50.border.border-yellow-200');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+            
+            // Adicionar cabeÃ§alhos
+            csvResult.headers.forEach(header => {
+                const th = document.createElement('th');
+                th.className = 'px-3 py-2 text-left font-medium text-gray-700';
+                th.textContent = header;
+                previewHeaders.appendChild(th);
+            });
+            
+            // Adicionar todos os dados
+            const previewData = csvResult.data;
+            previewData.forEach((record, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                
+                csvResult.headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.className = 'px-3 py-2 text-gray-900';
+                    
+                    // FormataÃ§Ã£o especial para timestamp
+                    if (header === 'time') {
+                        const timestamp = parseInt(record[header]);
+                        const date = new Date(timestamp * 1000);
+                        td.textContent = `${record[header]} (${date.toLocaleString()})`;
+                    } else {
+                        td.textContent = record[header] || '';
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                previewBody.appendChild(tr);
+            });
+            
+            // Mostrar erros se houver
+            const errorsSection = document.getElementById('errorsSection');
+            const errorsList = document.getElementById('errorsList');
+            
+            if (csvResult.errors.length > 0) {
+                errorsSection.classList.remove('hidden');
+                errorsList.innerHTML = '';
+                
+                csvResult.errors.forEach(error => {
+                    const div = document.createElement('div');
+                    div.textContent = error;
+                    errorsList.appendChild(div);
+                });
+            } else {
+                errorsSection.classList.add('hidden');
+            }
+            
+            // Armazenar dados para importaÃ§Ã£o
+            validRecords = csvResult.data;
+            invalidRecords = csvResult.errors;
+        }
+        
+        // Importar dados para o banco
+        async function importDataToDB() {
+            updateStep(3);
+            
+            // Esconder preview e mostrar importaÃ§Ã£o
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('importSection').classList.remove('hidden');
+            
+            const progressBar = document.getElementById('importProgress');
+            const statusText = document.getElementById('importStatus');
+            const importResult = document.getElementById('importResult');
+            const closeSection = document.getElementById('closeSection');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            const batchSize = 50; // Processar em lotes de 50
+            
+            try {
+                statusText.textContent = `Importando ${validRecords.length} registros...`;
+                
+                // Processar em lotes
+                for (let i = 0; i < validRecords.length; i += batchSize) {
+                    const batch = validRecords.slice(i, i + batchSize);
+                    
+                    // Preparar dados para inserÃ§Ã£o
+                    const insertData = batch.map(record => ({
+                        id: parseInt(record.id) || null,
+                        time: parseInt(record.time),
+                        event: parseInt(record.event),
+                        device_id: parseInt(record.device_id),
+                        identifier_id: parseInt(record.identifier_id) || 0,
+                        user_id: parseInt(record.user_id) || 0,
+                        portal_id: parseInt(record.portal_id) || 0,
+                        identification_rule_id: parseInt(record.identification_rule_id) || 0,
+                        card_value: record.card_value || '0',
+                        qrcode_value: record.qrcode_value || null,
+                        pin_value: record.pin_value || null,
+                        confidence: record.confidence || null,
+                        mask: record.mask || null,
+                        log_type_id: parseInt(record.log_type_id) || 0,
+                        // Converter timestamp unix para timestamp with timezone
+                        inserted_at: new Date(parseInt(record.time) * 1000).toISOString()
+                    }));
+                    
+                    try {
+                        const { error } = await supabaseClient
+                            .from('logs')
+                            .insert(insertData);
+                        
+                        if (error) {
+                            console.error('Erro no lote:', error);
+                            errorCount += batch.length;
+                        } else {
+                            successCount += batch.length;
+                        }
+                    } catch (batchError) {
+                        console.error('Erro ao processar lote:', batchError);
+                        errorCount += batch.length;
+                    }
+                    
+                    // Atualizar progresso
+                    const progress = Math.min(100, ((i + batchSize) / validRecords.length) * 100);
+                    progressBar.style.width = `${progress}%`;
+                    statusText.textContent = `Processando... ${Math.min(i + batchSize, validRecords.length)} de ${validRecords.length}`;
+                    
+                    // Pequena pausa entre lotes
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Mostrar resultado
+                progressBar.style.width = '100%';
+                statusText.textContent = 'ImportaÃ§Ã£o concluÃ­da!';
+                
+                document.getElementById('successCount').textContent = successCount;
+                document.getElementById('errorCount').textContent = errorCount;
+                document.getElementById('totalProcessed').textContent = validRecords.length;
+                
+                importResult.classList.remove('hidden');
+                closeSection.classList.remove('hidden');
+                
+                if (successCount > 0) {
+                    showToast(`${successCount} logs importados com sucesso!`);
+                }
+                
+                if (errorCount > 0) {
+                    showToast(`${errorCount} logs falharam na importaÃ§Ã£o`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erro na importaÃ§Ã£o:', error);
+                statusText.textContent = 'Erro na importaÃ§Ã£o!';
+                showToast('Erro ao importar logs: ' + error.message, 'error');
+                closeSection.classList.remove('hidden');
+            }
+        }
+        
+        // Adicionar evento ao botÃ£o quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnCarregar = document.getElementById('btnCarregarUsuarios');
+            if (btnCarregar) {
+                btnCarregar.addEventListener('click', carregarUsuariosClick);
+            }
+
+            const btnAdicionar = document.getElementById('btnAdicionarGrupo');
+            if (btnAdicionar) {
+                btnAdicionar.addEventListener('click', adicionarTodosAoGrupo);
+            }
+            
+            // BotÃ£o de importar logs
+            const btnImportarLogs = document.getElementById('btnImportarLogs');
+            if (btnImportarLogs) {
+                btnImportarLogs.addEventListener('click', openImportLogsModal);
+            }
+            
+            // Input de arquivo CSV
+            const csvFileInput = document.getElementById('csvFileInput');
+            if (csvFileInput) {
+                csvFileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Mostrar informaÃ§Ãµes do arquivo
+                        document.getElementById('fileName').textContent = file.name;
+                        document.getElementById('fileSize').textContent = `${(file.size / 1024).toFixed(2)} KB`;
+                        document.getElementById('fileInfo').classList.remove('hidden');
+                    }
+                });
+            }
+            
+            // BotÃ£o processar arquivo
+            const btnProcessFile = document.getElementById('btnProcessFile');
+            if (btnProcessFile) {
+                btnProcessFile.addEventListener('click', async function() {
+                    const file = csvFileInput.files[0];
+                    if (!file) return;
+                    
+                    const spinner = this.querySelector('.animate-spin');
+                    const buttonText = this.querySelector('span');
+                    
+                    try {
+                        this.disabled = true;
+                        spinner.classList.remove('hidden');
+                        buttonText.textContent = 'Processando...';
+                        
+                        const csvResult = await processCSVFile(file);
+                        showPreview(csvResult);
+                        
+                    } catch (error) {
+                        console.error('Erro ao processar arquivo:', error);
+                        showToast('Erro ao processar arquivo: ' + error.message, 'error');
+                    } finally {
+                        this.disabled = false;
+                        spinner.classList.add('hidden');
+                        buttonText.textContent = 'Processar Arquivo';
+                    }
+                });
+            }
+            
+            // BotÃ£o importar dados
+            const btnImportData = document.getElementById('btnImportData');
+            if (btnImportData) {
+                btnImportData.addEventListener('click', async function() {
+                    if (validRecords.length === 0) {
+                        showToast('Nenhum registro vÃ¡lido para importar', 'error');
+                        return;
+                    }
+                    
+                    const spinner = this.querySelector('.animate-spin');
+                    const buttonText = this.querySelector('span');
+                    
+                    try {
+                        this.disabled = true;
+                        spinner.classList.remove('hidden');
+                        buttonText.textContent = 'Importando...';
+                        
+                        await importDataToDB();
+                        
+                    } catch (error) {
+                        console.error('Erro na importaÃ§Ã£o:', error);
+                        showToast('Erro na importaÃ§Ã£o: ' + error.message, 'error');
+                    } finally {
+                        this.disabled = false;
+                        spinner.classList.add('hidden');
+                        buttonText.textContent = 'Importar Dados';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

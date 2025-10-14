@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistema Escolar</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sistema Escolar">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="apple-touch-icon" href="../icon-192x192.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            width: 38px;
+            height: 38px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .back-btn i { width: 20px; height: 20px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .stat-card .icon {
+            width: 38px;
+            height: 38px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+        }
+
+        .stat-number { font-size: 1.6rem; font-weight: 700; color: #1e293b; }
+        .stat-label { font-size: 0.85rem; color: #64748b; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            overflow: hidden; /* evita overflow do canvas em redimensionamentos */
+        }
+
+        .chart-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+        .chart-canvas { width: 100%; height: 280px; display: block; }
+        .chart-card.chart-square .chart-canvas { aspect-ratio: 1 / 1; height: auto; }
+
+        .recent-students {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .recent-students h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        /* Lista de alunos recentes em grid compacto com fotos */
+        .student-list { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 10px; 
+        }
+        .student-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 12px; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 12px; 
+            background: #ffffff; 
+        }
+        .student-avatar { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%; 
+            background: #3b82f6; 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 700; 
+            font-size: 1rem; 
+            border: 2px solid #e2e8f0; 
+            object-fit: cover; 
+        }
+        .student-name { font-size: 0.9rem; font-weight: 600; color: #1e293b; text-align: center; }
+        .student-details { font-size: 0.75rem; color: #64748b; text-align: center; }
+
+        .loading { display: flex; align-items: center; gap: 8px; color: #64748b; }
+        .spinner { width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: row; gap: 8px; padding: 12px 16px; align-items: center; }
+            .logo img { height: 32px; flex-shrink: 0; }
+            .user-avatar { width: 32px; height: 32px; font-size: 14px; }
+            .stat-number { font-size: 1.3rem; }
+            .stat-label { font-size: 0.8rem; }
+            .chart-canvas { height: 200px; }
+            .chart-card.chart-square .chart-canvas { aspect-ratio: 1 / 1; height: auto; }
+            /* Garantir duas colunas para cards de métricas e alunos recentes no mobile */
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 12px; }
+            .stat-card .icon { width: 32px; height: 32px; }
+            .stat-number { font-size: 1.2rem; }
+            .stat-label { font-size: 0.75rem; }
+            .student-avatar { width: 44px; height: 44px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="../img/logo-horizonal.png" alt="Escola Log">
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="menu.html" class="back-btn" aria-label="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="stat-number" id="totalStudents">-</div>
+                <div class="stat-label">Total de Alunos</div>
+            </div>
+
+            <div class="stat-card male">
+                <div class="icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="stat-number" id="maleStudents">-</div>
+                <div class="stat-label">Masculinos</div>
+            </div>
+
+            <div class="stat-card female">
+                <div class="icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="stat-number" id="femaleStudents">-</div>
+                <div class="stat-label">Femininos</div>
+            </div>
+
+            <div class="stat-card schools">
+                <div class="icon">
+                    <i data-lucide="building"></i>
+                </div>
+                <div class="stat-number" id="totalSchools">-</div>
+                <div class="stat-label">Escolas</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="calendar"></i>
+                </div>
+                <div class="stat-number" id="newStudents30">-</div>
+                <div class="stat-label">Novos (30 dias)</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="layers"></i>
+                </div>
+                <div class="stat-number" id="uniqueSeries">-</div>
+                <div class="stat-label">Séries Únicas</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card chart-square">
+                <h3 class="chart-title">Distribuição por Gênero</h3>
+                <div id="genderChart" class="chart-canvas"></div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">Alunos por Série</h3>
+                <div id="seriesChart" class="chart-canvas"></div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">Alunos por Turma</h3>
+                <div id="classChart" class="chart-canvas"></div>
+            </div>
+
+            <div class="chart-card chart-square">
+                <h3 class="chart-title">Distribuição por Bairro</h3>
+                <div id="neighborhoodChart" class="chart-canvas"></div>
+            </div>
+        </div>
+
+        <div class="recent-students">
+            <h3>
+                <i data-lucide="clock"></i>
+                Alunos Recentes
+            </h3>
+            <div class="student-list" id="recentStudents">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Carregando alunos...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração Supabase (busca via Lambda com fallback)
+        let supabase = null;
+
+        async function getSupabaseKeys() {
+            try {
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET', headers: { 'Content-Type': 'application/json' }, mode: 'cors'
+                });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                }
+                throw new Error('Formato inválido');
+            } catch (error) {
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            supabase = window.supabase.createClient(keys.url, keys.key);
+        }
+
+        let currentUser = null;
+        let turmas = [];
+        let turmaIds = [];
+        let dashboardData = {
+            totalStudents: 0,
+            maleStudents: 0,
+            femaleStudents: 0,
+            totalSchools: 0,
+            genderData: [],
+            seriesData: [],
+            classData: [],
+            neighborhoodData: [],
+            recentStudents: []
+        };
+
+        // Verificar autenticação (alinha com menu: usa whatsapp_user)
+        function checkAuth() {
+            try {
+                currentUser = JSON.parse(localStorage.getItem('whatsapp_user')) 
+                    || JSON.parse(localStorage.getItem('currentUser'));
+
+                if (!currentUser) {
+                    window.location.href = '../login.html';
+                    return false;
+                }
+
+                // Checar perfil do usuário
+                if (currentUser.tipo_usuario && currentUser.tipo_usuario !== 'professor') {
+                    // Redireciona por tipo (mantém consistência com menu)
+                    switch(currentUser.tipo_usuario) {
+                        case 'admin':
+                            window.location.href = '../admin/dashboard.html';
+                            break;
+                        case 'diretor':
+                            window.location.href = '../diretor/menu.html';
+                            break;
+                        case 'responsavel':
+                            window.location.href = '../responsavel/menu.html';
+                            break;
+                        default:
+                            window.location.href = '../login.html';
+                    }
+                    return false;
+                }
+
+                // Atualizar avatar do usuário
+                const userAvatar = document.getElementById('userAvatar');
+                const nome = currentUser.nome || currentUser.name || '';
+                if (userAvatar && nome) {
+                    userAvatar.textContent = nome.charAt(0).toUpperCase();
+                }
+
+                return true;
+            } catch (e) {
+                console.error('Erro na verificação de autenticação do dashboard:', e);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        // Carregar dados do dashboard
+        async function loadDashboardData() {
+            try {
+                // Carregar turmas com permissão para este professor
+                await loadProfessorTurmas();
+                // Carregar estatísticas básicas
+                await loadBasicStats();
+                
+                // Carregar dados para gráficos
+                await loadChartData();
+                
+                // Carregar alunos recentes
+                await loadRecentStudents();
+                
+                // Renderizar gráficos
+                renderCharts();
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do dashboard:', error);
+            }
+        }
+
+        // Carregar turmas permitidas do professor
+        async function loadProfessorTurmas() {
+            try {
+                if (!currentUser || !currentUser.id) return;
+
+                // Turmas onde o professor é responsável
+                const { data: turmasResp } = await supabase
+                    .from('turmas')
+                    .select('id, nome, serie_id')
+                    .eq('professor_responsavel_id', currentUser.id)
+                    .eq('soft_delete', false);
+
+                // Permissões explícitas de turmas
+                const { data: perms } = await supabase
+                    .from('permissoes')
+                    .select('referencia_id')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'turma')
+                    .eq('ativo', true);
+
+                const permTurmaIds = (perms || []).map(p => p.referencia_id).filter(Boolean);
+                let turmasPerm = [];
+                if (permTurmaIds.length > 0) {
+                    const { data: turmasData } = await supabase
+                        .from('turmas')
+                        .select('id, nome, serie_id')
+                        .in('id', permTurmaIds)
+                        .eq('soft_delete', false);
+                    turmasPerm = turmasData || [];
+                }
+
+                const todas = [...(turmasResp || []), ...turmasPerm];
+                const unicas = [];
+                const seen = new Set();
+                for (const t of todas) { if (!seen.has(t.id)) { seen.add(t.id); unicas.push(t); } }
+                turmas = unicas;
+                turmaIds = unicas.map(t => t.id);
+            } catch (_) {
+                turmas = [];
+                turmaIds = [];
+            }
+        }
+
+        // Carregar estatísticas básicas
+        async function loadBasicStats() {
+            // Total de alunos
+            const { data: students, error: studentsError } = await supabase
+                .from('alunos')
+                .select('id, sexo')
+                .is('soft_delete', false)
+                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+
+            if (studentsError) {
+                console.error('Erro Supabase (alunos básicos):', studentsError);
+            }
+
+            if (!studentsError && students) {
+                dashboardData.totalStudents = students.length;
+                dashboardData.maleStudents = students.filter(s => s.sexo === 'M').length;
+                dashboardData.femaleStudents = students.filter(s => s.sexo === 'F').length;
+                // created_at não existe na tabela alunos — manter métrica em 0
+                dashboardData.newStudents30 = 0;
+            }
+
+            // Total de escolas
+            const { data: schools, error: schoolsError } = await supabase
+                .from('escolas')
+                .select('id')
+                .is('soft_delete', false);
+            if (schoolsError) {
+                console.error('Erro Supabase (escolas):', schoolsError);
+            }
+
+            if (!schoolsError && schools) {
+                dashboardData.totalSchools = schools.length;
+            }
+
+            // Atualizar UI
+            document.getElementById('totalStudents').textContent = dashboardData.totalStudents;
+            document.getElementById('maleStudents').textContent = dashboardData.maleStudents;
+            document.getElementById('femaleStudents').textContent = dashboardData.femaleStudents;
+            document.getElementById('totalSchools').textContent = dashboardData.totalSchools;
+            document.getElementById('newStudents30').textContent = dashboardData.newStudents30 ?? 0;
+        }
+
+        // Carregar dados para gráficos
+        async function loadChartData() {
+            // Dados por série
+            const { data: seriesData, error: seriesError } = await supabase
+                .from('alunos')
+                .select(`
+                    id,
+                    series:serie_id (
+                        nome
+                    )
+                `)
+                .is('soft_delete', false)
+                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+            if (seriesError) {
+                console.error('Erro Supabase (séries):', seriesError);
+            }
+
+            if (!seriesError && seriesData) {
+                const seriesCount = {};
+                seriesData.forEach(student => {
+                    const serieName = student.series?.nome || 'Sem série';
+                    seriesCount[serieName] = (seriesCount[serieName] || 0) + 1;
+                });
+                const sorted = Object.entries(seriesCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
+                dashboardData.seriesData = sorted;
+                dashboardData.uniqueSeries = Object.keys(seriesCount).length;
+            }
+
+            // Dados por turma
+            const { data: classData, error: classError } = await supabase
+                .from('alunos')
+                .select(`
+                    id,
+                    turmas:turma_id (
+                        nome
+                    )
+                `)
+                .is('soft_delete', false)
+                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+            if (classError) {
+                console.error('Erro Supabase (turmas):', classError);
+            }
+
+            if (!classError && classData) {
+                const classCount = {};
+                classData.forEach(student => {
+                    const className = student.turmas?.nome || 'Sem turma';
+                    classCount[className] = (classCount[className] || 0) + 1;
+                });
+                dashboardData.classData = Object.entries(classCount).sort((a,b)=>b[1]-a[1]).slice(0, 8);
+            }
+
+            // Dados por bairro
+            const { data: neighborhoodData, error: neighborhoodError } = await supabase
+                .from('alunos')
+                .select('bairro')
+                .eq('soft_delete', false)
+                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+            if (neighborhoodError) {
+                console.error('Erro Supabase (bairros):', neighborhoodError);
+            }
+
+            if (!neighborhoodError && neighborhoodData) {
+                const neighborhoodCount = {};
+                neighborhoodData.forEach(student => {
+                    const neighborhood = student.bairro || 'Não informado';
+                    neighborhoodCount[neighborhood] = (neighborhoodCount[neighborhood] || 0) + 1;
+                });
+                // Pegar apenas os 5 bairros com mais alunos
+                const sortedNeighborhoods = Object.entries(neighborhoodCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                dashboardData.neighborhoodData = sortedNeighborhoods;
+            }
+        }
+
+        // Carregar alunos recentes
+        async function loadRecentStudents() {
+            const { data: students, error } = await supabase
+                .from('alunos')
+                .select(`
+                    id,
+                    nome,
+                    matricula,
+                    foto_url,
+                    turmas:turma_id (
+                        nome
+                    ),
+                    series:serie_id (
+                        nome
+                    )
+                `)
+                .is('soft_delete', false)
+                .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                .order('id', { ascending: false })
+                .limit(6);
+            if (error) {
+                console.error('Erro Supabase (alunos recentes):', error);
+            }
+
+            if (!error && students) {
+                dashboardData.recentStudents = students;
+                renderRecentStudents();
+            }
+        }
+
+        // Renderizar lista de alunos recentes
+        function renderRecentStudents() {
+            const container = document.getElementById('recentStudents');
+            
+            if (dashboardData.recentStudents.length === 0) {
+                container.innerHTML = '<div class="loading">Nenhum aluno encontrado</div>';
+                return;
+            }
+
+            container.innerHTML = dashboardData.recentStudents.map(student => `
+                <div class="student-item">
+                    ${student.foto_url 
+                        ? `<img src="${student.foto_url}" alt="${student.nome}" class="student-avatar">`
+                        : `<div class="student-avatar">${student.nome.charAt(0).toUpperCase()}</div>`
+                    }
+                    <div class="student-info">
+                        <div class="student-name">${student.nome}</div>
+                        <div class="student-details">
+                            ${student.turmas?.nome || 'Sem turma'} • ${student.series?.nome || 'Sem série'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Renderizar gráficos com ApexCharts
+        function renderCharts() {
+            // Gênero (donut)
+            const genderOptions = {
+                chart: { type: 'donut', height: 280 },
+                series: [dashboardData.maleStudents || 0, dashboardData.femaleStudents || 0],
+                labels: ['Masculinos', 'Femininos'],
+                colors: ['#4FACFE', '#FA709A'],
+                legend: { position: 'bottom' },
+                dataLabels: { enabled: true },
+                responsive: [{ breakpoint: 640, options: { chart: { height: 200 }, legend: { position: 'bottom' } } }]
+            };
+            const genderChart = new ApexCharts(document.querySelector('#genderChart'), genderOptions);
+            genderChart.render();
+
+            // Séries (bar)
+            const seriesLabels = (dashboardData.seriesData || []).map(i => i[0]);
+            const seriesValues = (dashboardData.seriesData || []).map(i => i[1]);
+            const seriesOptions = {
+                chart: { type: 'bar', height: 280 },
+                series: [{ name: 'Alunos', data: seriesValues }],
+                xaxis: { categories: seriesLabels },
+                colors: ['#667EEA'],
+                plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
+                dataLabels: { enabled: false },
+                legend: { show: false },
+                responsive: [{ breakpoint: 640, options: { chart: { height: 200 } } }]
+            };
+            const seriesChart = new ApexCharts(document.querySelector('#seriesChart'), seriesOptions);
+            seriesChart.render();
+
+            // Turmas (bar)
+            const classLabels = (dashboardData.classData || []).map(i => i[0]);
+            const classValues = (dashboardData.classData || []).map(i => i[1]);
+            const classOptions = {
+                chart: { type: 'bar', height: 280 },
+                series: [{ name: 'Alunos', data: classValues }],
+                xaxis: { categories: classLabels },
+                colors: ['#A8EDEA'],
+                plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
+                dataLabels: { enabled: false },
+                legend: { show: false },
+                responsive: [{ breakpoint: 640, options: { chart: { height: 200 } } }]
+            };
+            const classChart = new ApexCharts(document.querySelector('#classChart'), classOptions);
+            classChart.render();
+
+            // Bairros (pie)
+            const neighLabels = (dashboardData.neighborhoodData || []).map(i => i[0]);
+            const neighValues = (dashboardData.neighborhoodData || []).map(i => i[1]);
+            const neighOptions = {
+                chart: { type: 'pie', height: 280 },
+                series: neighValues,
+                labels: neighLabels,
+                colors: ['#667EEA','#764BA2','#4FACFE','#FA709A','#A8EDEA'],
+                legend: { position: 'bottom' },
+                dataLabels: { enabled: true },
+                responsive: [{ breakpoint: 640, options: { chart: { height: 200 }, legend: { position: 'bottom' } } }]
+            };
+            const neighborhoodChart = new ApexCharts(document.querySelector('#neighborhoodChart'), neighOptions);
+            neighborhoodChart.render();
+        }
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Inicializar ícones Lucide
+                lucide.createIcons();
+
+                // Inicializar Supabase
+                await initializeSupabase();
+
+                // Verificar autenticação e carregar dados
+                if (checkAuth()) {
+                    await loadDashboardData();
+                }
+            } catch (e) {
+                console.error('Erro na inicialização do dashboard:', e);
+            }
+        });
+    </script>
+</body>
+</html>

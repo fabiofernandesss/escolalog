@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Menu Professor - Escola Log</title>
+    <meta name="description" content="Menu principal do professor - Escola Log - Sistema de gestão escolar">
+    <meta name="theme-color" content="#10b981">
+    <meta name="msapplication-TileColor" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/professor/menu.html">
+    <meta property="og:title" content="Menu Professor - Escola Log">
+    <meta property="og:description" content="Menu principal do professor - Escola Log - Sistema de gestão escolar">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/professor/menu.html">
+    <meta name="twitter:title" content="Menu Professor - Escola Log">
+    <meta name="twitter:description" content="Menu principal do professor - Escola Log - Sistema de gestão escolar">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .user-details h3 {
+            font-size: 0.9rem;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        .user-details p {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--card-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border-color: var(--card-color);
+        }
+
+        .menu-card:hover::before {
+            opacity: 1;
+        }
+
+        .menu-card.dashboard { --card-color: #8b5cf6; }
+        .menu-card.alunos { --card-color: #10b981; }
+        .menu-card.frequencia { --card-color: #f59e0b; }
+        .menu-card.chamada { --card-color: #3b82f6; }
+        .menu-card.cameras { --card-color: #ef4444; }
+        .menu-card.perfil { --card-color: #6b7280; }
+
+        .menu-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px;
+            background: var(--card-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .menu-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+            stroke-width: 2;
+        }
+
+        .menu-card:hover .menu-icon {
+            transform: scale(1.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .menu-description {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Toast "Em breve" */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            background: rgba(17, 24, 39, 0.9);
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .logo img {
+                height: 40px;
+            }
+
+            .user-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .user-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
+
+            .user-details h3 {
+                font-size: 0.8rem;
+            }
+
+            .user-details p {
+                font-size: 0.7rem;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                margin-top: 15px;
+            }
+
+            .menu-card {
+                padding: 15px 12px;
+            }
+
+            .menu-icon {
+                width: 35px;
+                height: 35px;
+                margin-bottom: 8px;
+            }
+
+            .menu-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .menu-title {
+                font-size: 1rem;
+                margin-bottom: 5px;
+            }
+
+            .menu-description {
+                font-size: 0.75rem;
+                line-height: 1.2;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            .logo img {
+                height: 35px;
+            }
+
+            .user-info {
+                padding: 6px;
+            }
+
+            .user-avatar {
+                width: 20px;
+                height: 20px;
+                font-size: 0.6rem;
+            }
+
+            .user-details h3 {
+                font-size: 0.7rem;
+            }
+
+            .user-details p {
+                font-size: 0.6rem;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .menu-card {
+                padding: 12px 8px;
+            }
+
+            .menu-icon {
+                width: 30px;
+                height: 30px;
+                margin-bottom: 6px;
+            }
+
+            .menu-icon svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .menu-title {
+                font-size: 0.9rem;
+                margin-bottom: 4px;
+            }
+
+            .menu-description {
+                font-size: 0.7rem;
+                line-height: 1.1;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading .menu-icon {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 36px;
+            }
+
+            .user-info {
+                justify-content: center;
+            }
+
+            .user-name {
+                font-size: 0.85rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .menu-card {
+                padding: 16px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .logo img {
+                height: 36px;
+            }
+
+            .user-info {
+                padding: 8px 12px;
+            }
+
+            .user-details h3 {
+                font-size: 0.85rem;
+            }
+
+            .user-details p {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            }
+
+            .menu-card,
+            .header {
+                background: rgba(30, 41, 59, 0.95);
+                color: #f1f5f9;
+            }
+
+            .user-details h3,
+            .menu-title {
+                color: #f1f5f9;
+            }
+
+            .user-details p,
+            .menu-description {
+                color: #94a3b8;
+            }
+
+            .user-info {
+                background: rgba(16, 185, 129, 0.2);
+                border-color: rgba(16, 185, 129, 0.3);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="../img/logo-horizonal.png" alt="Escola Log">
+                </div>
+            </div>
+            <div class="header-right">
+            </div>
+        </header>
+
+        <!-- Menu Principal -->
+        <div class="menu-grid">
+            <!-- Dashboard -->
+            <div class="menu-card dashboard" onclick="navigateTo('dashboard.html')">
+                <div class="menu-icon">
+                    <i data-lucide="bar-chart-3"></i>
+                </div>
+                <h2 class="menu-title">Dashboard</h2>
+                <p class="menu-description">Métricas e estatísticas dos alunos</p>
+            </div>
+
+            <!-- Alunos -->
+            <div class="menu-card alunos" onclick="navigateTo('alunos.html')">
+                <div class="menu-icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <h2 class="menu-title">Alunos</h2>
+                <p class="menu-description">Visualizar informações dos alunos das suas turmas</p>
+            </div>
+
+
+            <!-- Chamada -->
+            <div class="menu-card chamada" onclick="navigateTo('chamada.html')">
+                <div class="menu-icon">
+                    <i data-lucide="clipboard-check"></i>
+                </div>
+                <h2 class="menu-title">Chamada</h2>
+                <p class="menu-description">Fazer chamada e registrar presença dos alunos</p>
+            </div>
+
+            <!-- Frequência com IA (Em breve) -->
+            <div class="menu-card frequencia" onclick="showSoonToast()">
+                <div class="menu-icon">
+                    <i data-lucide="brain"></i>
+                </div>
+                <h2 class="menu-title">Frequência com IA</h2>
+                <p class="menu-description">Em breve: presença automática via reconhecimento</p>
+            </div>
+
+            <!-- Câmeras -->
+            <div class="menu-card cameras" onclick="navigateTo('cameras.html')">
+                <div class="menu-icon">
+                    <i data-lucide="video"></i>
+                </div>
+                <h2 class="menu-title">Câmeras</h2>
+                <p class="menu-description">Monitoramento das câmeras das suas turmas</p>
+            </div>
+
+            <!-- Perfil -->
+            <div class="menu-card perfil" onclick="navigateTo('perfil.html')">
+                <div class="menu-icon">
+                    <i data-lucide="user-cog"></i>
+                </div>
+                <h2 class="menu-title">Perfil</h2>
+                <p class="menu-description">Configurações pessoais e dados do usuário</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast: Em breve -->
+    <div id="toastSoon" class="toast" role="status" aria-live="polite" aria-atomic="true">Em breve</div>
+
+    <!-- PWA Scripts -->
+    <script src="../js/pwa.js"></script>
+    
+    <script>
+        // Configuração do Supabase
+        let supabase = null;
+        let currentUser = null;
+        
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Não logar resposta da Lambda
+                
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            
+            console.log('🔧 Inicializando Supabase com:', {
+                url: keys.url,
+                key: keys.key ? 'Configurada' : 'Não configurada',
+                keyType: keys.key?.includes('eyJ') ? 'JWT Token' : 'Unknown'
+            });
+            
+            // Definir variáveis globais
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            
+            // Configurar Supabase
+            supabase = window.supabase.createClient(keys.url, keys.key);
+            
+            console.log('✅ Supabase inicializado com sucesso');
+            console.log('🔍 Cliente Supabase:', {
+                supabaseUrl: supabase.supabaseUrl,
+                supabaseKey: supabase.supabaseKey ? 'Configurada' : 'Não configurada'
+            });
+            
+            return supabase;
+        }
+
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎯 Inicializando menu do professor...');
+            
+            try {
+                // Inicializar Supabase
+                await initializeSupabase();
+                
+                // Inicializar ícones Lucide
+                lucide.createIcons();
+                
+                // Verificar autenticação
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                // Carregar dados do usuário
+                loadUserData();
+                
+                console.log('✅ Menu do professor inicializado com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar menu do professor:', error);
+            }
+        });
+
+        // Toast "Em breve" ao clicar em recursos ainda não disponíveis
+        function showSoonToast() {
+            try {
+                const toast = document.getElementById('toastSoon');
+                if (!toast) return;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
+            } catch (err) {
+                console.error('Erro ao exibir toast:', err);
+            }
+        }
+
+        // Verificar se o usuário está autenticado e é professor
+        function checkAuthentication() {
+            try {
+                // Verificar se há usuário logado via WhatsApp
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', currentUser);
+                console.log('📊 Dados do usuário:', {
+                    nome: currentUser.nome,
+                    tipo_usuario: currentUser.tipo_usuario,
+                    status: currentUser.status,
+                    whatsapp: currentUser.whatsapp
+                });
+                
+                // Verificar se o usuário é professor
+                if (currentUser.tipo_usuario !== 'professor') {
+                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                    
+                    // Redirecionar baseado no tipo de usuário
+                    switch(currentUser.tipo_usuario) {
+                        case 'admin':
+                            window.location.href = '../admin/dashboard.html';
+                            break;
+                        case 'diretor':
+                            window.location.href = '../diretor/menu.html';
+                            break;
+                        case 'responsavel':
+                            window.location.href = '../responsavel/menu.html';
+                            break;
+                        default:
+                            redirectToLogin();
+                    }
+                    return false;
+                }
+                
+                // Verificar status - ser mais flexível
+                if (currentUser.status && currentUser.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', currentUser.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                console.log('✅ Professor autorizado:', currentUser.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+
+        // Carregar dados do usuário na interface
+        function loadUserData() {
+            if (!currentUser) return;
+
+            try {
+                // Atualizar nome do usuário
+                const userName = document.getElementById('userName');
+                if (userName) {
+                    userName.textContent = currentUser.nome || 'Professor';
+                }
+
+                // Atualizar avatar com primeira letra do nome
+                const userAvatar = document.getElementById('userAvatar');
+                if (userAvatar && currentUser.nome) {
+                    userAvatar.textContent = currentUser.nome.charAt(0).toUpperCase();
+                }
+
+                // Se houver foto do usuário, usar ela
+                if (currentUser.foto_url) {
+                    userAvatar.style.backgroundImage = `url(${currentUser.foto_url})`;
+                    userAvatar.style.backgroundSize = 'cover';
+                    userAvatar.style.backgroundPosition = 'center';
+                    userAvatar.textContent = '';
+                }
+
+                console.log('✅ Dados do usuário carregados na interface');
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+            }
+        }
+
+        // Navegar para uma página
+        function navigateTo(page) {
+            try {
+                console.log('🔗 Navegando para:', page);
+                
+                // Adicionar efeito de loading
+                const card = event.currentTarget;
+                if (card) {
+                    card.classList.add('loading');
+                }
+
+                // Simular pequeno delay para UX
+                setTimeout(() => {
+                    window.location.href = page;
+                }, 200);
+                
+            } catch (error) {
+                console.error('Erro ao navegar:', error);
+                alert('Erro ao navegar para a página solicitada');
+            }
+        }
+
+        // Função para redirecionar para login
+        function redirectToLogin() {
+            // Limpar dados de sessão
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('whatsapp_user');
+            sessionStorage.clear();
+            
+            // Redirecionar para login
+            window.location.href = '../login.html';
+        }
+
+        // Detectar se está offline
+        window.addEventListener('online', function() {
+            console.log('🌐 Conexão restaurada');
+        });
+
+        window.addEventListener('offline', function() {
+            console.log('📡 Aplicação funcionando offline');
+        });
+
+        // Prevenir zoom duplo toque em dispositivos móveis
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+    
+    <!-- PWA Status Bar -->
+    <div class="pwa-status-bar"></div>
+</body>
+</html>

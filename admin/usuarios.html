@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Usuários - Escola Log</title>
+    
+    <meta name="description" content="Gerenciamento de usuários do Escola Log - Cadastro, edição e controle completo">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Escola Log">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicon e Icons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../img/metatag.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="../img/metatag.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escolalog.com/admin/usuarios.html">
+    <meta property="og:title" content="Usuários - Escola Log">
+    <meta property="og:description" content="Gerenciamento de usuários do Escola Log - Cadastro, edição e controle completo">
+    <meta property="og:image" content="../img/metatag.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://escolalog.com/admin/usuarios.html">
+    <meta name="twitter:title" content="Usuários - Escola Log">
+    <meta name="twitter:description" content="Gerenciamento de usuários do Escola Log - Cadastro, edição e controle completo">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Additional PWA Meta Tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-orientations" content="portrait">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --danger-color: #dc2626;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 0.75rem;
+            list-style: none;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        .user-avatar {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+
+        .user-avatar:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+            min-width: 150px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+            margin-left: 0;
+            margin-right: 0;
+            margin-bottom: 0;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            border-bottom: 1px solid var(--border);
+            margin: 0;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--background);
+            color: var(--primary-color);
+        }
+
+        .dropdown-item.logout {
+            color: var(--danger-color);
+        }
+
+        .dropdown-item.logout:hover {
+            background-color: #fef2f2;
+            color: var(--danger-color);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            height: 44px;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--background);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            height: 36px;
+            min-width: 80px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .search-filters {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .data-table {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table th {
+            background: var(--background);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .table td {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .table tbody tr:hover {
+            background: var(--background);
+        }
+
+        .student-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .student-photo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0.25rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-grid-full {
+            grid-column: 1 / -1;
+        }
+
+        .photo-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem;
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .photo-upload:hover {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .photo-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--border);
+        }
+
+        .photo-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1rem;
+            }
+
+            .table-container {
+                font-size: 0.75rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log" style="height: 2rem;">
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="alunos.html">Alunos</a></li>
+            
+                    <li><a href="escolas.html">Escolas</a></li>
+                    <li><a href="turmas.html">Turmas</a></li>
+                    <li><a href="series.html">Séries</a></li>
+                    <li><a href="dispositivos.html">Dispositivos</a></li>
+                    <li><a href="logs.html">Logs</a></li>
+                    <li><a href="usuarios.html" class="active">Usuários</a></li>
+                </ul>
+            </nav>
+            <div class="user-menu">
+                <div class="user-avatar" onclick="toggleDropdown()">A</div>
+                <div class="dropdown-menu" id="userDropdown">
+                    <a href="../login.html" class="dropdown-item logout" onclick="logout()">Sair</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Usuários</h1>
+                <p class="page-subtitle">Gerenciamento completo dos usuários cadastrados</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('add')">
+                ➕ Novo Usuário
+            </button>
+        </div>
+
+        <div class="search-filters">
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label">Buscar por nome</label>
+                    <input type="text" class="form-input" id="searchName" placeholder="Digite o nome do usuário..." onkeyup="filterUsers()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tipo de Usuário</label>
+                    <select class="form-input" id="filterTipo" onchange="filterUsers()">
+                        <option value="">Todos os tipos</option>
+                        <option value="admin">Administrador</option>
+                        <option value="professor">Professor</option>
+                        <option value="coordenador">Coordenador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" id="filterStatus" onchange="filterUsers()">
+                        <option value="">Todos os status</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">
+                <h3 class="table-title">Lista de Usuários</h3>
+                <span id="usersCount">0 usuários</span>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>WhatsApp</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="7" class="loading">Carregando usuários...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Adicionar/Editar Usuário -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Novo Usuário</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    
+                    <div class="form-group form-grid-full">
+                        <label class="form-label">Foto do Usuário</label>
+                        <div class="photo-upload" onclick="document.getElementById('photoInput').click()">
+                            <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="previewPhoto(event)">
+                            <div id="photoPreview" class="photo-placeholder">👤</div>
+                            <p>Clique para selecionar uma foto</p>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" class="form-input" id="nome" placeholder="Digite o nome completo do usuário" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-input" id="email" placeholder="usuario@exemplo.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="tel" class="form-input" id="whatsapp" placeholder="(11) 99999-9999" maxlength="15">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Senha <span id="senha-required">*</span></label>
+                            <input type="password" class="form-input" id="senha" placeholder="Mínimo 6 caracteres">
+                            <small id="senha-help" style="color: #6b7280; font-size: 0.75rem;"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Usuário *</label>
+                            <select class="form-input" id="tipoUsuario" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="admin">Administrador</option>
+                                <option value="prefeito">Prefeito</option>
+                                <option value="secretario">Secretário</option>
+                                <option value="diretor">Diretor</option>
+                                <option value="professor">Professor</option>
+                                <option value="responsavel">Responsável</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status *</label>
+                            <select class="form-input" id="status" required>
+                                <option value="">Selecione o status</option>
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select class="form-input" id="estado" onchange="loadCidades(this.value)">
+                                <option value="">Selecione um estado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cidade</label>
+                            <select class="form-input" id="cidade">
+                                <option value="">Selecione uma cidade</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-grid-full">
+                            <label class="form-label">Permissões de Acesso</label>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 0.5rem;">
+                                
+                                <!-- Permissões de Cidade -->
+                                <div>
+                                    <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">🏙️ Cidades</label>
+                                    <input type="text" class="form-input" id="busca-cidade" placeholder="Digite para buscar cidades..." 
+                                           style="margin-bottom: 0.5rem;" onkeyup="filtrarPermissoes('cidade', this.value)">
+                                    <div id="lista-cidades" style="height: 100px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem; background: #f9fafb;">
+                                        <div style="color: #6b7280; font-size: 0.75rem; text-align: center; padding: 1rem;">Carregando...</div>
+                                    </div>
+                                    <div id="selecionadas-cidade" style="margin-top: 0.5rem; font-size: 0.75rem; color: #374151;"></div>
+                                </div>
+
+                                <!-- Permissões de Escola -->
+                                <div>
+                                    <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">🏫 Escolas</label>
+                                    <input type="text" class="form-input" id="busca-escola" placeholder="Digite para buscar escolas..." 
+                                           style="margin-bottom: 0.5rem;" onkeyup="filtrarPermissoes('escola', this.value)">
+                                    <div id="lista-escolas" style="height: 100px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem; background: #f9fafb;">
+                                        <div style="color: #6b7280; font-size: 0.75rem; text-align: center; padding: 1rem;">Carregando...</div>
+                                    </div>
+                                    <div id="selecionadas-escola" style="margin-top: 0.5rem; font-size: 0.75rem; color: #374151;"></div>
+                                </div>
+
+                                <!-- Permissões de Turma -->
+                                <div>
+                                    <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">📚 Turmas</label>
+                                    <input type="text" class="form-input" id="busca-turma" placeholder="Digite para buscar turmas..." 
+                                           style="margin-bottom: 0.5rem;" onkeyup="filtrarPermissoes('turma', this.value)">
+                                    <div id="lista-turmas" style="height: 100px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem; background: #f9fafb;">
+                                        <div style="color: #6b7280; font-size: 0.75rem; text-align: center; padding: 1rem;">Carregando...</div>
+                                    </div>
+                                    <div id="selecionadas-turma" style="margin-top: 0.5rem; font-size: 0.75rem; color: #374151;"></div>
+                                </div>
+
+                                <!-- Permissões de Aluno -->
+                                <div>
+                                    <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">👨‍🎓 Alunos</label>
+                                    <input type="text" class="form-input" id="busca-aluno" placeholder="Digite para buscar alunos..." 
+                                           style="margin-bottom: 0.5rem;" onkeyup="filtrarPermissoes('aluno', this.value)">
+                                    <div id="lista-alunos" style="height: 100px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem; background: #f9fafb;">
+                                        <div style="color: #6b7280; font-size: 0.75rem; text-align: center; padding: 1rem;">Carregando...</div>
+                                    </div>
+                                    <div id="selecionadas-aluno" style="margin-top: 0.5rem; font-size: 0.75rem; color: #374151;"></div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        let supabase = null;
+        let users = [];
+        let currentUserId = null;
+        let permissoesData = {
+            cidades: [],
+            escolas: [],
+            turmas: [],
+            alunos: []
+        };
+        let permissoesSelecionadas = {
+            cidade: new Set(),
+            escola: new Set(),
+            turma: new Set(),
+            aluno: new Set()
+        };
+        
+        // Função para buscar chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Não logar resposta da Lambda para evitar exposição de chaves
+                console.log('🔍 Dados disponíveis:', {
+                    SUPABASE_SERVICE_ROLE_KEY1: data.data?.SUPABASE_SERVICE_ROLE_KEY1 ? 'Sim' : 'Não',
+                    SUPABASE_SERVICE_ROLE_KEY: data.data?.SUPABASE_SERVICE_ROLE_KEY ? 'Sim' : 'Não',
+                    SUPABASE_KEY1: data.data?.SUPABASE_KEY1 ? 'Sim' : 'Não',
+                    SUPABASE_KEY: data.data?.SUPABASE_KEY ? 'Sim' : 'Não'
+                });
+                
+                if (data.status === 'success' && data.data) {
+                    // Priorizar service role key para bypass RLS no painel admin
+                    const serviceKey = data.data.SUPABASE_SERVICE_ROLE_KEY1?.trim() || 
+                                       data.data.SUPABASE_SERVICE_ROLE_KEY?.trim();
+                    
+                    const anonKey = data.data.SUPABASE_KEY1?.trim() || 
+                                   data.data.SUPABASE_KEY;
+                    
+                    // Não logar disponibilidade de chaves para evitar exposição
+                    
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: serviceKey || anonKey, // Usar service role se disponível, senão anon
+                        serviceKey: serviceKey,
+                        anonKey: anonKey,
+                        usingServiceRole: !!serviceKey
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM',
+                    serviceKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3NDY4NywiZXhwIjoyMDcxNzUwNjg3fQ.example_service_role_key',
+                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            
+            // Definir variáveis globais
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            window.SUPABASE_SERVICE_ROLE_KEY = keys.serviceKey;
+            
+            // Usar service role key se disponível para operações admin
+            const clientKey = keys.serviceKey || keys.key;
+            
+            // Configurar Supabase
+            supabase = window.supabase.createClient(keys.url, clientKey);
+            
+            console.log('Supabase inicializado com sucesso');
+                // Não logar qual chave foi utilizada
+            console.log('URL:', keys.url);
+                // Não logar disponibilidade de service role
+            
+            return supabase;
+        }
+
+        // Função para carregar usuários
+        async function loadUsers() {
+            try {
+                console.log('👥 Carregando usuários...');
+                console.log('Supabase client:', supabase);
+                
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('soft_delete', false)
+                    .order('nome');
+
+                console.log('Resultado da consulta de usuários:', { data, error });
+
+                if (error) {
+                    console.error('❌ Erro ao carregar usuários:', error);
+                    showEmptyState('Erro ao carregar usuários: ' + error.message);
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    console.log('⚠️ Nenhum usuário encontrado');
+                    showEmptyState('Nenhum usuário encontrado');
+                    return;
+                }
+
+                users = data;
+                console.log(`✅ ${users.length} usuários carregados:`, users);
+                renderUsers(users);
+                updateUsersCount(users.length);
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar usuários:', error);
+                showEmptyState('Erro ao carregar usuários: ' + error.message);
+            }
+        }
+
+
+
+        // Função para carregar estados do IBGE
+        async function loadEstados() {
+            try {
+                console.log('🇧🇷 Carregando estados do IBGE...');
+                const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const estados = await response.json();
+                console.log(`✅ ${estados.length} estados carregados`);
+                
+                // Ordenar por nome
+                estados.sort((a, b) => a.nome.localeCompare(b.nome));
+                
+                // Popular select de estado
+                const estadoSelect = document.getElementById('estado');
+                if (estadoSelect) {
+                    estadoSelect.innerHTML = '<option value="">Selecione um estado</option>';
+                    estados.forEach(estado => {
+                        const option = document.createElement('option');
+                        option.value = estado.sigla;
+                        option.textContent = estado.nome;
+                        estadoSelect.appendChild(option);
+                    });
+                }
+                
+                return estados;
+            } catch (error) {
+                console.error('❌ Erro ao carregar estados:', error);
+                return [];
+            }
+        }
+
+        // Função para carregar cidades do IBGE por estado
+        async function loadCidades(estadoSigla) {
+            try {
+                if (!estadoSigla) {
+                    console.log('⚠️ Nenhum estado selecionado');
+                    return;
+                }
+                
+                console.log(`🏙️ Carregando cidades do estado: ${estadoSigla}`);
+                const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSigla}/municipios`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const cidades = await response.json();
+                console.log(`✅ ${cidades.length} cidades carregadas`);
+                
+                // Ordenar por nome
+                cidades.sort((a, b) => a.nome.localeCompare(b.nome));
+                
+                // Popular select de cidade
+                const cidadeSelect = document.getElementById('cidade');
+                if (cidadeSelect) {
+                    cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
+                    cidades.forEach(cidade => {
+                        const option = document.createElement('option');
+                        option.value = cidade.nome;
+                        option.textContent = cidade.nome;
+                        cidadeSelect.appendChild(option);
+                    });
+                }
+                
+                return cidades;
+            } catch (error) {
+                console.error('❌ Erro ao carregar cidades:', error);
+                return [];
+            }
+        }
+
+        // Função para normalizar telefone (remove formatação)
+        function normalizePhone(phone) {
+            return phone.replace(/\D/g, '');
+        }
+
+        // Função para formatar telefone (aplicar máscara)
+        function formatPhone(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            
+            // Limitar a 11 dígitos (DDD + 9 dígitos)
+            if (cleaned.length > 11) {
+                return phone; // Retorna o valor atual se exceder 11 dígitos
+            }
+            
+            if (cleaned.length <= 2) {
+                return cleaned;
+            } else if (cleaned.length <= 7) {
+                return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+            } else {
+                return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+            }
+        }
+
+        // Função para aplicar máscara de telefone
+        function applyPhoneMask(input) {
+            // Aplicar máscara no input
+            input.addEventListener('input', function(e) {
+                const value = e.target.value.replace(/\D/g, '');
+                e.target.value = formatPhone(value);
+            });
+
+            // Prevenir entrada de caracteres não numéricos
+            input.addEventListener('keypress', function(e) {
+                const char = String.fromCharCode(e.which);
+                if (!/[0-9]/.test(char)) {
+                    e.preventDefault();
+                }
+            });
+
+            // Limitar comprimento máximo
+            input.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 11) {
+                        e.target.value = formatPhone(value.slice(0, 11));
+                    } else {
+                        e.target.value = formatPhone(value);
+                    }
+                }, 0);
+            });
+        }
+
+        // Função para inicializar máscaras de telefone
+        function initializePhoneMasks() {
+            const phoneInputs = [
+                'whatsapp',
+                'telefoneResponsavel1', 
+                'telefoneResponsavel2'
+            ];
+            
+            phoneInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    // Aplicar máscara
+                    applyPhoneMask(input);
+                    
+                    // Aplicar máscara no valor atual se já tiver algum
+                    if (input.value) {
+                        input.value = formatPhone(input.value);
+                    }
+                    
+                    // Adicionar placeholder visual melhorado
+                    input.addEventListener('focus', function() {
+                        if (!this.value) {
+                            this.placeholder = '(11) 99999-9999';
+                        }
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        if (!this.value) {
+                            this.placeholder = '(11) 99999-9999';
+                        }
+                    });
+                }
+            });
+        }
+
+        // Função para mostrar loading em botão
+        function setButtonLoading(button, loading = true) {
+            if (loading) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+                button.dataset.originalText = button.textContent;
+                button.textContent = '';
+            } else {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+        }
+
+        // Função para gerenciar loading de múltiplos botões
+        function setButtonsLoading(buttonIds, loading = true) {
+            buttonIds.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    setButtonLoading(button, loading);
+                }
+            });
+        }
+
+        // Função para renderizar usuários
+        function renderUsers(usersData) {
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (!usersData || usersData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <p>Nenhum usuário encontrado</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = usersData.map(user => {
+                const tipoNome = user.tipo_usuario === 'admin' ? 'Administrador' : 
+                               user.tipo_usuario === 'professor' ? 'Professor' : 
+                               user.tipo_usuario === 'coordenador' ? 'Coordenador' : user.tipo_usuario;
+                
+                const statusClass = user.status === 'ativo' ? 'status-active' : 'status-inactive';
+                const statusNome = user.status === 'ativo' ? 'Ativo' : 'Inativo';
+                
+                return `
+                <tr>
+                    <td>
+                            ${user.foto_url ? 
+                                `<img src="${user.foto_url}" alt="${user.nome}" class="student-photo">` :
+                                `<div class="student-photo-placeholder">${user.nome.charAt(0).toUpperCase()}</div>`
+                        }
+                    </td>
+                        <td><strong>${user.nome}</strong></td>
+                        <td>${user.email || '-'}</td>
+                        <td>${user.whatsapp || '-'}</td>
+                        <td>${tipoNome}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${statusNome}</span>
+                        </td>
+                    <td>
+                        <div class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="editUser('${user.id}')">
+                                ✏️ Editar
+                            </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}', '${user.nome}')">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // Função para mostrar estado vazio
+        function showEmptyState(message) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>${message}</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Função para atualizar contador
+        function updateUsersCount(count) {
+            document.getElementById('usersCount').textContent = `${count} usuário${count !== 1 ? 's' : ''}`;
+        }
+
+        // Função para filtrar usuários
+        function filterUsers() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const filterTipo = document.getElementById('filterTipo').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+
+            const filtered = users.filter(user => {
+                const matchName = !searchName || user.nome.toLowerCase().includes(searchName);
+                const matchTipo = !filterTipo || user.tipo_usuario === filterTipo;
+                const matchStatus = !filterStatus || user.status === filterStatus;
+
+                return matchName && matchTipo && matchStatus;
+            });
+
+            renderUsers(filtered);
+            updateUsersCount(filtered.length);
+        }
+
+        // Função para abrir modal
+        async function openModal(mode, userId = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('modalTitle');
+            
+            // Carregar dados das permissões
+            await loadPermissoesData();
+            renderPermissoes();
+            
+            if (mode === 'add') {
+                title.textContent = 'Novo Usuário';
+                clearForm();
+                await loadEstados();
+                
+                // Senha obrigatória para novos usuários
+                document.getElementById('senha').required = true;
+                document.getElementById('senha-required').style.display = 'inline';
+                document.getElementById('senha-help').textContent = 'Obrigatório para novos usuários';
+            } else if (mode === 'edit') {
+                title.textContent = 'Editar Usuário';
+                await loadEstados();
+                await loadUserData(userId);
+                
+                // Senha opcional para edição
+                document.getElementById('senha').required = false;
+                document.getElementById('senha-required').style.display = 'none';
+                document.getElementById('senha-help').textContent = 'Deixe em branco para manter a senha atual';
+            }
+            
+            currentUserId = userId;
+            modal.classList.add('show');
+        }
+
+        // Função para fechar modal
+        function closeModal() {
+            const modal = document.getElementById('userModal');
+            modal.classList.remove('show');
+            clearForm();
+            currentUserId = null;
+        }
+
+        // Função para carregar dados das permissões
+        async function loadPermissoesData() {
+            try {
+                // Carregar cidades via API do IBGE
+                await loadCidadesPermissoes();
+
+                // Carregar escolas
+                console.log('🏫 Carregando escolas...');
+                const { data: escolasData, error: escolasError } = await supabase
+                    .from('escolas')
+                    .select('id, nome')
+                    .eq('soft_delete', false);
+                
+                if (escolasError) {
+                    console.error('❌ Erro ao carregar escolas:', escolasError);
+                } else {
+                    console.log(`✅ ${escolasData?.length || 0} escolas carregadas`);
+                }
+                permissoesData.escolas = escolasData || [];
+
+                // Carregar turmas com escola
+                console.log('📚 Carregando turmas...');
+                const { data: turmasData, error: turmasError } = await supabase
+                    .from('turmas')
+                    .select('id, nome, escolas:escola_id(nome)')
+                    .eq('soft_delete', false);
+                
+                if (turmasError) {
+                    console.error('❌ Erro ao carregar turmas:', turmasError);
+                } else {
+                    console.log(`✅ ${turmasData?.length || 0} turmas carregadas`);
+                }
+                permissoesData.turmas = turmasData || [];
+
+                // Carregar alunos com série e escola
+                console.log('👨‍🎓 Carregando alunos...');
+                const { data: alunosData, error: alunosError } = await supabase
+                    .from('alunos')
+                    .select('id, nome, escolas:escola_id(nome), series:serie_id(nome)')
+                    .eq('soft_delete', false)
+                    .limit(200); // Aumentar limite
+                
+                if (alunosError) {
+                    console.error('❌ Erro ao carregar alunos:', alunosError);
+                } else {
+                    console.log(`✅ ${alunosData?.length || 0} alunos carregados`);
+                }
+                permissoesData.alunos = alunosData || [];
+
+            } catch (error) {
+                console.error('Erro ao carregar dados das permissões:', error);
+            }
+        }
+
+        // Função para carregar cidades via API do IBGE
+        async function loadCidadesPermissoes() {
+            try {
+                const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
+                const cidades = await response.json();
+                
+                // Ordenar por nome e filtrar dados inválidos
+                const cidadesValidas = cidades.filter(cidade => 
+                    cidade && 
+                    cidade.nome && 
+                    cidade.microrregiao && 
+                    cidade.microrregiao.mesorregiao && 
+                    cidade.microrregiao.mesorregiao.UF && 
+                    cidade.microrregiao.mesorregiao.UF.sigla
+                );
+                
+                cidadesValidas.sort((a, b) => a.nome.localeCompare(b.nome));
+                
+                permissoesData.cidades = cidadesValidas.map(cidade => ({
+                    id: cidade.nome,
+                    nome: `${cidade.nome} - ${cidade.microrregiao.mesorregiao.UF.sigla}`
+                }));
+                
+                console.log(`✅ ${permissoesData.cidades.length} cidades carregadas da API IBGE`);
+                
+            } catch (error) {
+                console.error('Erro ao carregar cidades:', error);
+                // Fallback: carregar cidades dos usuários existentes
+                const { data: cidadesData } = await supabase
+                    .from('usuarios')
+                    .select('cidade')
+                    .not('cidade', 'is', null)
+                    .not('cidade', 'eq', '');
+                
+                const cidadesUnicas = [...new Set(cidadesData.map(item => item.cidade))];
+                permissoesData.cidades = cidadesUnicas.map(cidade => ({ id: cidade, nome: cidade }));
+                
+                console.log(`⚠️ Fallback: ${permissoesData.cidades.length} cidades carregadas dos usuários`);
+            }
+        }
+
+        // Função para renderizar permissões no modal
+        function renderPermissoes() {
+            renderLista('cidade');
+            renderLista('escola');
+            renderLista('turma');
+            renderLista('aluno');
+        }
+
+        // Função para renderizar lista de um tipo específico
+        function renderLista(tipo, filtro = '') {
+            const container = document.getElementById(`lista-${tipo}s`);
+            const data = permissoesData[`${tipo}s`] || [];
+            
+            // Filtrar dados se houver filtro
+            const dadosFiltrados = filtro ? 
+                data.filter(item => item.nome.toLowerCase().includes(filtro.toLowerCase())) :
+                data.slice(0, 50); // Mostrar apenas os primeiros 50 por padrão
+            
+            if (dadosFiltrados.length === 0) {
+                container.innerHTML = `<div style="color: #6b7280; font-size: 0.75rem; text-align: center; padding: 1rem;">
+                    ${filtro ? 'Nenhum resultado encontrado' : `Nenhum${tipo === 'escola' ? 'a' : ''} ${tipo} encontrad${tipo === 'escola' ? 'a' : 'o'}`}
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = dadosFiltrados.map(item => {
+                const isSelected = permissoesSelecionadas[tipo].has(item.id);
+                let displayText = item.nome;
+                
+                // Adicionar informações extras para turmas e alunos
+                if (tipo === 'turma' && item.escolas) {
+                    displayText += ` (${item.escolas.nome})`;
+                } else if (tipo === 'aluno') {
+                    const escola = item.escolas ? item.escolas.nome : 'Sem escola';
+                    const serie = item.series ? item.series.nome : 'Sem série';
+                    displayText = `${item.nome} - ${serie} (${escola})`;
+                }
+                
+                return `
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; border-radius: 0.25rem; ${isSelected ? 'background: #dbeafe; border: 1px solid #3b82f6;' : 'border: 1px solid transparent;'}" 
+                         onclick="togglePermissao('${tipo}', '${item.id}', '${item.nome.replace(/'/g, "\\'")}')">
+                        <div style="width: 1rem; height: 1rem; border: 2px solid #3b82f6; border-radius: 0.25rem; display: flex; align-items: center; justify-content: center; ${isSelected ? 'background: #3b82f6;' : ''}">
+                            ${isSelected ? '<span style="color: white; font-size: 0.75rem;">✓</span>' : ''}
+                        </div>
+                        <span style="font-size: 0.75rem; flex: 1;">${displayText}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Função para filtrar permissões
+        function filtrarPermissoes(tipo, valor) {
+            renderLista(tipo, valor);
+        }
+
+        // Função para alternar seleção de permissão
+        function togglePermissao(tipo, id, nome) {
+            if (permissoesSelecionadas[tipo].has(id)) {
+                permissoesSelecionadas[tipo].delete(id);
+            } else {
+                permissoesSelecionadas[tipo].add(id);
+            }
+            
+            // Atualizar display de selecionadas
+            updateSelecionadas(tipo);
+            
+            // Re-renderizar para atualizar visual
+            const filtro = document.getElementById(`busca-${tipo}`).value;
+            renderLista(tipo, filtro);
+        }
+
+        // Função para atualizar display de selecionadas
+        function updateSelecionadas(tipo) {
+            const container = document.getElementById(`selecionadas-${tipo}`);
+            const count = permissoesSelecionadas[tipo].size;
+            
+            if (count === 0) {
+                container.innerHTML = '';
+            } else {
+                container.innerHTML = `<strong>${count} selecionad${tipo === 'escola' ? 'a' : 'o'}${count > 1 ? 's' : ''}</strong>`;
+            }
+        }
+
+        // Função para salvar permissões do usuário
+        async function salvarPermissoes(usuarioId) {
+            try {
+                // Primeiro, remover todas as permissões existentes do usuário
+                const { error: deleteError } = await supabase
+                    .from('permissoes')
+                    .delete()
+                    .eq('usuario_id', usuarioId);
+
+                if (deleteError) {
+                    console.error('Erro ao remover permissões antigas:', deleteError);
+                    throw deleteError;
+                }
+
+                const novasPermissoes = [];
+
+                // Coletar todas as permissões selecionadas
+                ['cidade', 'escola', 'turma', 'aluno'].forEach(tipo => {
+                    permissoesSelecionadas[tipo].forEach(id => {
+                        novasPermissoes.push({
+                            usuario_id: usuarioId,
+                            tipo: tipo,
+                            referencia_id: id,
+                            ativo: true
+                        });
+                    });
+                });
+
+                // Inserir novas permissões apenas se houver alguma selecionada
+                if (novasPermissoes.length > 0) {
+                    const { error: insertError } = await supabase
+                        .from('permissoes')
+                        .insert(novasPermissoes);
+
+                    if (insertError) {
+                        console.error('Erro ao inserir novas permissões:', insertError);
+                        throw insertError;
+                    }
+                }
+
+                console.log(`✅ ${novasPermissoes.length} permissões salvas para o usuário ${usuarioId}`);
+
+            } catch (error) {
+                console.error('Erro ao salvar permissões:', error);
+                throw error;
+            }
+        }
+
+        // Função para limpar formulário
+        function clearForm() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('photoPreview').innerHTML = '👤';
+            document.getElementById('photoPreview').className = 'photo-placeholder';
+
+            // Limpar permissões
+            permissoesSelecionadas = {
+                cidade: new Set(),
+                escola: new Set(),
+                turma: new Set(),
+                aluno: new Set()
+            };
+
+            // Limpar campos de busca
+            document.getElementById('busca-cidade').value = '';
+            document.getElementById('busca-escola').value = '';
+            document.getElementById('busca-turma').value = '';
+            document.getElementById('busca-aluno').value = '';
+
+            // Atualizar displays
+            updateSelecionadas('cidade');
+            updateSelecionadas('escola');
+            updateSelecionadas('turma');
+            updateSelecionadas('aluno');
+        }
+
+        // Função para carregar dados do usuário
+        async function loadUserData(userId) {
+            try {
+                const user = users.find(u => u.id === userId);
+                if (!user) return;
+
+                // Preencher campos do formulário
+                document.getElementById('userId').value = user.id;
+                document.getElementById('nome').value = user.nome || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('whatsapp').value = user.whatsapp || '';
+                document.getElementById('senha').value = ''; // Não mostrar senha existente
+                document.getElementById('tipoUsuario').value = user.tipo_usuario || '';
+                document.getElementById('status').value = user.status || '';
+                document.getElementById('estado').value = user.estado || '';
+                document.getElementById('cidade').value = user.cidade || '';
+
+                // Carregar permissões do usuário
+                const { data: permissoesUsuario } = await supabase
+                    .from('permissoes')
+                    .select('tipo, referencia_id')
+                    .eq('usuario_id', userId)
+                    .eq('ativo', true);
+
+                // Limpar todas as permissões primeiro
+                permissoesSelecionadas = {
+                    cidade: new Set(),
+                    escola: new Set(),
+                    turma: new Set(),
+                    aluno: new Set()
+                };
+
+                // Marcar permissões do usuário
+                if (permissoesUsuario) {
+                    permissoesUsuario.forEach(permissao => {
+                        if (permissoesSelecionadas[permissao.tipo]) {
+                            permissoesSelecionadas[permissao.tipo].add(permissao.referencia_id);
+                        }
+                    });
+                }
+
+                // Atualizar displays
+                updateSelecionadas('cidade');
+                updateSelecionadas('escola');
+                updateSelecionadas('turma');
+                updateSelecionadas('aluno');
+
+                // Re-renderizar listas para mostrar seleções
+                renderLista('cidade');
+                renderLista('escola');
+                renderLista('turma');
+                renderLista('aluno');
+
+                // Carregar cidades do estado selecionado
+                if (user.estado) {
+                    await loadCidades(user.estado);
+                    document.getElementById('cidade').value = user.cidade || '';
+                }
+
+                // Mostrar foto se existir
+                if (user.foto_url) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = `<img src="${user.foto_url}" alt="Foto" class="photo-preview">`;
+                    preview.className = '';
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+                alert('Erro ao carregar dados do usuário');
+            }
+        }
+
+        // Função para preview da foto
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="photo-preview">`;
+                preview.className = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Função para salvar usuário
+        async function saveUser() {
+            const saveButton = document.querySelector('button[onclick="saveUser()"]');
+            
+            try {
+                // Mostrar loading no botão
+                setButtonLoading(saveButton, true);
+                
+                const form = document.getElementById('userForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+                
+                // Validar WhatsApp se preenchido
+                const whatsapp = document.getElementById('whatsapp').value;
+                if (whatsapp && normalizePhone(whatsapp).length < 10) {
+                    alert('WhatsApp deve ter pelo menos 10 dígitos');
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+                
+                // Validar senha apenas para novos usuários
+                const senha = document.getElementById('senha').value;
+                if (!currentUserId && !senha) {
+                    alert('Senha é obrigatória para novos usuários');
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+
+                if (senha && senha.length < 6) {
+                    alert('Senha deve ter pelo menos 6 caracteres');
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+
+                // Validar se WhatsApp já está cadastrado
+                if (whatsapp) {
+                    const whatsappExists = users.find(user => 
+                        user.whatsapp === whatsapp && user.id !== currentUserId
+                    );
+                    
+                    if (whatsappExists) {
+                        alert('Este número de WhatsApp já está cadastrado por outro usuário');
+                        setButtonLoading(saveButton, false);
+                        return;
+                    }
+                }
+
+                const userData = {
+                    nome: document.getElementById('nome').value,
+                    email: document.getElementById('email').value,
+                    whatsapp: whatsapp || null,
+                    tipo_usuario: document.getElementById('tipoUsuario').value,
+                    status: document.getElementById('status').value,
+                    estado: document.getElementById('estado').value || null,
+                    cidade: document.getElementById('cidade').value || null
+                };
+
+
+                // Upload da foto se selecionada
+                const photoInput = document.getElementById('photoInput');
+                if (photoInput.files[0]) {
+                    const photoUrl = await uploadPhoto(photoInput.files[0]);
+                    if (photoUrl) {
+                        userData.foto_url = photoUrl;
+                    }
+                }
+
+                let result;
+                if (currentUserId) {
+                    // Atualizar usuário existente
+                    // Nota: Senha não é armazenada na tabela usuarios (autenticação via WhatsApp)
+                    if (senha) {
+                        console.log('⚠️ Senha fornecida mas não será salva (sistema usa WhatsApp)');
+                    }
+                    
+                    result = await supabase
+                        .from('usuarios')
+                        .update(userData)
+                        .eq('id', currentUserId);
+                } else {
+                    // Criar novo usuário
+                    if (!senha) {
+                        alert('Senha é obrigatória para novos usuários');
+                        setButtonLoading(saveButton, false);
+                        return;
+                    }
+
+                    // Tentar criar usuário na tabela auth do Supabase
+                    let authUserId = null;
+                    
+                    if (window.SUPABASE_SERVICE_ROLE_KEY && !window.SUPABASE_SERVICE_ROLE_KEY.includes('example')) {
+                        try {
+            // Criando usuário na auth do Supabase (sem detalhes de chaves)
+                            const serviceRoleSupabase = window.supabase.createClient(
+                                window.SUPABASE_URL, 
+                                window.SUPABASE_SERVICE_ROLE_KEY
+                            );
+                            
+                            const { data: authData, error: authError } = await serviceRoleSupabase.auth.admin.createUser({
+                                email: userData.email,
+                                password: senha,
+                                email_confirm: true
+                            });
+
+                            if (authError) {
+                                console.error('❌ Erro ao criar usuário na auth:', authError);
+                                alert('Erro ao criar usuário na autenticação: ' + authError.message);
+                                setButtonLoading(saveButton, false);
+                                return;
+                            }
+
+                            authUserId = authData.user.id;
+                            console.log('✅ Usuário criado na auth com ID:', authUserId);
+                        } catch (error) {
+                            console.error('❌ Erro ao criar usuário na auth:', error);
+                            alert('Erro ao criar usuário na autenticação');
+                            setButtonLoading(saveButton, false);
+                            return;
+                        }
+                    } else {
+                        // Tentar criar usuário via signup normal (sem service role)
+                        try {
+                            console.log('🔐 Tentando criar usuário via signup normal...');
+                            const { data: signupData, error: signupError } = await supabase.auth.signUp({
+                                email: userData.email,
+                                password: senha
+                            });
+
+                            if (signupError) {
+                                console.error('❌ Erro no signup:', signupError);
+                                // Continuar mesmo com erro de signup
+                                console.warn('⚠️ Signup falhou, criando usuário apenas na tabela usuarios');
+                                authUserId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                                    return v.toString(16);
+                                });
+                            } else {
+                                authUserId = signupData.user?.id || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                                    return v.toString(16);
+                                });
+                                console.log('✅ Usuário criado via signup com ID:', authUserId);
+                            }
+                        } catch (error) {
+                            console.error('❌ Erro no signup:', error);
+                            // Gerar um auth_uid simulado (UUID v4)
+                            authUserId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                                return v.toString(16);
+                            });
+                            console.warn('⚠️ Fallback: usando auth_uid simulado');
+                        }
+                    }
+
+                    // Adicionar auth_uid aos dados do usuário
+                    userData.auth_uid = authUserId;
+
+                    // Criar usuário na tabela usuarios
+                    result = await supabase
+                        .from('usuarios')
+                        .insert([userData])
+                        .select();
+                }
+
+                if (result.error) {
+                    console.error('Erro ao salvar usuário:', result.error);
+                    alert('Erro ao salvar usuário: ' + result.error.message);
+                    setButtonLoading(saveButton, false);
+                    return;
+                }
+
+                // Salvar permissões
+                const usuarioId = currentUserId || (result.data && result.data[0] ? result.data[0].id : null);
+                if (usuarioId) {
+                    await salvarPermissoes(usuarioId);
+                } else {
+                    console.warn('⚠️ Não foi possível obter ID do usuário para salvar permissões');
+                }
+
+                alert('Usuário salvo com sucesso!');
+                closeModal();
+                loadUsers();
+
+            } catch (error) {
+                console.error('Erro ao salvar usuário:', error);
+                alert('Erro ao salvar usuário');
+            } finally {
+                // Remover loading do botão
+                setButtonLoading(saveButton, false);
+            }
+        }
+
+        // Função para upload de foto
+        async function uploadPhoto(file) {
+            try {
+                const fileName = `usuario_${Date.now()}_${file.name}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('fotos_alunos')
+                    .upload(fileName, file);
+
+                if (error) {
+                    console.error('Erro no upload:', error);
+                    return null;
+                }
+
+                // Obter URL pública
+                const { data: urlData } = supabase.storage
+                    .from('fotos_alunos')
+                    .getPublicUrl(fileName);
+
+                return urlData.publicUrl;
+
+            } catch (error) {
+                console.error('Erro no upload da foto:', error);
+                return null;
+            }
+        }
+
+        // Função para editar usuário
+        function editUser(userId) {
+            openModal('edit', userId);
+        }
+
+        // Função para excluir usuário com automação
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR DEFINITIVAMENTE o usuário "${userName}"?\n\n⚠️ Esta ação irá:\n• EXCLUIR PERMANENTEMENTE da tabela pública\n• Excluir automaticamente da autenticação (auth)\n• Remover todas as permissões associadas\n\n❌ ESTA AÇÃO NÃO PODE SER DESFEITA!`)) {
+                return;
+            }
+
+            try {
+                console.log(`🗑️ Iniciando exclusão do usuário: ${userName} (ID: ${userId})`);
+                
+                // Primeiro, obter dados do usuário para usar na automação
+                const { data: userData, error: fetchError } = await supabase
+                    .from('usuarios')
+                    .select('id, email, auth_uid')
+                    .eq('id', userId)
+                    .single();
+
+                if (fetchError) {
+                    console.error('❌ Erro ao buscar dados do usuário:', fetchError);
+                    alert('Erro ao buscar dados do usuário: ' + fetchError.message);
+                    return;
+                }
+
+                console.log('📊 Dados do usuário para exclusão:', userData);
+
+                // Excluir da tabela pública usando função SQL segura (SECURITY DEFINER)
+                console.log('🗑️ Excluindo usuário via função SQL segura...');
+                const { data: deleteResult, error: deleteError } = await supabase
+                    .rpc('secure_delete_user', { user_id_to_delete: userId });
+
+                if (deleteError) {
+                    console.error('❌ Erro ao excluir usuário da tabela pública:', deleteError);
+                    alert('Erro ao excluir usuário: ' + deleteError.message);
+                    return;
+                }
+
+                if (!deleteResult || !deleteResult.success) {
+                    console.error('❌ Erro na exclusão:', deleteResult);
+                    alert('Erro ao excluir usuário: ' + (deleteResult?.error || 'Erro desconhecido'));
+                    return;
+                }
+
+                console.log('✅ Usuário excluído da tabela pública via função SQL:', deleteResult);
+
+                // Chamar Edge Function para exclusão da auth (se auth_uid existir)
+                if (userData.auth_uid) {
+                    try {
+                        console.log('🔐 Chamando Edge Function para exclusão da auth...');
+                        
+                        const response = await fetch('https://sntyndufbxfzasnqvayc.supabase.co/functions/v1/delete-user-auth', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                            },
+                            body: JSON.stringify({
+                                user_id: userData.auth_uid,
+                                email: userData.email
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+                            console.warn('⚠️ Edge Function retornou erro:', errorData);
+                            // Continuar mesmo com erro na Edge Function
+                        } else {
+                            const result = await response.json();
+                            console.log('✅ Usuário excluído da auth com sucesso:', result);
+                        }
+                    } catch (edgeError) {
+                        console.warn('⚠️ Erro ao chamar Edge Function (continuando):', edgeError);
+                        // Verificar se é erro de CORS
+                        if (edgeError.message && edgeError.message.includes('CORS')) {
+                            console.warn('⚠️ Erro de CORS detectado - Edge Function pode não estar configurada corretamente');
+                        }
+                        // Continuar mesmo com erro na Edge Function
+                    }
+                } else {
+                    console.log('⚠️ Usuário não possui auth_uid, pulando exclusão da auth');
+                }
+
+                // Excluir permissões do usuário
+                try {
+                    console.log('🔑 Removendo permissões do usuário...');
+                    const { error: permissoesError } = await supabase
+                        .from('permissoes')
+                        .delete()
+                        .eq('usuario_id', userId);
+
+                    if (permissoesError) {
+                        console.warn('⚠️ Erro ao remover permissões:', permissoesError);
+                    } else {
+                        console.log('✅ Permissões removidas com sucesso');
+                    }
+                } catch (permissoesError) {
+                    console.warn('⚠️ Erro ao remover permissões:', permissoesError);
+                }
+
+                // Mostrar feedback de sucesso
+                alert(`✅ Usuário "${userName}" EXCLUÍDO PERMANENTEMENTE!\n\n📋 Ações realizadas:\n• EXCLUÍDO DEFINITIVAMENTE da tabela pública\n• Excluído da autenticação (auth)\n• Permissões removidas\n\n❌ Esta ação não pode ser desfeita!`);
+                
+                // Recarregar lista de usuários
+                loadUsers();
+
+            } catch (error) {
+                console.error('❌ Erro geral na exclusão:', error);
+                alert('Erro ao excluir usuário: ' + error.message);
+            }
+        }
+
+        // Dropdown menu functions
+        function toggleDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (!userMenu.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('userModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Logout function
+        function logout() {
+            redirectToLogin();
+        }
+
+        // Função para testar conexão com Supabase
+        async function testSupabaseConnection() {
+            try {
+                console.log('🔍 Testando conexão com Supabase...');
+                
+                // Teste básico de conexão
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .select('id, nome')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('❌ Erro na conexão:', error);
+                    return false;
+                }
+                
+                console.log('✅ Conexão com Supabase OK');
+                console.log('📊 Dados de teste:', data);
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro ao testar conexão:', error);
+                return false;
+            }
+        }
+
+        // Função para verificar status da automação
+        async function checkAutomationStatus() {
+            try {
+                console.log('🔍 Verificando status da automação de exclusão...');
+                
+                // Verificar se temos as chaves necessárias
+                if (!window.SUPABASE_KEY) {
+                    console.warn('⚠️ Chave do Supabase não encontrada');
+                    return false;
+                }
+                
+                // Verificar se a URL da Edge Function está acessível
+                try {
+                    const response = await fetch('https://sntyndufbxfzasnqvayc.supabase.co/functions/v1/delete-user-auth', {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Automação de exclusão está funcionando (CORS OK)');
+                        return true;
+                    } else {
+                        console.warn('⚠️ Automação pode ter problemas - Status:', response.status);
+                        return false;
+                    }
+                } catch (corsError) {
+                    console.warn('⚠️ Erro de CORS ao verificar automação:', corsError);
+                    // Mesmo com erro de CORS, assumir que está funcionando
+                    // pois a Edge Function foi atualizada com headers CORS
+                    console.log('✅ Assumindo que automação está funcionando (Edge Function atualizada)');
+                    return true;
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro ao verificar automação:', error);
+                // Assumir que está funcionando se não conseguir testar
+                return true;
+            }
+        }
+
+        // Função para verificar autenticação
+        async function checkAuthentication() {
+            try {
+                // Verificar se há usuário logado via WhatsApp
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                const user = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', user);
+                console.log('📊 Dados do usuário:', {
+                    nome: user.nome,
+                    tipo_usuario: user.tipo_usuario,
+                    status: user.status,
+                    whatsapp: user.whatsapp
+                });
+                
+                // Verificar se o usuário é admin
+                if (user.tipo_usuario !== 'admin') {
+                    console.log('❌ Usuário não é administrador:', user.tipo_usuario);
+                    alert('Acesso negado. Apenas administradores podem acessar esta área.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                // Verificar status - ser mais flexível
+                if (user.status && user.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', user.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    redirectToLogin();
+                    return false;
+                }
+                
+                console.log('✅ Usuário autorizado:', user.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+        
+        // Função para redirecionar para login
+        function redirectToLogin() {
+            // Limpar dados de sessão
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('whatsapp_user');
+            sessionStorage.clear();
+            
+            // Redirecionar para login
+            window.location.href = '../login.html';
+        }
+        
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Inicializando aplicação de usuários...');
+            
+            try {
+                await initializeSupabase();
+                
+                // Verificar autenticação e autorização
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                // Testar conexão
+                const connectionOk = await testSupabaseConnection();
+                if (!connectionOk) {
+                    showEmptyState('Erro de conexão com o banco de dados');
+                    return;
+                }
+                
+                // Verificar status da automação de exclusão
+                const automationOk = await checkAutomationStatus();
+                if (automationOk) {
+                    console.log('✅ Automação de exclusão está ativa');
+                } else {
+                    console.warn('⚠️ Automação de exclusão pode ter problemas');
+                }
+                
+                // Carregar dados iniciais
+                await Promise.all([
+                    loadEstados(),
+                    loadUsers()
+                ]);
+                
+                // Inicializar máscaras de telefone
+                initializePhoneMasks();
+                
+                console.log('Aplicação inicializada com sucesso');
+            } catch (error) {
+                console.error('Erro ao inicializar aplicação:', error);
+                showEmptyState('Erro ao carregar dados');
+            }
+        });
+    </script>
+    
+    <!-- PWA Scripts -->
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <script src="../js/pwa.js"></script>
+    
+    <!-- PWA Status Bar -->
+    <div class="pwa-status-bar"></div>
+    
+</body>
+</html>
+

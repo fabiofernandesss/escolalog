@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câmeras - Escola Log</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="../img/favicon.png">
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://escola-log.com/">
+    <meta property="og:title" content="Escola Log - Sistema de Gestão Escolar">
+    <meta property="og:description" content="Sistema completo de gestão escolar com controle de presença, notas e comunicação.">
+    <meta property="og:image" content="../img/metatag.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://escola-log.com/">
+    <meta property="twitter:title" content="Escola Log - Sistema de Gestão Escolar">
+    <meta property="twitter:description" content="Sistema completo de gestão escolar com controle de presença, notas e comunicação.">
+    <meta property="twitter:image" content="../img/metatag.png">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 42px;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .back-button:hover {
+            background: #2563eb;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .cameras-section {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .cameras-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .cameras-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .cameras-count {
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .cameras-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 16px;
+        }
+
+        .camera-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .camera-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .camera-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 16px;
+        }
+
+        .camera-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .camera-status.online {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .camera-status.offline {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        /* Iframe ocupa todo espaço, sem fundo preto */
+        .camera-iframe {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            height: auto;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .camera-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .camera-location {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .fullscreen-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .fullscreen-button:hover {
+            background: #2563eb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        /* Modal de tela cheia */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal iframe {
+            width: 95vw;
+            height: 95vh;
+            border: none;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .modal .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #0f172a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0;
+            }
+
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 32px;
+                flex-shrink: 0;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-left: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .user-info {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .user-name {
+                display: none;
+            }
+
+            .back-button {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+
+            .cameras-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .cameras-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 16px;
+            }
+
+            .camera-iframe {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="../img/logo-horizonal.png" alt="Escola Log">
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="menu.html" class="back-button" aria-label="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Seção de Câmeras -->
+        <div class="cameras-section">
+            <div class="cameras-header">
+                <h2 class="cameras-title">Câmeras Disponíveis</h2>
+                <div class="cameras-count" id="camerasCount">0 câmeras</div>
+            </div>
+            <div class="cameras-grid" id="camerasGrid">
+                <!-- Câmeras serão carregadas aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Tela Cheia -->
+    <div id="fullscreenModal" class="modal" aria-hidden="true">
+        <button id="closeModal" class="close-btn" type="button">Fechar</button>
+        <iframe id="modalIframe" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let supabase;
+        let currentUser = null;
+        let camerasData = [];
+
+        // Fallback local: permitir testes sem Supabase
+        function getMockCameras() {
+            try {
+                const raw = localStorage.getItem('cameras_mock');
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed;
+                return [];
+            } catch (e) {
+                console.warn('Falha ao ler cameras_mock do localStorage:', e);
+                return [];
+            }
+        }
+
+        // Obter chaves do Supabase via Lambda
+        async function getSupabaseKeys() {
+            try {
+                console.log('🔑 Buscando chaves do Supabase via Lambda...');
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Não logar resposta da Lambda
+
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                } else {
+                    throw new Error('Formato de resposta inválido');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback para variáveis hardcoded (mesmo padrão das outras páginas)
+                console.log('🔄 Usando fallback para chaves hardcoded...');
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+
+        // Inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                const keys = await getSupabaseKeys();
+                supabase = window.supabase.createClient(keys.url, keys.key);
+                console.log('✅ Supabase inicializado com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Verificar autenticação
+        async function checkAuthentication() {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                // Aceita sessão do 'userSession' ou 'whatsapp_user'
+                const rawSession = localStorage.getItem('userSession') || localStorage.getItem('whatsapp_user');
+
+                if (!rawSession) {
+                    console.log('❌ Nenhuma sessão encontrada em localStorage');
+                    redirectToLogin();
+                    return false;
+                }
+
+                try {
+                    currentUser = JSON.parse(rawSession);
+                } catch (e) {
+                    console.log('❌ Sessão inválida (JSON parse falhou)');
+                    redirectToLogin();
+                    return false;
+                }
+
+                // Normaliza papel
+                const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString();
+                const role = roleRaw.toLowerCase();
+
+                // Permite acesso se papel contém 'professor' em qualquer forma
+                if (!role || !role.includes('professor')) {
+                    console.log(`❌ Papel inválido para professor: '${roleRaw}'`);
+                    redirectToLogin();
+                    return false;
+                }
+
+                // Normaliza id do usuário
+                currentUser.id = currentUser.id || currentUser.usuario_id || currentUser.user_id || currentUser.uid || null;
+                if (!currentUser.id) {
+                    console.warn('⚠️ Usuário sem id definido na sessão; consultas podem falhar');
+                }
+
+                // Se houver authToken, ok; se não houver, segue mesmo assim (evita loop de redirecionamento)
+                if (!authToken) {
+                    console.log('ℹ️ authToken ausente, mas sessão válida presente; prosseguindo');
+                }
+
+                console.log('✅ Usuário autenticado:', currentUser.nome || '(sem nome)');
+                return true;
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                redirectToLogin();
+                return false;
+            }
+        }
+
+        // Carregar câmeras
+        async function loadCamerasFromFirstTurma() {
+            try {
+                console.log('🔄 Buscando primeira turma do professor...');
+
+                const { data: turma, error: turmaError } = await supabase
+                    .from('turmas')
+                    .select('id, nome, escola_id, criado_em')
+                    .eq('professor_responsavel_id', currentUser.id)
+                    .order('criado_em', { ascending: true })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (turmaError) throw turmaError;
+
+                // Se não houver turma, tenta pela escola do usuário ou carrega todas
+                if (!turma) {
+                    console.log('ℹ️ Nenhuma turma encontrada; tentando buscar pela escola do usuário');
+                    const userEscolaId = currentUser.escola_id;
+
+                    if (userEscolaId) {
+                        const { data: camerasByUserSchool, error: camBySchoolErr } = await supabase
+                            .from('cameras')
+                            .select('*')
+                            .eq('escola_id', userEscolaId)
+                            .order('nome');
+
+                        if (camBySchoolErr) throw camBySchoolErr;
+                        camerasData = camerasByUserSchool || [];
+                        console.log(`✅ ${camerasData.length} câmeras carregadas pela escola do usuário`);
+                        renderCameras();
+                        updateCamerasCount();
+                        return;
+                    }
+
+                    console.log('ℹ️ Usuário sem escola; carregando todas as câmeras');
+                    const { data: allCameras, error: allCamErr } = await supabase
+                        .from('cameras')
+                        .select('*')
+                        .order('nome');
+
+                    if (allCamErr) throw allCamErr;
+                    camerasData = allCameras || [];
+                    renderCameras();
+                    updateCamerasCount();
+                    return;
+                }
+
+                console.log(`✅ Turma encontrada: ${turma.nome} (escola_id: ${turma.escola_id})`);
+
+                if (!turma.escola_id) {
+                    showEmptyState('Turma sem escola', 'A turma não possui escola associada.');
+                    camerasData = [];
+                    updateCamerasCount();
+                    return;
+                }
+
+                console.log('🔄 Carregando câmeras da escola...');
+                const { data: cameras, error: camError } = await supabase
+                    .from('cameras')
+                    .select('*')
+                    .eq('escola_id', turma.escola_id)
+                    .order('nome');
+
+                if (camError) throw camError;
+
+                camerasData = cameras || [];
+                console.log(`✅ ${camerasData.length} câmeras carregadas para a escola`);
+
+                renderCameras();
+                updateCamerasCount();
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar câmeras por turma/escola:', error);
+                // Fallback: tentar carregar todas as câmeras diretamente de dispositivos
+                try {
+                    console.log('🔁 Fallback: carregando todas as câmeras de dispositivos...');
+                    const { data: allCameras, error: allCamErr } = await supabase
+                        .from('cameras')
+                        .select('*')
+                        .order('nome');
+
+                    if (!allCamErr && allCameras) {
+                        camerasData = allCameras || [];
+                        renderCameras();
+                        updateCamerasCount();
+                        return;
+                    }
+                } catch (fallbackErr) {
+                    console.error('❌ Fallback falhou ao carregar dispositivos:', fallbackErr);
+                }
+
+                showEmptyState('Erro ao carregar câmeras', 'Não foi possível carregar as câmeras. Verifique sua conexão com a internet.');
+            }
+        }
+
+        // Renderizar câmeras
+        function renderCameras() {
+            const camerasGrid = document.getElementById('camerasGrid');
+            
+            if (!camerasData || camerasData.length === 0) {
+                showEmptyState('Nenhuma câmera encontrada', 'Não há câmeras cadastradas no sistema.');
+                return;
+            }
+
+            const camerasHTML = camerasData.map(camera => {
+                const streamSrc = camera.url_m3u8 || '';
+                const isOnline = !!streamSrc;
+                const statusClass = isOnline ? 'online' : 'offline';
+                const statusText = isOnline ? 'Online' : 'Offline';
+
+                return `
+                <div class="camera-card">
+                    <div class="camera-header">
+                        <h3 class="camera-name">${camera.nome}</h3>
+                        <span class="camera-status ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </div>
+                    <iframe 
+                        class="camera-iframe" 
+                        src="${streamSrc}" 
+                        allowfullscreen>
+                    </iframe>
+                    <div class="camera-info">
+                        <span class="camera-location">${camera.localizacao || ''}</span>
+                        <button class="fullscreen-button" onclick="openFullscreen(this.dataset.url)" data-url="${streamSrc}">
+                            <i data-lucide="maximize"></i>
+                            Tela Cheia
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            camerasGrid.innerHTML = camerasHTML;
+            lucide.createIcons();
+        }
+
+        // Atualizar contador de câmeras
+        function updateCamerasCount() {
+            const camerasCount = document.getElementById('camerasCount');
+            const count = camerasData.length;
+            camerasCount.textContent = `${count} câmera${count !== 1 ? 's' : ''}`;
+        }
+
+        // Modal de tela cheia (sem abrir nova aba)
+        function openFullscreen(url) {
+            if (!url) {
+                alert('URL da câmera não disponível');
+                return;
+            }
+
+            const modal = document.getElementById('fullscreenModal');
+            const iframe = document.getElementById('modalIframe');
+            iframe.src = url;
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeFullscreen() {
+            const modal = document.getElementById('fullscreenModal');
+            const iframe = document.getElementById('modalIframe');
+            iframe.src = '';
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        // Mostrar estado vazio
+        function showEmptyState(title, message) {
+            const camerasGrid = document.getElementById('camerasGrid');
+            camerasGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📹</div>
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Carregar dados do usuário
+        function loadUserData() {
+            if (!currentUser) return;
+
+            try {
+                const userName = document.getElementById('userName');
+                if (userName) {
+                    userName.textContent = currentUser.nome || 'Professor';
+                }
+
+                const userAvatar = document.getElementById('userAvatar');
+                if (userAvatar && currentUser.nome) {
+                    userAvatar.textContent = currentUser.nome.charAt(0).toUpperCase();
+                }
+
+                if (currentUser.foto_url) {
+                    userAvatar.style.backgroundImage = `url(${currentUser.foto_url})`;
+                    userAvatar.style.backgroundSize = 'cover';
+                    userAvatar.style.backgroundPosition = 'center';
+                    userAvatar.textContent = '';
+                }
+
+                console.log('✅ Dados do usuário carregados na interface');
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+            }
+        }
+
+        // Redirecionar para login
+        function redirectToLogin() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('whatsapp_user');
+            sessionStorage.clear();
+            window.location.href = '../login.html';
+        }
+
+        // Voltar para menu
+        function goBack() {
+            window.location.href = 'menu.html';
+        }
+
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎯 Inicializando visualização de câmeras...');
+            
+            try {
+                await initializeSupabase();
+                lucide.createIcons();
+
+                // Eventos do modal
+                document.getElementById('closeModal')?.addEventListener('click', closeFullscreen);
+                document.getElementById('fullscreenModal')?.addEventListener('click', (e) => {
+                    if (e.target && e.target.id === 'fullscreenModal') {
+                        closeFullscreen();
+                    }
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') closeFullscreen();
+                });
+                
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                loadUserData();
+                // Se houver mock local, renderiza imediatamente os cards
+                const mock = getMockCameras();
+                if (mock && mock.length) {
+                    camerasData = mock;
+                    renderCameras();
+                    updateCamerasCount();
+                }
+                await loadCamerasFromFirstTurma();
+                
+                // Configurar atualização automática a cada 5 minutos
+                setInterval(async () => {
+                    console.log('🔄 Atualizando lista de câmeras automaticamente...');
+                    await loadCamerasFromFirstTurma();
+                }, 5 * 60 * 1000); // 5 minutos em milissegundos
+                
+                console.log('✅ Visualização de câmeras inicializada com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar visualização de câmeras:', error);
+            }
+        });
+    </script>
+</body>
+</html>

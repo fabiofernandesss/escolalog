@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Escola Log</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Dashboard escolar completo com métricas e análises em tempo real">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/favicon.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Dashboard Escolar - Escola Log">
+    <meta property="og:description" content="Dashboard completo com métricas escolares">
+    <meta property="og:image" content="../img/metatag.png">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dashboard Escolar - Escola Log">
+    <meta name="twitter:description" content="Dashboard completo com métricas escolares">
+    <meta name="twitter:image" content="../img/metatag.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo img {
+            height: 50px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .card-icon.users { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .card-icon.presenca { background: linear-gradient(135deg, #10b981, #059669); }
+        .card-icon.logs { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .card-icon.atrasos { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .header {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .logo img {
+                height: 40px;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .dashboard-card {
+                padding: 20px;
+            }
+
+            .card-value {
+                font-size: 2rem;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 12px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .logo {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .logo img {
+                height: 35px;
+            }
+
+            .page-title {
+                font-size: 1.3rem;
+            }
+
+            .dashboard-card {
+                padding: 15px;
+            }
+
+            .card-value {
+                font-size: 1.8rem;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log">
+                <h1 class="page-title">Dashboard Escolar</h1>
+            </div>
+            <button class="back-btn" onclick="goBack()">
+                <i data-lucide="arrow-left"></i>
+                Voltar
+            </button>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            <div>
+                <i data-lucide="loader-2" style="animation: spin 1s linear infinite;"></i>
+                <p>Carregando dados da escola...</p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error" style="display: none;">
+            <h3>❌ Erro ao carregar dados</h3>
+            <p id="errorMessage"></p>
+            <button onclick="loadDashboard()" style="margin-top: 10px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Tentar Novamente
+            </button>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboardContent" style="display: none;">
+            <!-- Métricas Principais -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card alunos">
+                    <div class="card-header">
+                        <div class="card-icon users">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <h2 class="card-title">Total de Alunos</h2>
+                    </div>
+                    <div class="card-value" id="totalAlunos">-</div>
+                    <p class="card-description">Alunos matriculados na escola</p>
+                </div>
+
+                <div class="dashboard-card presenca">
+                    <div class="card-header">
+                        <div class="card-icon presenca">
+                            <i data-lucide="percent"></i>
+                        </div>
+                        <h2 class="card-title">Taxa de Presença</h2>
+                    </div>
+                    <div class="card-value" id="taxaPresenca">-</div>
+                    <p class="card-description">Percentual de presença hoje</p>
+                </div>
+
+                <div class="dashboard-card logs">
+                    <div class="card-header">
+                        <div class="card-icon logs">
+                            <i data-lucide="activity"></i>
+                        </div>
+                        <h2 class="card-title">Logs Hoje</h2>
+                    </div>
+                    <div class="card-value" id="logsHoje">-</div>
+                    <p class="card-description">Registros de entrada e saída</p>
+                </div>
+
+                <div class="dashboard-card atrasos">
+                    <div class="card-header">
+                        <div class="card-icon atrasos">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <h2 class="card-title">Atrasos Hoje</h2>
+                    </div>
+                    <div class="card-value" id="atrasosHoje">-</div>
+                    <p class="card-description">Alunos que chegaram atrasados</p>
+                </div>
+            </div>
+
+            <!-- Estatísticas Detalhadas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="alunosAtivos">-</div>
+                    <div class="stat-label">Alunos Ativos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTurmas">-</div>
+                    <div class="stat-label">Turmas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSeries">-</div>
+                    <div class="stat-label">Séries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="entradasHoje">-</div>
+                    <div class="stat-label">Entradas Hoje</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="saidasHoje">-</div>
+                    <div class="stat-label">Saídas Hoje</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="alunosAusentes">-</div>
+                    <div class="stat-label">Ausentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalLogsSemana">-</div>
+                    <div class="stat-label">Logs Esta Semana</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="mediaLogsPorDia">-</div>
+                    <div class="stat-label">Média Logs/Dia</div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="trending-up"></i>
+                        Presença por Dia (Últimos 7 dias)
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="presencaChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="pie-chart"></i>
+                        Distribuição por Série
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="seriesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="bar-chart-3"></i>
+                        Distribuição por Turma
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="turmasChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="user-check"></i>
+                        Distribuição por Sexo
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="sexoChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="calendar"></i>
+                        Distribuição por Idade
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="idadeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="map-pin"></i>
+                        Distribuição por Bairro
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="bairroChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="trending-up"></i>
+                        Alunos Mais Presentes
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="maisPresentesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="trending-down"></i>
+                        Alunos Mais Faltosos
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="maisFaltososChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i data-lucide="activity"></i>
+                        Logs por Dia (Últimos 7 dias)
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="logsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração global
+        let supabase = null;
+        let currentUser = null;
+        let escolaId = null;
+        let escolaData = null;
+        let dashboardData = {};
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Inicializando Dashboard Escolar...');
+            
+            try {
+                // Verificar autenticação
+                if (!await checkAuthentication()) {
+                    return;
+                }
+
+                // Inicializar Supabase
+                await initializeSupabase();
+                
+                // Buscar permissões e escola
+                await getEscolaFromPermissions();
+                
+                // Carregar dados do dashboard
+                await loadDashboard();
+                
+                // Inicializar ícones
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                console.log('✅ Dashboard inicializado com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar dashboard:', error);
+                showError('Erro ao inicializar dashboard: ' + error.message);
+            }
+        });
+
+        // Verificar autenticação
+        async function checkAuthentication() {
+            try {
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                
+                if (currentUser.tipo_usuario !== 'diretor') {
+                    console.log('❌ Usuário não é diretor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para diretores.');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                console.log('✅ Diretor autorizado:', currentUser.nome);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        // Inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                console.log('🔧 Inicializando Supabase...');
+                
+                let url, key;
+                
+                try {
+                    // Buscar chaves via Lambda
+                    const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/');
+                    const result = await response.json();
+                    
+                    // Não logar resposta da Lambda
+                    
+                    if (result.data && result.data.url && result.data.key) {
+                        url = result.data.url;
+                        key = result.data.key;
+                    // Não logar chaves obtidas
+                    } else {
+                        throw new Error('Lambda não retornou dados válidos');
+                    }
+                } catch (lambdaError) {
+                console.warn('⚠️ Erro na Lambda, fallback sem detalhes');
+                    
+                    // Fallback para chaves hardcoded (temporário para teste)
+                    url = 'https://sntyndufbxfzasnqvayc.supabase.co';
+                    key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM';
+                    
+                    // Não logar chaves hardcoded
+                }
+                
+                // Não logar chaves finais
+                
+                // Inicializar cliente Supabase
+                supabase = window.supabase.createClient(url, key);
+                
+                console.log('✅ Supabase inicializado com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Buscar escola das permissões
+        async function getEscolaFromPermissions() {
+            try {
+                console.log('🔐 Buscando permissões do diretor...');
+                console.log('👤 Usuário atual:', currentUser);
+                
+                // Buscar permissão de escola
+                const { data: permissao, error: permissaoError } = await supabase
+                    .from('permissoes')
+                    .select('referencia_id')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'escola')
+                    .eq('ativo', true)
+                    .limit(1)
+                    .single();
+
+                console.log('🔍 Resultado da query de permissões:', { permissao, permissaoError });
+
+                if (permissaoError) {
+                    throw new Error('Erro ao buscar permissões: ' + permissaoError.message);
+                }
+
+                if (!permissao) {
+                    throw new Error('Diretor não possui permissões de escola');
+                }
+
+                escolaId = permissao.referencia_id;
+                console.log('🔍 ID da escola encontrado:', escolaId);
+
+                // Buscar dados da escola
+                const { data: escola, error: escolaError } = await supabase
+                    .from('escolas')
+                    .select('id, nome, cidade, estado')
+                    .eq('id', escolaId)
+                    .eq('soft_delete', false)
+                    .single();
+
+                if (escolaError) {
+                    throw new Error('Erro ao buscar dados da escola: ' + escolaError.message);
+                }
+
+                escolaData = escola;
+                console.log('🏫 Escola do diretor:', escolaData);
+                
+            } catch (error) {
+                console.error('❌ Erro ao buscar escola:', error);
+                throw error;
+            }
+        }
+
+        // Carregar dados do dashboard
+        async function loadDashboard() {
+            try {
+                console.log('📊 Carregando dados do dashboard...');
+                console.log('🔍 Escola ID atual:', escolaId);
+                
+                if (!escolaId) {
+                    throw new Error('ID da escola não encontrado. Verifique se o diretor tem permissões de escola.');
+                }
+
+                // Ocultar loading e mostrar conteúdo
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+
+                // Buscar todos os dados em paralelo
+                const [
+                    alunosResult,
+                    turmasResult,
+                    seriesResult,
+                    frequenciaHojeResult,
+                    frequenciaSemanaResult
+                ] = await Promise.all([
+                    supabase.from('alunos').select('*').eq('escola_id', escolaId).eq('soft_delete', false),
+                    supabase.from('turmas').select('*').eq('escola_id', escolaId).eq('soft_delete', false),
+                    supabase.from('series').select('*'),
+                    supabase.from('frequencia_diaria').select('*').eq('escola_id', escolaId).eq('dia', new Date().toISOString().split('T')[0]),
+                    supabase.from('frequencia_diaria').select('*').eq('escola_id', escolaId).gte('dia', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+                ]);
+
+                // Processar dados
+                const alunos = alunosResult.data || [];
+                const turmas = turmasResult.data || [];
+                const series = seriesResult.data || [];
+                const frequenciaHoje = frequenciaHojeResult.data || [];
+                const frequenciaSemana = frequenciaSemanaResult.data || [];
+
+                console.log('📊 Dados carregados:', {
+                    alunos: alunos.length,
+                    turmas: turmas.length,
+                    series: series.length,
+                    frequenciaHoje: frequenciaHoje.length,
+                    frequenciaSemana: frequenciaSemana.length
+                });
+
+                // Calcular métricas
+                calculateMetrics(alunos, turmas, series, frequenciaHoje, frequenciaSemana);
+                
+                // Atualizar interface
+                updateDashboardUI();
+                
+                // Criar gráficos
+                createCharts(alunos, turmas, series, frequenciaSemana);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dashboard:', error);
+                showError('Erro ao carregar dados: ' + error.message);
+            }
+        }
+
+        // Calcular métricas
+        function calculateMetrics(alunos, turmas, series, frequenciaHoje, frequenciaSemana) {
+            console.log('🧮 Calculando métricas...');
+            
+            // Métricas básicas
+            dashboardData.totalAlunos = alunos.length;
+            dashboardData.alunosAtivos = alunos.filter(a => !a.soft_delete).length;
+            dashboardData.totalTurmas = turmas.length;
+            dashboardData.totalSeries = series.length;
+            
+            // Presença usando frequencia_diaria
+            const alunosPresentesHoje = frequenciaHoje.filter(f => f.tipo_frequencia === 'ENTRADA_SAIDA' || f.tipo_frequencia === 'APENAS_ENTRADA').length;
+            const entradasHoje = frequenciaHoje.filter(f => f.entrada).length;
+            const saidasHoje = frequenciaHoje.filter(f => f.saida).length;
+            
+            dashboardData.entradasHoje = entradasHoje;
+            dashboardData.saidasHoje = saidasHoje;
+            dashboardData.taxaPresenca = dashboardData.totalAlunos > 0 ? 
+                Math.round((alunosPresentesHoje / dashboardData.totalAlunos) * 100) + '%' : '0%';
+            dashboardData.alunosAusentes = Math.max(0, dashboardData.totalAlunos - alunosPresentesHoje);
+            
+            // Atrasos (entradas após 8h)
+            const atrasos = frequenciaHoje.filter(f => {
+                if (!f.entrada) return false;
+                const hora = new Date(f.entrada).getHours();
+                return hora >= 8;
+            }).length;
+            dashboardData.atrasosHoje = atrasos;
+            
+            // Logs baseados na frequencia_diaria
+            dashboardData.logsHoje = frequenciaHoje.length;
+            dashboardData.totalLogsSemana = frequenciaSemana.length;
+            dashboardData.mediaLogsPorDia = Math.round(frequenciaSemana.length / 7);
+            
+            // Alunos que mais comparecem e faltam
+            const frequenciaPorAluno = {};
+            frequenciaSemana.forEach(f => {
+                if (!frequenciaPorAluno[f.user_id]) {
+                    frequenciaPorAluno[f.user_id] = {
+                        nome: f.nome_aluno,
+                        presencas: 0,
+                        totalDias: 0
+                    };
+                }
+                frequenciaPorAluno[f.user_id].totalDias++;
+                if (f.tipo_frequencia === 'ENTRADA_SAIDA' || f.tipo_frequencia === 'APENAS_ENTRADA') {
+                    frequenciaPorAluno[f.user_id].presencas++;
+                }
+            });
+            
+            // Ordenar por presença
+            const alunosPorPresenca = Object.values(frequenciaPorAluno)
+                .sort((a, b) => b.presencas - a.presencas);
+            
+            dashboardData.alunosMaisPresentes = alunosPorPresenca.slice(0, 5);
+            dashboardData.alunosMaisFaltosos = alunosPorPresenca.slice(-5).reverse();
+            
+            // Distribuições
+            dashboardData.alunosPorSerie = {};
+            dashboardData.alunosPorTurma = {};
+            dashboardData.distribuicaoSexo = { masculino: 0, feminino: 0, nao_informado: 0 };
+            dashboardData.distribuicaoIdade = { '0-5': 0, '6-10': 0, '11-15': 0, '16-20': 0, '21+': 0, 'nao_informado': 0 };
+            dashboardData.distribuicaoBairro = {};
+            
+            alunos.forEach(aluno => {
+                // Por série
+                if (aluno.serie_id) {
+                    const serie = series.find(s => s.id === aluno.serie_id);
+                    const serieNome = serie ? serie.nome : `Série ${aluno.serie_id}`;
+                    dashboardData.alunosPorSerie[serieNome] = (dashboardData.alunosPorSerie[serieNome] || 0) + 1;
+                }
+                
+                // Por turma
+                if (aluno.turma_id) {
+                    const turma = turmas.find(t => t.id === aluno.turma_id);
+                    const turmaNome = turma ? turma.nome : `Turma ${aluno.turma_id}`;
+                    dashboardData.alunosPorTurma[turmaNome] = (dashboardData.alunosPorTurma[turmaNome] || 0) + 1;
+                }
+                
+                // Por sexo
+                if (aluno.sexo === 'M' || aluno.sexo === 'masculino') {
+                    dashboardData.distribuicaoSexo.masculino++;
+                } else if (aluno.sexo === 'F' || aluno.sexo === 'feminino') {
+                    dashboardData.distribuicaoSexo.feminino++;
+                } else {
+                    dashboardData.distribuicaoSexo.nao_informado++;
+                }
+                
+                // Por idade
+                if (aluno.data_nascimento) {
+                    const hoje = new Date();
+                    const nascimento = new Date(aluno.data_nascimento);
+                    const idade = hoje.getFullYear() - nascimento.getFullYear();
+                    
+                    if (idade >= 0 && idade <= 5) {
+                        dashboardData.distribuicaoIdade['0-5']++;
+                    } else if (idade >= 6 && idade <= 10) {
+                        dashboardData.distribuicaoIdade['6-10']++;
+                    } else if (idade >= 11 && idade <= 15) {
+                        dashboardData.distribuicaoIdade['11-15']++;
+                    } else if (idade >= 16 && idade <= 20) {
+                        dashboardData.distribuicaoIdade['16-20']++;
+                    } else {
+                        dashboardData.distribuicaoIdade['21+']++;
+                    }
+                } else {
+                    dashboardData.distribuicaoIdade.nao_informado++;
+                }
+                
+                // Por bairro
+                if (aluno.bairro) {
+                    dashboardData.distribuicaoBairro[aluno.bairro] = (dashboardData.distribuicaoBairro[aluno.bairro] || 0) + 1;
+                }
+            });
+            
+            console.log('✅ Métricas calculadas:', dashboardData);
+        }
+
+        // Atualizar interface
+        function updateDashboardUI() {
+            console.log('🔄 Atualizando interface...');
+            
+            // Métricas principais
+            document.getElementById('totalAlunos').textContent = dashboardData.totalAlunos.toLocaleString();
+            document.getElementById('taxaPresenca').textContent = dashboardData.taxaPresenca;
+            document.getElementById('logsHoje').textContent = dashboardData.logsHoje.toLocaleString();
+            document.getElementById('atrasosHoje').textContent = dashboardData.atrasosHoje.toLocaleString();
+            
+            // Estatísticas detalhadas
+            document.getElementById('alunosAtivos').textContent = dashboardData.alunosAtivos;
+            document.getElementById('totalTurmas').textContent = dashboardData.totalTurmas;
+            document.getElementById('totalSeries').textContent = dashboardData.totalSeries;
+            document.getElementById('entradasHoje').textContent = dashboardData.entradasHoje;
+            document.getElementById('saidasHoje').textContent = dashboardData.saidasHoje;
+            document.getElementById('alunosAusentes').textContent = dashboardData.alunosAusentes;
+            document.getElementById('totalLogsSemana').textContent = dashboardData.totalLogsSemana || 0;
+            document.getElementById('mediaLogsPorDia').textContent = dashboardData.mediaLogsPorDia || 0;
+        }
+
+        // Criar gráficos
+        function createCharts(alunos, turmas, series, frequenciaSemana) {
+            console.log('📊 Criando gráficos...');
+            
+            if (typeof Chart === 'undefined') {
+                console.error('❌ Chart.js não está carregado');
+                return;
+            }
+            
+            createPresencaChart(frequenciaSemana);
+            createSeriesChart();
+            createTurmasChart();
+            createSexoChart();
+            createIdadeChart();
+            createBairroChart();
+            createMaisPresentesChart();
+            createMaisFaltososChart();
+            createLogsChart(frequenciaSemana);
+        }
+
+        // Gráfico de presença
+        function createPresencaChart(frequenciaSemana) {
+            const ctx = document.getElementById('presencaChart').getContext('2d');
+            
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                last7Days.push(date.toISOString().split('T')[0]);
+            }
+
+            const presencaData = last7Days.map(day => {
+                const frequenciaDoDia = frequenciaSemana.filter(f => f.dia === day);
+                const alunosPresentes = frequenciaDoDia.filter(f => f.tipo_frequencia === 'ENTRADA_SAIDA' || f.tipo_frequencia === 'APENAS_ENTRADA').length;
+                const totalAlunos = dashboardData.totalAlunos;
+                return totalAlunos > 0 ? Math.round((alunosPresentes / totalAlunos) * 100) : 0;
+            });
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last7Days.map(day => new Date(day).toLocaleDateString('pt-BR', { weekday: 'short' })),
+                    datasets: [{
+                        label: 'Presença (%)',
+                        data: presencaData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de séries
+        function createSeriesChart() {
+            const ctx = document.getElementById('seriesChart').getContext('2d');
+            const data = dashboardData.alunosPorSerie;
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            if (labels.length === 0) {
+                labels.push('Sem dados');
+                values.push(1);
+            }
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de turmas
+        function createTurmasChart() {
+            const ctx = document.getElementById('turmasChart').getContext('2d');
+            const data = dashboardData.alunosPorTurma;
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            if (labels.length === 0) {
+                labels.push('Sem dados');
+                values.push(1);
+            }
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Alunos',
+                        data: values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de sexo
+        function createSexoChart() {
+            const ctx = document.getElementById('sexoChart').getContext('2d');
+            const data = dashboardData.distribuicaoSexo;
+            const labels = Object.keys(data).map(key => {
+                switch(key) {
+                    case 'masculino': return 'Masculino';
+                    case 'feminino': return 'Feminino';
+                    case 'nao_informado': return 'Não Informado';
+                    default: return key;
+                }
+            });
+            const values = Object.values(data);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#3b82f6', '#ec4899', '#6b7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de idade
+        function createIdadeChart() {
+            const ctx = document.getElementById('idadeChart').getContext('2d');
+            const data = dashboardData.distribuicaoIdade;
+            const labels = Object.keys(data).map(key => {
+                switch(key) {
+                    case '0-5': return '0-5 anos';
+                    case '6-10': return '6-10 anos';
+                    case '11-15': return '11-15 anos';
+                    case '16-20': return '16-20 anos';
+                    case '21+': return '21+ anos';
+                    case 'nao_informado': return 'Não Informado';
+                    default: return key;
+                }
+            });
+            const values = Object.values(data);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Alunos',
+                        data: values,
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de bairro
+        function createBairroChart() {
+            const ctx = document.getElementById('bairroChart').getContext('2d');
+            const data = dashboardData.distribuicaoBairro;
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            if (labels.length === 0) {
+                labels.push('Sem dados');
+                values.push(1);
+            }
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Alunos',
+                        data: values,
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de alunos mais presentes
+        function createMaisPresentesChart() {
+            const ctx = document.getElementById('maisPresentesChart').getContext('2d');
+            const data = dashboardData.alunosMaisPresentes || [];
+            const labels = data.map(aluno => aluno.nome);
+            const values = data.map(aluno => aluno.presencas);
+            
+            if (labels.length === 0) {
+                labels.push('Sem dados');
+                values.push(1);
+            }
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Presenças',
+                        data: values,
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de alunos mais faltosos
+        function createMaisFaltososChart() {
+            const ctx = document.getElementById('maisFaltososChart').getContext('2d');
+            const data = dashboardData.alunosMaisFaltosos || [];
+            const labels = data.map(aluno => aluno.nome);
+            const values = data.map(aluno => aluno.totalDias - aluno.presencas);
+            
+            if (labels.length === 0) {
+                labels.push('Sem dados');
+                values.push(1);
+            }
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Faltas',
+                        data: values,
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de logs por dia
+        function createLogsChart(frequenciaSemana) {
+            const ctx = document.getElementById('logsChart').getContext('2d');
+            
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                last7Days.push(date.toISOString().split('T')[0]);
+            }
+
+            const logsData = last7Days.map(day => {
+                return frequenciaSemana.filter(f => f.dia === day).length;
+            });
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last7Days.map(day => new Date(day).toLocaleDateString('pt-BR', { weekday: 'short' })),
+                    datasets: [{
+                        label: 'Logs',
+                        data: logsData,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Voltar ao menu
+        function goBack() {
+            window.location.href = 'menu.html';
+        }
+
+        // CSS para animação de loading
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
