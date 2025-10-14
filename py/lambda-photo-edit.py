@@ -107,6 +107,134 @@ def update_student_photo_url(student_id, photo_url):
         logger.error(f'Erro ao atualizar foto no banco: {str(e)}')
         return False
 
+def get_student_devices(student_id):
+    """Busca todos os dispositivos associados ao aluno."""
+    try:
+        headers = {
+            "apikey": SUPABASE_API_KEY,
+            "Authorization": f"Bearer {SUPABASE_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        # Buscar dispositivos do aluno
+        url = f"{SUPABASE_URL}/rest/v1/aluno_dispositivo?select=id_do_aluno_no_dispositivo,dispositivos!inner(id,nome,ip,login,senha,status)&aluno=eq.{student_id}&dispositivos.status=eq.ATIVO"
+        
+        req = urllib.request.Request(url=url, method="GET", headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
+            body = response.read().decode()
+            data = json.loads(body)
+            
+            if isinstance(data, list):
+                logger.info(f'Encontrados {len(data)} dispositivos para aluno {student_id}')
+                return data
+            return []
+            
+    except Exception as e:
+        logger.error(f'Erro ao buscar dispositivos: {str(e)}')
+        return []
+
+def get_device_session(device_ip, login, password):
+    """Obtém sessão de autenticação do dispositivo."""
+    try:
+        ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
+        
+        # Dados de login
+        login_data = f"login={login}&password={password}"
+        
+        # Fazer requisição de login
+        url = f"http://{ip_with_port}/login.fcgi"
+        req = urllib.request.Request(
+            url=url,
+            data=login_data.encode(),
+            method="POST",
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            body = response.read().decode()
+            
+            # Parse da resposta
+            for line in body.split('\n'):
+                if line.startswith('session='):
+                    session = line.split('=')[1].strip()
+                    logger.info(f'Sessão obtida para {device_ip}: {session[:10]}...')
+                    return session
+            
+            logger.error(f'Sessão não encontrada na resposta de {device_ip}')
+            return None
+            
+    except Exception as e:
+        logger.error(f'Erro ao obter sessão de {device_ip}: {str(e)}')
+        return None
+
+def update_photo_on_device(device_ip, student_device_id, session, photo_data):
+    """Atualiza foto no dispositivo de controle de acesso."""
+    try:
+        ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
+        timestamp = int(datetime.now().timestamp())
+        
+        # URL para atualizar foto
+        url = f"http://{ip_with_port}/user_set_image.fcgi?user_id={student_device_id}&session={session}&timestamp={timestamp}"
+        
+        # Fazer requisição
+        req = urllib.request.Request(
+            url=url,
+            data=photo_data,
+            method="POST",
+            headers={'Content-Type': 'application/octet-stream'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            if response.status == 200:
+                logger.info(f'Foto atualizada no dispositivo {device_ip} para usuário {student_device_id}')
+                return True
+            else:
+                logger.error(f'Erro ao atualizar foto no dispositivo {device_ip}: status {response.status}')
+                return False
+                
+    except Exception as e:
+        logger.error(f'Erro ao atualizar foto no dispositivo {device_ip}: {str(e)}')
+        return False
+
+def update_devices_photos(student_id, photo_data):
+    """Atualiza foto em todos os dispositivos do aluno."""
+    devices = get_student_devices(student_id)
+    
+    if not devices:
+        logger.info(f'Nenhum dispositivo encontrado para aluno {student_id}')
+        return True  # Não é erro crítico
+    
+    success_count = 0
+    total_devices = len(devices)
+    
+    for device in devices:
+        try:
+            device_info = device['dispositivos']
+            device_ip = device_info['ip'].rstrip('/')
+            student_device_id = device['id_do_aluno_no_dispositivo']
+            
+            logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip})...')
+            
+            # Obter sessão
+            session = get_device_session(device_ip, device_info['login'], device_info['senha'])
+            if not session:
+                logger.error(f'Falha ao obter sessão do dispositivo {device_ip}')
+                continue
+            
+            # Atualizar foto
+            if update_photo_on_device(device_ip, student_device_id, session, photo_data):
+                success_count += 1
+                logger.info(f'Sucesso no dispositivo {device_info["nome"]}')
+            else:
+                logger.error(f'Falha ao atualizar foto no dispositivo {device_info["nome"]}')
+                
+        except Exception as e:
+            logger.error(f'Erro ao processar dispositivo: {str(e)}')
+    
+    logger.info(f'Dispositivos atualizados: {success_count}/{total_devices}')
+    return success_count > 0  # Sucesso se pelo menos um dispositivo foi atualizado
+
 def lambda_handler(event, context):
     """Handler principal da Lambda para edição de fotos."""
     
@@ -235,20 +363,32 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Erro ao atualizar foto no banco de dados'})
             }
         
+        # Atualizar foto nos dispositivos de controle de acesso
+        devices_updated = update_devices_photos(student['id'], photo_data)
+        
+        # Preparar resposta com informações sobre dispositivos
+        response_data = {
+            'success': True,
+            'message': 'Foto atualizada com sucesso',
+            'student': {
+                'id': student['id'],
+                'nome': student['nome'],
+                'id_control_id': student['id_control_id'],
+                'foto_url': photo_url
+            },
+            'devices_updated': devices_updated
+        }
+        
+        if devices_updated:
+            response_data['message'] += ' e sincronizada com dispositivos'
+        else:
+            response_data['message'] += ' (dispositivos não atualizados - verifique logs)'
+        
         # Sucesso
         return {
             'statusCode': 200,
             'headers': cors_headers,
-            'body': json.dumps({
-                'success': True,
-                'message': 'Foto atualizada com sucesso',
-                'student': {
-                    'id': student['id'],
-                    'nome': student['nome'],
-                    'id_control_id': student['id_control_id'],
-                    'foto_url': photo_url
-                }
-            })
+            'body': json.dumps(response_data)
         }
         
     except Exception as e:
