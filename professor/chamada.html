@@ -1113,12 +1113,13 @@
             }
         }
 
-        // Função para obter data local do Brasil (UTC-3)
-        function getTodayBrazil() {
+        // Função para obter a data local do navegador em formato YYYY-MM-DD
+        function getTodayLocalISODate() {
             const now = new Date();
-            // Ajustar para fuso horário do Brasil (UTC-3)
-            const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-            return brazilTime.toISOString().split('T')[0];
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         // Carregar logs de hoje
@@ -1126,7 +1127,7 @@
             try {
                 console.log('📊 Carregando logs de hoje...');
                 
-                const today = getTodayBrazil();
+                const today = getTodayLocalISODate();
                 const filterData = document.getElementById('filterData');
                 if (filterData && !filterData.value) {
                     filterData.value = today;
@@ -1187,7 +1188,9 @@
 
         function formatTimeView(dt) {
             const d = parseLogDate(dt);
-            return d ? d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '';
+            if (!d) return '';
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            return d.toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
         }
 
         // Renderizar cards dos alunos
