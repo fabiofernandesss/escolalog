@@ -212,25 +212,84 @@
             margin-bottom: 12px;
         }
 
-        /* Lista de alunos recentes em grid compacto com fotos */
+        /* Filtros de logs */
+        .logs-filters {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 200px;
+        }
+        .filter-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+        .filter-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .btn-clear {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-clear:hover {
+            background: #dc2626;
+        }
+
+        /* Lista de logs em layout lateral */
         .student-list { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 10px; 
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 8px;
         }
         .student-item { 
             display: flex; 
-            flex-direction: column; 
             align-items: center; 
-            gap: 8px; 
-            padding: 12px; 
+            gap: 16px; 
+            padding: 16px; 
             border: 1px solid #e2e8f0; 
             border-radius: 12px; 
-            background: #ffffff; 
+            background: #ffffff;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .student-item:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
         .student-avatar { 
-            width: 48px; 
-            height: 48px; 
+            width: 60px; 
+            height: 60px; 
             border-radius: 50%; 
             background: #3b82f6; 
             color: white; 
@@ -238,12 +297,44 @@
             align-items: center; 
             justify-content: center; 
             font-weight: 700; 
-            font-size: 1rem; 
-            border: 2px solid #e2e8f0; 
-            object-fit: cover; 
+            font-size: 1.2rem; 
+            border: 3px solid #e2e8f0; 
+            object-fit: cover;
+            flex-shrink: 0;
         }
-        .student-name { font-size: 0.9rem; font-weight: 600; color: #1e293b; text-align: center; }
-        .student-details { font-size: 0.75rem; color: #64748b; text-align: center; }
+        .student-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .student-name { 
+            font-size: 1rem; 
+            font-weight: 600; 
+            color: #1e293b; 
+            margin-bottom: 4px;
+        }
+        .student-details { 
+            font-size: 0.875rem; 
+            color: #64748b; 
+        }
+        .student-details div {
+            margin-bottom: 2px;
+        }
+        .student-details strong {
+            color: #374151;
+        }
+
+        /* Loading indicator para scroll infinito */
+        .loading-more {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
 
         .loading { display: flex; align-items: center; gap: 8px; color: #64748b; }
         .spinner { width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -366,15 +457,39 @@
         </div>
 
         <div class="recent-students">
-            <h3>
-                <i data-lucide="clock"></i>
-                Alunos Recentes
-            </h3>
-            <div class="student-list" id="recentStudents">
+             <h3>
+                 <i data-lucide="activity"></i>
+                 Logs Recentes da Escola
+             </h3>
+             
+             <!-- Filtros -->
+             <div class="logs-filters">
+                 <div class="filter-row">
+                     <div class="filter-group">
+                         <label for="searchStudent">Pesquisar Aluno:</label>
+                         <input type="text" id="searchStudent" placeholder="Digite o nome do aluno..." />
+                     </div>
+                     <div class="filter-group">
+                         <label for="dateFilter">Filtrar por Data:</label>
+                         <input type="date" id="dateFilter" />
+                     </div>
+                     <div class="filter-group">
+                         <button id="clearFilters" class="btn-clear">Limpar Filtros</button>
+                     </div>
+                 </div>
+             </div>
+             
+             <div class="student-list" id="recentStudents">
                 <div class="loading">
                     <div class="spinner"></div>
-                    Carregando alunos...
+                    Carregando logs...
                 </div>
+            </div>
+            
+            <!-- Loading indicator para scroll infinito -->
+            <div id="loadingMore" class="loading-more" style="display: none;">
+                <div class="spinner"></div>
+                Carregando mais logs...
             </div>
         </div>
     </div>
@@ -413,6 +528,7 @@
         let currentUser = null;
         let turmas = [];
         let turmaIds = [];
+        let logsSubscription = null; // Para subscription em tempo real
         let dashboardData = {
             totalStudents: 0,
             maleStudents: 0,
@@ -422,7 +538,7 @@
             seriesData: [],
             classData: [],
             neighborhoodData: [],
-            recentStudents: []
+            recentLogs: [] // Mudança: logs ao invés de students
         };
 
         // Verificar autenticação (alinha com menu: usa whatsapp_user)
@@ -470,6 +586,246 @@
             }
         }
 
+        // Carregar todos os logs em tempo real da frequência diária
+        // Variáveis para controle de paginação e filtros
+        let currentPage = 0;
+        const pageSize = 20;
+        let isLoading = false;
+        let hasMoreLogs = true;
+        let currentFilters = {
+            studentName: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+
+        async function loadRecentLogs(reset = false) {
+            if (isLoading || (!hasMoreLogs && !reset)) return;
+            
+            try {
+                isLoading = true;
+                
+                if (reset) {
+                    currentPage = 0;
+                    hasMoreLogs = true;
+                    dashboardData.recentLogs = [];
+                }
+
+                // Construir query com filtros
+                let query = supabase
+                    .from('frequencia_diaria')
+                    .select(`
+                        nome_aluno,
+                        url_foto_aluno,
+                        entrada,
+                        saida,
+                        turma_nome,
+                        serie_nome,
+                        escola_nome,
+                        total_logs,
+                        tipo_frequencia,
+                        tempo_na_escola_formatado
+                    `)
+                    .not('nome_aluno', 'is', null);
+
+                // Aplicar filtro de nome do aluno
+                if (currentFilters.studentName) {
+                    query = query.ilike('nome_aluno', `%${currentFilters.studentName}%`);
+                }
+
+                // Aplicar filtro de data
+                if (currentFilters.dateFrom) {
+                    query = query.gte('entrada', currentFilters.dateFrom);
+                }
+                if (currentFilters.dateTo) {
+                    const dateTo = new Date(currentFilters.dateTo);
+                    dateTo.setHours(23, 59, 59, 999);
+                    query = query.lte('entrada', dateTo.toISOString());
+                }
+
+                // Aplicar paginação
+                const from = currentPage * pageSize;
+                const to = from + pageSize - 1;
+                
+                query = query
+                    .order('entrada', { ascending: false })
+                    .range(from, to);
+
+                const { data: logs, error } = await query;
+
+                if (error) {
+                    console.error('Erro ao carregar logs:', error);
+                    return;
+                }
+
+                const newLogs = logs || [];
+                
+                if (reset) {
+                    dashboardData.recentLogs = newLogs;
+                } else {
+                    dashboardData.recentLogs = [...dashboardData.recentLogs, ...newLogs];
+                }
+
+                hasMoreLogs = newLogs.length === pageSize;
+                currentPage++;
+
+                renderRecentLogs(reset);
+            } catch (error) {
+                console.error('Erro ao carregar logs recentes:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Renderizar lista de logs com scroll infinito
+        function renderRecentLogs(reset = false) {
+            const container = document.getElementById('recentStudents');
+            
+            if (dashboardData.recentLogs.length === 0) {
+                container.innerHTML = '<div class="loading">Nenhum log encontrado</div>';
+                return;
+            }
+
+            // Atualizar título da seção
+            const titleElement = document.querySelector('#recentStudents').previousElementSibling;
+            if (titleElement && titleElement.tagName === 'H3') {
+                titleElement.textContent = `Últimos Logs em Tempo Real (${dashboardData.recentLogs.length}${hasMoreLogs ? '+' : ''})`;
+            }
+
+            const logsHtml = dashboardData.recentLogs.map(log => {
+                // Formatar horário de entrada para fuso horário brasileiro (UTC-3)
+                const entrada = log.entrada ? new Date(log.entrada).toLocaleString('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }) : 'Sem horário';
+
+                // Formatar horário de saída se existir
+                const saida = log.saida && log.saida !== log.entrada ? 
+                    new Date(log.saida).toLocaleString('pt-BR', {
+                        timeZone: 'America/Sao_Paulo',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }) : null;
+
+                return `
+                    <div class="student-item">
+                        ${log.url_foto_aluno 
+                            ? `<img src="${log.url_foto_aluno}" alt="${log.nome_aluno}" class="student-avatar">`
+                            : `<div class="student-avatar">${(log.nome_aluno || 'A').charAt(0).toUpperCase()}</div>`
+                        }
+                        <div class="student-info">
+                            <div class="student-name">${log.nome_aluno || 'Aluno não identificado'}</div>
+                            <div class="student-details">
+                                <div>${log.turma_nome || 'Sem turma'} • ${log.serie_nome || 'Sem série'}</div>
+                                <div><strong>Entrada:</strong> ${entrada}</div>
+                                ${saida ? `<div><strong>Saída:</strong> ${saida}</div>` : ''}
+                                <div><strong>Logs:</strong> ${log.total_logs || 0} • <strong>Tipo:</strong> ${log.tipo_frequencia || 'N/A'}</div>
+                                ${log.tempo_na_escola_formatado ? `<div><strong>Tempo na escola:</strong> ${log.tempo_na_escola_formatado}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Adicionar indicador de loading se há mais logs
+            const loadingIndicator = hasMoreLogs ? 
+                '<div class="loading-more" id="loadingMore">🔄 Carregando mais logs...</div>' : '';
+
+            container.innerHTML = logsHtml + loadingIndicator;
+
+            // Configurar scroll infinito
+            setupInfiniteScroll();
+        }
+
+        // Configurar scroll infinito
+        function setupInfiniteScroll() {
+            const container = document.querySelector('.student-list');
+            const loadingIndicator = document.getElementById('loadingMore');
+            
+            if (!container || !loadingIndicator) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && hasMoreLogs && !isLoading) {
+                        loadRecentLogs(false);
+                    }
+                });
+            }, {
+                root: container,
+                rootMargin: '100px'
+            });
+
+            observer.observe(loadingIndicator);
+        }
+
+        // Aplicar filtros
+        function applyFilters() {
+            const studentNameInput = document.getElementById('studentSearch');
+            const dateFromInput = document.getElementById('dateFrom');
+            const dateToInput = document.getElementById('dateTo');
+
+            currentFilters = {
+                studentName: studentNameInput?.value.trim() || '',
+                dateFrom: dateFromInput?.value || '',
+                dateTo: dateToInput?.value || ''
+            };
+
+            loadRecentLogs(true);
+        }
+
+        // Limpar filtros
+        function clearFilters() {
+            document.getElementById('studentSearch').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            
+            currentFilters = {
+                studentName: '',
+                dateFrom: '',
+                dateTo: ''
+            };
+
+            loadRecentLogs(true);
+        }
+
+        // Configurar subscription em tempo real para frequência diária
+        function setupLogsSubscription() {
+            // Remover subscription anterior se existir
+            if (logsSubscription) {
+                supabase.removeChannel(logsSubscription);
+            }
+
+            // Criar nova subscription para frequencia_diaria
+            logsSubscription = supabase
+                .channel('frequencia-realtime')
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'frequencia_diaria'
+                }, (payload) => {
+                    console.log('🔄 Nova frequência recebida:', payload.new);
+                    // Recarregar logs quando houver inserção (reset para mostrar novos logs no topo)
+                    loadRecentLogs(true);
+                })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'frequencia_diaria'
+                }, (payload) => {
+                    console.log('🔄 Frequência atualizada:', payload.new);
+                    // Recarregar logs quando houver atualização (reset para mostrar atualizações)
+                    loadRecentLogs(true);
+                })
+                .subscribe((status) => {
+                    console.log('📡 Status da subscription de frequência:', status);
+                });
+        }
+
         // Carregar dados do dashboard
         async function loadDashboardData() {
             try {
@@ -481,8 +837,11 @@
                 // Carregar dados para gráficos
                 await loadChartData();
                 
-                // Carregar alunos recentes
-                await loadRecentStudents();
+                // Carregar logs recentes (substituindo alunos recentes)
+                await loadRecentLogs();
+                
+                // Configurar subscription em tempo real
+                setupLogsSubscription();
                 
                 // Renderizar gráficos
                 renderCharts();
@@ -780,12 +1139,55 @@
                 // Inicializar Supabase
                 await initializeSupabase();
 
+                // Configurar event listeners para filtros
+                setupFilterListeners();
+
                 // Verificar autenticação e carregar dados
                 if (checkAuth()) {
                     await loadDashboardData();
                 }
             } catch (e) {
                 console.error('Erro na inicialização do dashboard:', e);
+            }
+        });
+
+        // Configurar event listeners para filtros
+        function setupFilterListeners() {
+            // Pesquisa por nome do aluno
+            const studentSearchInput = document.getElementById('studentSearch');
+            if (studentSearchInput) {
+                let searchTimeout;
+                studentSearchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        applyFilters();
+                    }, 500); // Debounce de 500ms
+                });
+            }
+
+            // Filtros de data
+            const dateFromInput = document.getElementById('dateFrom');
+            const dateToInput = document.getElementById('dateTo');
+            
+            if (dateFromInput) {
+                dateFromInput.addEventListener('change', applyFilters);
+            }
+            
+            if (dateToInput) {
+                dateToInput.addEventListener('change', applyFilters);
+            }
+
+            // Botão limpar filtros
+            const clearButton = document.getElementById('clearFilters');
+            if (clearButton) {
+                clearButton.addEventListener('click', clearFilters);
+            }
+        }
+
+        // Cleanup ao sair da página
+        window.addEventListener('beforeunload', () => {
+            if (logsSubscription) {
+                supabase.removeChannel(logsSubscription);
             }
         });
     </script>
