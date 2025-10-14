@@ -15,7 +15,7 @@ SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 
 # Timeouts
 # Com 10s de Lambda: dispositivos usam ~1.8s, restam ~8s para Storage+DB
-SUPABASE_TIMEOUT = 5.0
+SUPABASE_TIMEOUT = 15.0
 
 def safe_int_cast(value, default=0):
     """Converte valor para int de forma segura."""
@@ -260,12 +260,15 @@ def update_devices_photos(student_id, photo_data):
 def lambda_handler(event, context):
     """Handler principal da Lambda para edição de fotos."""
     
-    # Headers CORS sem restrições
+    # CORS dinâmico: libera qualquer origem e trata preflight corretamente
+    headers_in = event.get('headers') or {}
+    origin = headers_in.get('origin') or headers_in.get('Origin') or '*'
+    requested_headers = headers_in.get('access-control-request-headers', '*')
     cors_headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': '*',
-        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Origin': origin if origin else '*',
+        'Access-Control-Allow-Headers': requested_headers,
+        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+        'Vary': 'Origin',
         'Content-Type': 'application/json'
     }
     
@@ -283,9 +286,11 @@ def lambda_handler(event, context):
         
         if http_method == 'OPTIONS':
             logger.info('Processando requisição OPTIONS (preflight) - sem restrições')
+            options_headers = dict(cors_headers)
+            options_headers['Access-Control-Max-Age'] = '86400'
             return {
-                'statusCode': 200,
-                'headers': cors_headers,
+                'statusCode': 204,
+                'headers': options_headers,
                 'body': ''
             }
         
@@ -297,44 +302,50 @@ def lambda_handler(event, context):
         
         # Parse do body
         body = event.get('body', '{}')
+        # Alguns provedores enviam body em base64
+        if event.get('isBase64Encoded'):
+            try:
+                body = base64.b64decode(body).decode('utf-8')
+            except Exception as e:
+                logger.warning(f'Falha ao decodificar body base64: {str(e)}')
         logger.info(f'Body recebido (tipo: {type(body)}): {body}')
-        
+
         try:
             if isinstance(body, str):
                 data = json.loads(body)
             else:
                 data = body
             logger.info(f'Dados parseados: {data}')
-        except json.JSONDecodeError as e:
-            logger.error(f'Erro ao parsear JSON: {str(e)}')
+        except json.JSONDecodeError:
+            logger.error('Erro ao parsear JSON no body da requisição')
             return {
                 'statusCode': 400,
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'JSON inválido no body da requisição'})
             }
-        
+
         # Validar parâmetros obrigatórios
         control_id = data.get('id_control_id')
         photo_base64 = data.get('photo_base64')
         file_extension = data.get('file_extension', 'jpg')
-        # Sincronização de dispositivos é obrigatória para este fluxo
-        sync_devices = True
-        logger.info('Sincronização com dispositivos definida como obrigatória.')
-        
+        # Permitir controle via payload; padrão True para ambientes administrados
+        sync_devices = bool(data.get('sync_devices', True))
+        logger.info(f'Sincronização com dispositivos (sync_devices): {sync_devices}')
+
         if not control_id:
             return {
                 'statusCode': 400,
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'id_control_id é obrigatório'})
             }
-        
+
         if not photo_base64:
             return {
                 'statusCode': 400,
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'photo_base64 é obrigatório'})
             }
-        
+
         # Buscar aluno pelo id_control_id
         student = get_student_by_control_id(control_id)
         if not student:
@@ -343,25 +354,24 @@ def lambda_handler(event, context):
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'Aluno não encontrado'})
             }
-        
+
         # Decodificar imagem base64
         try:
             # Remover prefixo data:image se existir
             if ',' in photo_base64:
                 photo_base64 = photo_base64.split(',')[1]
-            
             photo_data = base64.b64decode(photo_base64)
-        except Exception as e:
+        except Exception:
             return {
                 'statusCode': 400,
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'Formato de imagem inválido'})
             }
-        
+
         # Gerar nome único para o arquivo
         timestamp = int(datetime.now().timestamp())
         file_name = f"aluno_{control_id}_{timestamp}.{file_extension}"
-        
+
         # Determinar content-type
         content_type_map = {
             'jpg': 'image/jpeg',
@@ -370,29 +380,17 @@ def lambda_handler(event, context):
             'gif': 'image/gif'
         }
         content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
-        
-        # Atualizar foto nos dispositivos de controle de acesso (obrigatório) primeiro
-        # para evitar estouro do timeout total da Lambda
-        logger.info('Iniciando sincronização de foto com dispositivos (antes do upload)...')
-        devices_updated = update_devices_photos(student['id'], photo_data)
-        
-        if not devices_updated:
-            # Se nenhum dispositivo foi atualizado, retornar erro ao cliente imediatamente
-            logger.error('Nenhum dispositivo foi atualizado. Abortando com erro 502 antes do upload.')
-            return {
-                'statusCode': 502,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'success': False,
-                    'error': 'Falha ao sincronizar com dispositivos',
-                    'student': {
-                        'id': student['id'],
-                        'nome': student['nome'],
-                        'id_control_id': student['id_control_id']
-                    }
-                })
-            }
-        
+
+        devices_updated = None
+        if sync_devices:
+            # Tentar sincronizar com dispositivos antes do upload, porém não bloquear fluxo
+            logger.info('Iniciando sincronização de foto com dispositivos (antes do upload)...')
+            devices_updated = update_devices_photos(student['id'], photo_data)
+            if not devices_updated:
+                logger.warning('Nenhum dispositivo foi atualizado. Prosseguindo com upload e atualização no banco.')
+        else:
+            logger.info('Sincronização de dispositivos desativada pelo cliente. Pulando etapa de dispositivos.')
+
         # Upload da foto (após sincronização)
         photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
         if not photo_url:
@@ -401,7 +399,7 @@ def lambda_handler(event, context):
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'Erro ao fazer upload da foto'})
             }
-        
+
         # Atualizar URL no banco de dados
         if not update_student_photo_url(student['id'], photo_url):
             return {
@@ -409,7 +407,7 @@ def lambda_handler(event, context):
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'Erro ao atualizar foto no banco de dados'})
             }
-        
+
         # Preparar resposta com informações sobre dispositivos
         response_data = {
             'success': True,
@@ -420,13 +418,18 @@ def lambda_handler(event, context):
                 'id_control_id': student['id_control_id'],
                 'foto_url': photo_url
             },
-            'devices_updated': devices_updated,
-            'sync_devices': sync_devices
+            'devices_updated': bool(devices_updated) if devices_updated is not None else False,
+            'sync_devices': sync_devices,
+            'partial_success': (sync_devices and not devices_updated) if devices_updated is not None else False
         }
-        
-        # Dispositivos já sincronizados anteriormente; apenas ajustar mensagem
-        response_data['message'] += ' e sincronizada com dispositivos'
-        
+
+        # Ajustar mensagem conforme sincronização
+        if sync_devices:
+            if devices_updated:
+                response_data['message'] += ' e sincronizada com dispositivos'
+            else:
+                response_data['message'] += ' (dispositivos não sincronizados)'
+
         # Sucesso
         return {
             'statusCode': 200,
