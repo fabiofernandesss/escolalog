@@ -14,8 +14,8 @@ SUPABASE_URL = "https://sntyndufbxfzasnqvayc.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM"
 
 # Timeouts
-# Ajuste para caber no limite padrão de 3s da Lambda Function URL
-SUPABASE_TIMEOUT = 3.0
+# Ajuste agressivo: dispositivos usam ~1.8s, restam ~1.2s para Storage+DB
+SUPABASE_TIMEOUT = 1.0
 
 def safe_int_cast(value, default=0):
     """Converte valor para int de forma segura."""
@@ -56,8 +56,7 @@ def upload_photo_to_storage(file_data, file_name, content_type):
         headers = {
             "apikey": SUPABASE_API_KEY,
             "Authorization": f"Bearer {SUPABASE_API_KEY}",
-            "Content-Type": content_type,
-            "Cache-Control": "3600"
+            "Content-Type": content_type
         }
         
         # Upload para o bucket fotos_alunos
@@ -84,8 +83,7 @@ def update_student_photo_url(student_id, photo_url):
         headers = {
             "apikey": SUPABASE_API_KEY,
             "Authorization": f"Bearer {SUPABASE_API_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+            "Content-Type": "application/json"
         }
         
         payload = {
