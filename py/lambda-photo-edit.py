@@ -14,7 +14,8 @@ SUPABASE_URL = "https://sntyndufbxfzasnqvayc.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM"
 
 # Timeouts
-SUPABASE_TIMEOUT = 10.0
+# Ajuste para caber no limite padrão de 3s da Lambda Function URL
+SUPABASE_TIMEOUT = 3.0
 
 def safe_int_cast(value, default=0):
     """Converte valor para int de forma segura."""
@@ -134,7 +135,7 @@ def get_student_devices(student_id):
         logger.error(f'Erro ao buscar dispositivos: {str(e)}')
         return []
 
-def get_device_session(device_ip, login, password, retries=2):
+def get_device_session(device_ip, login, password, retries=1):
     """Obtém sessão de autenticação do dispositivo com tentativas.
     Tenta primeiro via JSON (como usado no frontend), depois faz fallback para form-url-encoded.
     """
@@ -151,7 +152,7 @@ def get_device_session(device_ip, login, password, retries=2):
                 method="POST",
                 headers={'Content-Type': 'application/json'}
             )
-            with urllib.request.urlopen(req_json, timeout=10) as response:
+            with urllib.request.urlopen(req_json, timeout=1.2) as response:
                 body = response.read().decode()
                 try:
                     data = json.loads(body)
@@ -175,7 +176,7 @@ def get_device_session(device_ip, login, password, retries=2):
                 method="POST",
                 headers={'Content-Type': 'application/x-www-form-urlencoded'}
             )
-            with urllib.request.urlopen(req_form, timeout=10) as response:
+            with urllib.request.urlopen(req_form, timeout=1.2) as response:
                 body = response.read().decode()
                 # Alguns firmwares retornam 'session=...' em texto puro
                 for line in body.split('\n'):
@@ -190,7 +191,7 @@ def get_device_session(device_ip, login, password, retries=2):
     logger.error(f'Falha ao obter sessão de {device_ip} após {retries} tentativas')
     return None
 
-def update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=2):
+def update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=1):
     """Atualiza foto no dispositivo de controle de acesso com tentativas."""
     ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
     timestamp = int(datetime.now().timestamp())
@@ -208,7 +209,7 @@ def update_photo_on_device(device_ip, student_device_id, session, photo_data, re
                 method="POST",
                 headers=headers
             )
-            with urllib.request.urlopen(req, timeout=20) as response:
+            with urllib.request.urlopen(req, timeout=1.5) as response:
                 if response.status == 200:
                     logger.info(f'Foto atualizada no dispositivo {device_ip} (tentativa {attempt}) para usuário {student_device_id}')
                     return True
@@ -240,13 +241,13 @@ def update_devices_photos(student_id, photo_data):
             logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip})...')
             
             # Obter sessão com retries
-            session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=2)
+            session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=1)
             if not session:
                 logger.error(f'Falha ao obter sessão do dispositivo {device_ip}')
                 continue
             
             # Atualizar foto com retries
-            if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=2):
+            if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=1):
                 success_count += 1
                 logger.info(f'Sucesso no dispositivo {device_info["nome"]}')
             else:
@@ -372,7 +373,29 @@ def lambda_handler(event, context):
         }
         content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
         
-        # Upload da foto
+        # Atualizar foto nos dispositivos de controle de acesso (obrigatório) primeiro
+        # para evitar estouro do timeout total da Lambda
+        logger.info('Iniciando sincronização de foto com dispositivos (antes do upload)...')
+        devices_updated = update_devices_photos(student['id'], photo_data)
+        
+        if not devices_updated:
+            # Se nenhum dispositivo foi atualizado, retornar erro ao cliente imediatamente
+            logger.error('Nenhum dispositivo foi atualizado. Abortando com erro 502 antes do upload.')
+            return {
+                'statusCode': 502,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Falha ao sincronizar com dispositivos',
+                    'student': {
+                        'id': student['id'],
+                        'nome': student['nome'],
+                        'id_control_id': student['id_control_id']
+                    }
+                })
+            }
+        
+        # Upload da foto (após sincronização)
         photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
         if not photo_url:
             return {
@@ -389,10 +412,6 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Erro ao atualizar foto no banco de dados'})
             }
         
-        # Atualizar foto nos dispositivos de controle de acesso (obrigatório)
-        logger.info('Iniciando sincronização de foto com dispositivos...')
-        devices_updated = update_devices_photos(student['id'], photo_data)
-        
         # Preparar resposta com informações sobre dispositivos
         response_data = {
             'success': True,
@@ -407,20 +426,8 @@ def lambda_handler(event, context):
             'sync_devices': sync_devices
         }
         
-        if devices_updated:
-            response_data['message'] += ' e sincronizada com dispositivos'
-        else:
-            # Se nenhum dispositivo foi atualizado, retornar erro ao cliente
-            logger.error('Nenhum dispositivo foi atualizado. Abortando com erro 502.')
-            return {
-                'statusCode': 502,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'success': False,
-                    'error': 'Falha ao sincronizar com dispositivos',
-                    'student': response_data['student']
-                })
-            }
+        # Dispositivos já sincronizados anteriormente; apenas ajustar mensagem
+        response_data['message'] += ' e sincronizada com dispositivos'
         
         # Sucesso
         return {
