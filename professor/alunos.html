@@ -2032,7 +2032,9 @@
                 const lambdaPayload = {
                     id_control_id: currentStudent.id_control_id,
                     photo_base64: base64Data,
-                    file_extension: fileExtension
+                    file_extension: fileExtension,
+                    // Sincronização de dispositivos obrigatória via Lambda
+                    sync_devices: true
                 };
                 console.log('📦 Payload para Lambda:', {
                     id_control_id: lambdaPayload.id_control_id,
@@ -2086,25 +2088,9 @@
                     console.log('✅ Foto atualizada na lista de alunos');
                 }
 
-                // Atualizar foto no dispositivo de controle de acesso
-                console.log('🔧 Iniciando atualização no dispositivo...');
-                try {
-                    await updatePhotoOnDevice(currentStudent, compressedFile);
-                    console.log('✅ Foto atualizada no dispositivo com sucesso');
-                } catch (deviceError) {
-                    console.error('⚠️ Erro ao atualizar foto no dispositivo:', deviceError);
-                    
-                    // Verificar se é dispositivo móvel para mostrar mensagem específica
-                    const isMobile = isMobileDevice();
-                    const isHttps = window.location.protocol === 'https:';
-                    
-                    if (isMobile && isHttps) {
-                        console.log('📱 Dispositivo móvel - foto salva apenas no sistema');
-                        alert('✅ Foto atualizada com sucesso!\n\n📱 Em dispositivos móveis, a foto é salva apenas no sistema. Para sincronizar com dispositivos de controle de acesso, use um computador.');
-                    } else {
-                        // Não interrompe o processo, apenas loga o erro
-                        alert('⚠️ Foto atualizada no sistema, mas houve erro ao sincronizar com o dispositivo: ' + deviceError.message);
-                    }
+                // Sincronização de dispositivos é feita pela Lambda
+                if (typeof lambdaResult.devices_updated !== 'undefined') {
+                    console.log('🔧 Sincronização de dispositivos (Lambda):', lambdaResult.devices_updated ? 'OK' : 'FALHA');
                 }
 
                 // Recarregar a lista de alunos para atualizar todos os cards
