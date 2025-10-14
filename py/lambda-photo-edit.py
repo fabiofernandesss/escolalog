@@ -367,6 +367,8 @@ def lambda_handler(event, context):
         # Validar parâmetros obrigatórios
         control_id = data.get('id_control_id')
         photo_base64 = data.get('photo_base64')
+        photo_url = data.get('photo_url')  # Nova opção para sync_only
+        sync_only = bool(data.get('sync_only', False))  # Modo apenas sincronização
         file_extension = data.get('file_extension', 'jpg')
         # Permitir controle via payload; padrão True para ambientes administrados
         sync_devices = bool(data.get('sync_devices', True))
@@ -389,72 +391,99 @@ def lambda_handler(event, context):
         except Exception:
             logger.warning('Não foi possível ajustar SUPABASE_TIMEOUT dinamicamente')
         logger.info(f'Sincronização com dispositivos (sync_devices): {sync_devices}')
+        logger.info(f'Modo sync_only: {sync_only}')
         logger.info(f'Config timeouts: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s, supabase_timeout={SUPABASE_TIMEOUT}s')
 
         if not control_id:
             return safe_response(400, {'error': 'id_control_id é obrigatório'})
 
-        if not photo_base64:
-            return safe_response(400, {'error': 'photo_base64 é obrigatório'})
+        # Se for modo sync_only, não precisa de photo_base64, mas precisa de photo_url
+        if sync_only:
+            if not photo_url:
+                return safe_response(400, {'error': 'photo_url é obrigatório para sync_only'})
+        else:
+            if not photo_base64:
+                return safe_response(400, {'error': 'photo_base64 é obrigatório'})
 
         # Buscar aluno pelo id_control_id
         student = get_student_by_control_id(control_id)
         if not student:
             return safe_response(404, {'error': 'Aluno não encontrado'})
 
-        # Decodificar imagem base64
-        try:
-            # Remover prefixo data:image se existir
-            if ',' in photo_base64:
-                photo_base64 = photo_base64.split(',')[1]
-            photo_data = base64.b64decode(photo_base64)
-        except Exception:
-            return safe_response(400, {'error': 'Formato de imagem inválido'})
+        # Se for modo sync_only, usar photo_url fornecida e pular upload
+        if sync_only:
+            logger.info('Modo sync_only ativado - usando photo_url fornecida')
+            final_photo_url = photo_url
+            photo_data = None  # Não temos dados da imagem em modo sync_only
+            
+            # Para sync_only, precisamos baixar a imagem da URL para sincronizar com dispositivos
+            if sync_devices:
+                try:
+                    logger.info(f'Baixando imagem da URL para sincronização: {photo_url}')
+                    req = urllib.request.Request(photo_url)
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        photo_data = response.read()
+                    logger.info('Imagem baixada com sucesso para sincronização')
+                except Exception as e:
+                    logger.warning(f'Erro ao baixar imagem para sincronização: {e}')
+                    photo_data = None
+        else:
+            # Modo normal - decodificar imagem base64
+            try:
+                # Remover prefixo data:image se existir
+                if ',' in photo_base64:
+                    photo_base64 = photo_base64.split(',')[1]
+                photo_data = base64.b64decode(photo_base64)
+            except Exception:
+                return safe_response(400, {'error': 'Formato de imagem inválido'})
 
-        # Gerar nome único para o arquivo
-        timestamp = int(datetime.now().timestamp())
-        file_name = f"aluno_{control_id}_{timestamp}.{file_extension}"
+            # Gerar nome único para o arquivo
+            timestamp = int(datetime.now().timestamp())
+            file_name = f"aluno_{control_id}_{timestamp}.{file_extension}"
 
-        # Determinar content-type
-        content_type_map = {
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'gif': 'image/gif'
-        }
-        content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
+            # Determinar content-type
+            content_type_map = {
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif'
+            }
+            content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
 
+            # Upload da foto
+            final_photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
+            if not final_photo_url:
+                return safe_response(500, {'error': 'Erro ao fazer upload da foto'})
+
+            # Atualizar URL no banco de dados (apenas em modo normal)
+            if not update_student_photo_url(student['id'], final_photo_url):
+                return safe_response(500, {'error': 'Erro ao atualizar foto no banco de dados'})
+
+        # Sincronização com dispositivos (se habilitada e temos dados da imagem)
         devices_updated = None
-        if sync_devices:
-            # Tentar sincronizar com dispositivos antes do upload, porém não bloquear fluxo
-            logger.info('Iniciando sincronização de foto com dispositivos (antes do upload)...')
+        if sync_devices and photo_data:
+            logger.info('Iniciando sincronização de foto com dispositivos...')
             devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
             if not devices_updated:
-                logger.warning('Nenhum dispositivo foi atualizado. Prosseguindo com upload e atualização no banco.')
+                logger.warning('Nenhum dispositivo foi atualizado.')
+        elif sync_devices and not photo_data:
+            logger.warning('Sincronização solicitada mas dados da imagem não disponíveis')
         else:
-            logger.info('Sincronização de dispositivos desativada pelo cliente. Pulando etapa de dispositivos.')
-
-        # Upload da foto (após sincronização)
-        photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
-        if not photo_url:
-            return safe_response(500, {'error': 'Erro ao fazer upload da foto'})
-
-        # Atualizar URL no banco de dados
-        if not update_student_photo_url(student['id'], photo_url):
-            return safe_response(500, {'error': 'Erro ao atualizar foto no banco de dados'})
+            logger.info('Sincronização de dispositivos desativada pelo cliente.')
 
         # Preparar resposta com informações sobre dispositivos
         response_data = {
             'success': True,
-            'message': 'Foto atualizada com sucesso',
+            'message': 'Sincronização concluída com sucesso' if sync_only else 'Foto atualizada com sucesso',
             'student': {
                 'id': student['id'],
                 'nome': student['nome'],
                 'id_control_id': student['id_control_id'],
-                'foto_url': photo_url
+                'foto_url': final_photo_url
             },
             'devices_updated': bool(devices_updated) if devices_updated is not None else False,
             'sync_devices': sync_devices,
+            'sync_only': sync_only,
             'partial_success': (sync_devices and not devices_updated) if devices_updated is not None else False
         }
 
