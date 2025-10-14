@@ -692,25 +692,33 @@
             }
 
             const logsHtml = dashboardData.recentLogs.map(log => {
-                // Formatar horário de entrada para fuso horário brasileiro (UTC-3)
-                const entrada = log.entrada ? new Date(log.entrada).toLocaleString('pt-BR', {
-                    timeZone: 'America/Sao_Paulo',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                }) : 'Sem horário';
-
-                // Formatar horário de saída se existir
-                const saida = log.saida && log.saida !== log.entrada ? 
-                    new Date(log.saida).toLocaleString('pt-BR', {
-                        timeZone: 'America/Sao_Paulo',
+                // Formatar horário de entrada - os dados já estão no horário local brasileiro
+                // mas são marcados como UTC, então vamos interpretar como horário local
+                const entrada = log.entrada ? (() => {
+                    const date = new Date(log.entrada);
+                    // Adicionar 3 horas para compensar a diferença UTC-3
+                    date.setHours(date.getHours() + 3);
+                    return date.toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
                         second: '2-digit'
-                    }) : null;
+                    });
+                })() : 'Sem horário';
+
+                // Formatar horário de saída se existir
+                const saida = log.saida && log.saida !== log.entrada ? (() => {
+                    const date = new Date(log.saida);
+                    // Adicionar 3 horas para compensar a diferença UTC-3
+                    date.setHours(date.getHours() + 3);
+                    return date.toLocaleString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                })() : null;
 
                 return `
                     <div class="student-item">
