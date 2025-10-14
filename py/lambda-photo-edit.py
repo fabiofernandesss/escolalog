@@ -134,76 +134,99 @@ def get_student_devices(student_id):
         logger.error(f'Erro ao buscar dispositivos: {str(e)}')
         return []
 
-def get_device_session(device_ip, login, password):
-    """Obtém sessão de autenticação do dispositivo."""
-    try:
-        ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
-        
-        # Dados de login
-        login_data = f"login={login}&password={password}"
-        
-        # Fazer requisição de login
-        url = f"http://{ip_with_port}/login.fcgi"
-        req = urllib.request.Request(
-            url=url,
-            data=login_data.encode(),
-            method="POST",
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}
-        )
-        
-        with urllib.request.urlopen(req, timeout=10) as response:
-            body = response.read().decode()
-            
-            # Parse da resposta
-            for line in body.split('\n'):
-                if line.startswith('session='):
-                    session = line.split('=')[1].strip()
-                    logger.info(f'Sessão obtida para {device_ip}: {session[:10]}...')
-                    return session
-            
-            logger.error(f'Sessão não encontrada na resposta de {device_ip}')
-            return None
-            
-    except Exception as e:
-        logger.error(f'Erro ao obter sessão de {device_ip}: {str(e)}')
-        return None
+def get_device_session(device_ip, login, password, retries=2):
+    """Obtém sessão de autenticação do dispositivo com tentativas.
+    Tenta primeiro via JSON (como usado no frontend), depois faz fallback para form-url-encoded.
+    """
+    ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
+    url = f"http://{ip_with_port}/login.fcgi"
 
-def update_photo_on_device(device_ip, student_device_id, session, photo_data):
-    """Atualiza foto no dispositivo de controle de acesso."""
-    try:
-        ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
-        timestamp = int(datetime.now().timestamp())
-        
-        # URL para atualizar foto
-        url = f"http://{ip_with_port}/user_set_image.fcgi?user_id={student_device_id}&session={session}&timestamp={timestamp}"
-        
-        # Fazer requisição
-        req = urllib.request.Request(
-            url=url,
-            data=photo_data,
-            method="POST",
-            headers={'Content-Type': 'application/octet-stream'}
-        )
-        
-        with urllib.request.urlopen(req, timeout=15) as response:
-            if response.status == 200:
-                logger.info(f'Foto atualizada no dispositivo {device_ip} para usuário {student_device_id}')
-                return True
-            else:
-                logger.error(f'Erro ao atualizar foto no dispositivo {device_ip}: status {response.status}')
-                return False
-                
-    except Exception as e:
-        logger.error(f'Erro ao atualizar foto no dispositivo {device_ip}: {str(e)}')
-        return False
+    for attempt in range(1, retries + 1):
+        # 1) Tentativa com JSON
+        try:
+            json_body = json.dumps({"login": login, "password": password}).encode('utf-8')
+            req_json = urllib.request.Request(
+                url=url,
+                data=json_body,
+                method="POST",
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req_json, timeout=10) as response:
+                body = response.read().decode()
+                try:
+                    data = json.loads(body)
+                    session = data.get('session')
+                    if session:
+                        logger.info(f'Sessão (JSON) obtida para {device_ip}: {session[:10]}... (tentativa {attempt})')
+                        return session
+                    else:
+                        logger.warning(f'Resposta JSON sem sessão de {device_ip} (tentativa {attempt})')
+                except Exception:
+                    logger.warning(f'Resposta não-JSON recebida de {device_ip} (tentativa {attempt})')
+        except Exception as e:
+            logger.warning(f'Erro JSON ao obter sessão de {device_ip} (tentativa {attempt}): {str(e)}')
+
+        # 2) Fallback com form-url-encoded
+        try:
+            login_data = f"login={login}&password={password}".encode('utf-8')
+            req_form = urllib.request.Request(
+                url=url,
+                data=login_data,
+                method="POST",
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            with urllib.request.urlopen(req_form, timeout=10) as response:
+                body = response.read().decode()
+                # Alguns firmwares retornam 'session=...' em texto puro
+                for line in body.split('\n'):
+                    if line.strip().startswith('session='):
+                        session = line.split('=', 1)[1].strip()
+                        logger.info(f'Sessão (form) obtida para {device_ip}: {session[:10]}... (tentativa {attempt})')
+                        return session
+                logger.warning(f'Sessão não encontrada na resposta (form) de {device_ip} (tentativa {attempt})')
+        except Exception as e:
+            logger.warning(f'Erro form ao obter sessão de {device_ip} (tentativa {attempt}): {str(e)}')
+
+    logger.error(f'Falha ao obter sessão de {device_ip} após {retries} tentativas')
+    return None
+
+def update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=2):
+    """Atualiza foto no dispositivo de controle de acesso com tentativas."""
+    ip_with_port = device_ip if ':' in device_ip else f"{device_ip}:80"
+    timestamp = int(datetime.now().timestamp())
+    url = f"http://{ip_with_port}/user_set_image.fcgi?user_id={student_device_id}&session={session}&timestamp={timestamp}"
+    headers = {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': str(len(photo_data))
+    }
+    
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(
+                url=url,
+                data=photo_data,
+                method="POST",
+                headers=headers
+            )
+            with urllib.request.urlopen(req, timeout=20) as response:
+                if response.status == 200:
+                    logger.info(f'Foto atualizada no dispositivo {device_ip} (tentativa {attempt}) para usuário {student_device_id}')
+                    return True
+                else:
+                    logger.warning(f'Status {response.status} ao atualizar foto no dispositivo {device_ip} (tentativa {attempt})')
+        except Exception as e:
+            logger.warning(f'Erro ao atualizar foto no dispositivo {device_ip} (tentativa {attempt}): {str(e)}')
+    
+    logger.error(f'Falha ao atualizar foto no dispositivo {device_ip} após {retries} tentativas')
+    return False
 
 def update_devices_photos(student_id, photo_data):
-    """Atualiza foto em todos os dispositivos do aluno."""
+    """Atualiza foto em todos os dispositivos do aluno. Falha se nenhum dispositivo sincronizar."""
     devices = get_student_devices(student_id)
     
     if not devices:
-        logger.info(f'Nenhum dispositivo encontrado para aluno {student_id}')
-        return True  # Não é erro crítico
+        logger.error(f'Nenhum dispositivo encontrado para aluno {student_id}')
+        return False
     
     success_count = 0
     total_devices = len(devices)
@@ -216,14 +239,14 @@ def update_devices_photos(student_id, photo_data):
             
             logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip})...')
             
-            # Obter sessão
-            session = get_device_session(device_ip, device_info['login'], device_info['senha'])
+            # Obter sessão com retries
+            session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=2)
             if not session:
                 logger.error(f'Falha ao obter sessão do dispositivo {device_ip}')
                 continue
             
-            # Atualizar foto
-            if update_photo_on_device(device_ip, student_device_id, session, photo_data):
+            # Atualizar foto com retries
+            if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=2):
                 success_count += 1
                 logger.info(f'Sucesso no dispositivo {device_info["nome"]}')
             else:
@@ -233,7 +256,7 @@ def update_devices_photos(student_id, photo_data):
             logger.error(f'Erro ao processar dispositivo: {str(e)}')
     
     logger.info(f'Dispositivos atualizados: {success_count}/{total_devices}')
-    return success_count > 0  # Sucesso se pelo menos um dispositivo foi atualizado
+    return success_count > 0
 
 def lambda_handler(event, context):
     """Handler principal da Lambda para edição de fotos."""
@@ -295,6 +318,9 @@ def lambda_handler(event, context):
         control_id = data.get('id_control_id')
         photo_base64 = data.get('photo_base64')
         file_extension = data.get('file_extension', 'jpg')
+        # Sincronização de dispositivos é obrigatória para este fluxo
+        sync_devices = True
+        logger.info('Sincronização com dispositivos definida como obrigatória.')
         
         if not control_id:
             return {
@@ -363,7 +389,8 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Erro ao atualizar foto no banco de dados'})
             }
         
-        # Atualizar foto nos dispositivos de controle de acesso
+        # Atualizar foto nos dispositivos de controle de acesso (obrigatório)
+        logger.info('Iniciando sincronização de foto com dispositivos...')
         devices_updated = update_devices_photos(student['id'], photo_data)
         
         # Preparar resposta com informações sobre dispositivos
@@ -376,13 +403,24 @@ def lambda_handler(event, context):
                 'id_control_id': student['id_control_id'],
                 'foto_url': photo_url
             },
-            'devices_updated': devices_updated
+            'devices_updated': devices_updated,
+            'sync_devices': sync_devices
         }
         
         if devices_updated:
             response_data['message'] += ' e sincronizada com dispositivos'
         else:
-            response_data['message'] += ' (dispositivos não atualizados - verifique logs)'
+            # Se nenhum dispositivo foi atualizado, retornar erro ao cliente
+            logger.error('Nenhum dispositivo foi atualizado. Abortando com erro 502.')
+            return {
+                'statusCode': 502,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Falha ao sincronizar com dispositivos',
+                    'student': response_data['student']
+                })
+            }
         
         # Sucesso
         return {
