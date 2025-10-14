@@ -150,6 +150,11 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
         }
+        /* Ícone interno maior para melhor legibilidade */
+        .back-btn svg {
+            width: 22px;
+            height: 22px;
+        }
 
         .user-avatar {
             width: 28px;
@@ -1187,10 +1192,14 @@
         }
 
         function formatTimeView(dt) {
+            if (!dt) return '';
+            if (typeof dt === 'string') {
+                const m = dt.match(/(\d{2}):(\d{2})/);
+                if (m) return `${m[1]}:${m[2]}`;
+            }
             const d = parseLogDate(dt);
             if (!d) return '';
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            return d.toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+            return d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
         }
 
         // Renderizar cards dos alunos
@@ -1238,8 +1247,12 @@
                     ? saidaCandidates.reduce((max, t) => (parseLogDate(t) > parseLogDate(max) ? t : max), saidaCandidates[0])
                     : null;
 
-                const entradaText = entradaTime ? formatTimeView(entradaTime) : '';
-                const saidaText = saidaTime ? formatTimeView(saidaTime) : '';
+                const entradaDate = entradaTime ? parseLogDate(entradaTime) : null;
+                const saidaDate = saidaTime ? parseLogDate(saidaTime) : null;
+                const saidaValida = !!saidaDate && (!entradaDate || (saidaDate > entradaDate));
+
+                const entradaText = entradaDate ? formatTimeView(entradaTime) : '';
+                const saidaText = saidaValida ? formatTimeView(saidaTime) : '';
 
                 const isPresent = hasPresentTipo || !!entradaTime || !!saidaTime;
                 const statusClass = isPresent ? 'presente' : 'ausente';
