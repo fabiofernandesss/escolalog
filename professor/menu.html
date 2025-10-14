@@ -114,6 +114,28 @@
             gap: 12px;
         }
 
+        .header-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 12px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .header-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
         .user-info {
             display: flex;
             align-items: center;
@@ -513,11 +535,11 @@
     <style>
         /* Mobile readability boost (no header changes) */
         @media (max-width: 768px) {
-            body { font-size: 18px; line-height: 1.5; }
-            .menu-title { font-size: 1.25rem; }
-            .menu-description { font-size: 0.95rem; }
-            .user-details h3 { font-size: 1.05rem; }
-            .user-details p { font-size: 0.9rem; }
+            body { font-size: 16px; line-height: 1.45; }
+            .menu-title { font-size: 1.1rem; }
+            .menu-description { font-size: 0.85rem; }
+            .user-details h3 { font-size: 0.95rem; }
+            .user-details p { font-size: 0.85rem; }
         }
     </style>
 </head>
@@ -531,6 +553,9 @@
                 </div>
             </div>
             <div class="header-right">
+                <button class="header-btn" onclick="logout()" title="Sair" aria-label="Sair">
+                    <i data-lucide="log-out"></i>
+                </button>
             </div>
         </header>
 
@@ -832,6 +857,17 @@
             
             // Redirecionar para login
             window.location.href = '../login.html';
+        }
+
+        async function logout() {
+            try {
+                if (supabase?.auth?.signOut) {
+                    try { await supabase.auth.signOut(); } catch (_) {}
+                }
+                redirectToLogin();
+            } catch (_) {
+                redirectToLogin();
+            }
         }
 
         // Detectar se está offline
