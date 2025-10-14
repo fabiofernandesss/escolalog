@@ -193,6 +193,33 @@
             transform: rotate(180deg);
         }
 
+        .filters-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .search-icon:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
         .filters-content {
             padding: 20px;
             display: none;
@@ -1013,7 +1040,12 @@
                 <div class="filters-title">
                     🔍 Filtros de Busca
                 </div>
-                <div class="filters-toggle" id="filtersToggle">▼</div>
+                <div class="filters-actions">
+                    <button class="search-icon" onclick="searchAndCloseFilters(event)" title="Pesquisar e fechar filtros">
+                        🔍
+                    </button>
+                    <div class="filters-toggle" id="filtersToggle">▼</div>
+                </div>
             </div>
             <div class="filters-content" id="filtersContent">
             <div class="filters-grid">
@@ -1075,7 +1107,7 @@
                         <img id="modalPhoto" class="modal-photo" style="display: none;" alt="Foto do aluno">
                         <div id="modalPhotoPlaceholder" class="modal-photo-placeholder"></div>
                         <button class="modal-photo-edit" onclick="editPhoto()">📷 Alterar Foto</button>
-                        <input type="file" id="photoInput" class="photo-input" accept="image/*" onchange="handlePhotoChange(event)">
+                        <input type="file" id="photoInput" class="photo-input" accept="image/*" capture="environment" onchange="handlePhotoChange(event)">
                     </div>
                     <div class="modal-details" id="modalDetails">
                         <!-- Detalhes serão preenchidos via JavaScript -->
@@ -1552,6 +1584,27 @@
             
             content.classList.toggle('open');
             toggle.classList.toggle('open');
+        }
+
+        function searchAndCloseFilters(event) {
+            // Impedir que o clique no ícone acione o toggleFilters do header
+            event.stopPropagation();
+            
+            // Executar a pesquisa
+            filterStudents();
+            
+            // Fechar os filtros
+            const content = document.getElementById('filtersContent');
+            const toggle = document.getElementById('filtersToggle');
+            
+            content.classList.remove('open');
+            toggle.classList.remove('open');
+
+            // Scroll suave para a lista de alunos
+            const target = document.querySelector('.students-container') || document.getElementById('studentsGrid');
+            if (target && typeof target.scrollIntoView === 'function') {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         // Funções de Foto
@@ -2033,7 +2086,7 @@
                     id_control_id: currentStudent.id_control_id,
                     photo_base64: base64Data,
                     file_extension: fileExtension,
-                    // Sincronização de dispositivos obrigatória via Lambda
+                    // Sempre sincronizar dispositivos via Lambda (HTTPS) — Lambda usa HTTP para o dispositivo
                     sync_devices: true
                 };
                 console.log('📦 Payload para Lambda:', {
