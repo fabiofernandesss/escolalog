@@ -2015,53 +2015,44 @@
             }
         }
 
-        // Função para sanitizar nome do arquivo
-        function sanitizeFileName(fileName) {
-            // Remover caracteres especiais e acentos
-            return fileName
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-                .replace(/[^a-zA-Z0-9._-]/g, '_') // Substitui caracteres especiais por _
-                .replace(/_+/g, '_') // Remove underscores duplicados
-                .replace(/^_|_$/g, ''); // Remove underscores do início e fim
-        }
-
-        // Função para upload de foto para Supabase Storage
-        async function uploadPhotoToStorage(file) {
+        // Função para fazer upload da foto para o Supabase Storage
+        async function uploadPhotoToSupabase(file, fileName) {
             try {
-                // Sanitizar nome do arquivo
-                const sanitizedName = sanitizeFileName(file.name);
-                const fileName = `aluno_${Date.now()}_${sanitizedName}`;
+                console.log('📤 Fazendo upload para Supabase Storage...');
                 
-                console.log('📤 Fazendo upload para Supabase Storage:', fileName);
-                
+                // Upload para o bucket 'fotos'
                 const { data, error } = await supabase.storage
                     .from('fotos')
-                    .upload(fileName, file);
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: true // Sobrescrever se já existir
+                    });
 
                 if (error) {
                     console.error('❌ Erro no upload:', error);
-                    throw new Error(`Erro no upload: ${error.message}`);
+                    throw error;
                 }
 
-                // Obter URL pública
+                console.log('✅ Upload concluído:', data);
+
+                // Obter URL pública da foto
                 const { data: urlData } = supabase.storage
                     .from('fotos')
                     .getPublicUrl(fileName);
 
-                console.log('✅ Upload concluído:', urlData.publicUrl);
+                console.log('🔗 URL pública gerada:', urlData.publicUrl);
                 return urlData.publicUrl;
 
             } catch (error) {
-                console.error('❌ Erro no upload da foto:', error);
+                console.error('❌ Erro no upload para Supabase:', error);
                 throw error;
             }
         }
 
         // Função para atualizar foto do aluno no banco de dados
-        async function updateStudentPhoto(studentId, photoUrl) {
+        async function updateStudentPhotoInDatabase(studentId, photoUrl) {
             try {
-                console.log('💾 Atualizando foto do aluno no banco:', { studentId, photoUrl });
+                console.log('💾 Atualizando foto no banco de dados...');
                 
                 const { data, error } = await supabase
                     .from('alunos')
@@ -2070,24 +2061,65 @@
                     .select();
 
                 if (error) {
-                    console.error('❌ Erro ao atualizar foto no banco:', error);
-                    throw new Error(`Erro ao atualizar banco: ${error.message}`);
+                    console.error('❌ Erro ao atualizar banco:', error);
+                    throw error;
                 }
 
-                console.log('✅ Foto atualizada no banco de dados');
+                console.log('✅ Foto atualizada no banco:', data);
                 return data[0];
 
             } catch (error) {
-                console.error('❌ Erro ao atualizar foto do aluno:', error);
+                console.error('❌ Erro ao atualizar banco de dados:', error);
                 throw error;
             }
         }
 
+        // Função para sincronizar com dispositivos via Lambda
+        async function syncPhotoWithDevices(studentData) {
+            try {
+                console.log('🔧 Sincronizando com dispositivos...');
+                
+                // Preparar dados para a lambda (apenas sincronização)
+                const lambdaPayload = {
+                    id_control_id: studentData.id_control_id,
+                    photo_url: studentData.foto_url,
+                    sync_only: true, // Flag para indicar que é apenas sincronização
+                    device_retries: 3,
+                    device_update_timeout: 12,
+                    device_login_timeout: 6
+                };
+
+                const lambdaResponse = await fetch('https://so2m6ipkdtqex3td5z75x27gfa0qjont.lambda-url.us-east-2.on.aws/', {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(lambdaPayload)
+                });
+
+                const lambdaResult = await lambdaResponse.json();
+                
+                if (lambdaResponse.ok && lambdaResult.success) {
+                    console.log('✅ Sincronização com dispositivos concluída');
+                    return true;
+                } else {
+                    console.warn('⚠️ Falha na sincronização com dispositivos:', lambdaResult.error);
+                    return false;
+                }
+
+            } catch (error) {
+                console.warn('⚠️ Erro na sincronização com dispositivos:', error);
+                return false;
+            }
+        }
+
+        // Função para lidar com mudança de foto (NOVA VERSÃO - Supabase direto)
         async function handlePhotoChange(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            console.log('📸 Iniciando processo de upload de foto direto ao Supabase...');
+            console.log('📸 Iniciando processo de edição de foto...');
             console.log('📁 Arquivo selecionado:', {
                 name: file.name,
                 size: file.size,
@@ -2095,7 +2127,8 @@
             });
             console.log('👤 Aluno atual:', {
                 id: currentStudent.id,
-                nome: currentStudent.nome
+                nome: currentStudent.nome,
+                id_control_id: currentStudent.id_control_id
             });
 
             // Validar tipo de arquivo
@@ -2112,6 +2145,13 @@
                 return;
             }
 
+            // Verificar se há um aluno selecionado
+            if (!currentStudent || !currentStudent.id) {
+                console.error('❌ Aluno não selecionado:', currentStudent);
+                alert('❌ Nenhum aluno selecionado.');
+                return;
+            }
+
             try {
                 // Mostrar loading
                 const editButton = document.querySelector('.modal-photo-edit');
@@ -2125,22 +2165,36 @@
                 console.log('✅ Compressão concluída');
 
                 // Atualizar status
-                editButton.textContent = '📤 Enviando para Supabase...';
+                editButton.textContent = '📤 Enviando...';
 
-                // Upload da foto para o Supabase Storage
-                console.log('🚀 Fazendo upload para Supabase Storage...');
-                const photoUrl = await uploadPhotoToStorage(compressedFile);
-                console.log('✅ Upload concluído:', photoUrl);
+                // Gerar nome único para o arquivo
+                const timestamp = Date.now();
+                const fileName = `aluno_${currentStudent.id}_${timestamp}.jpg`;
+                console.log('📁 Nome do arquivo:', fileName);
 
+                // 1. Upload da foto para Supabase Storage
+                const photoUrl = await uploadPhotoToSupabase(compressedFile, fileName);
+                
                 // Atualizar status
-                editButton.textContent = '💾 Atualizando banco...';
+                editButton.textContent = '💾 Salvando...';
 
-                // Atualizar foto do aluno no banco de dados
-                console.log('💾 Atualizando foto do aluno no banco...');
-                const updatedStudent = await updateStudentPhoto(currentStudent.id, photoUrl);
-                console.log('✅ Foto atualizada no banco de dados');
+                // 2. Atualizar banco de dados
+                const updatedStudent = await updateStudentPhotoInDatabase(currentStudent.id, photoUrl);
+                
+                // Atualizar status
+                editButton.textContent = '🔧 Sincronizando...';
 
-                // Atualizar dados locais
+                // 3. Sincronizar com dispositivos (opcional - não bloqueia o processo)
+                let devicesSynced = false;
+                if (currentStudent.id_control_id) {
+                    devicesSynced = await syncPhotoWithDevices({
+                        id_control_id: currentStudent.id_control_id,
+                        foto_url: photoUrl
+                    });
+                }
+
+                // Atualizar interface com a nova foto
+                console.log('🖼️ Nova URL da foto:', photoUrl);
                 currentStudent.foto_url = photoUrl;
                 
                 // Atualizar foto no modal
@@ -2159,9 +2213,6 @@
                     console.log('✅ Foto atualizada na lista de alunos');
                 }
 
-                // Atualizar status
-                editButton.textContent = '🔄 Recarregando lista...';
-
                 // Recarregar a lista de alunos para atualizar todos os cards
                 console.log('🔄 Recarregando lista de alunos...');
                 
@@ -2177,8 +2228,16 @@
                 await loadStudents();
                 console.log('✅ Lista de alunos recarregada');
 
-                console.log('🎉 Processo de upload de foto concluído com sucesso!');
-                alert('✅ Foto atualizada com sucesso no Supabase!');
+                console.log('🎉 Processo de edição de foto concluído com sucesso!');
+                
+                // Mensagem de sucesso com informação sobre dispositivos
+                if (devicesSynced) {
+                    alert('✅ Foto atualizada com sucesso! Dispositivos sincronizados.');
+                } else if (currentStudent.id_control_id) {
+                    alert('✅ Foto atualizada com sucesso! ⚠️ Sincronização com dispositivos falhou (não afeta o sistema).');
+                } else {
+                    alert('✅ Foto atualizada com sucesso!');
+                }
 
             } catch (error) {
                 console.error('❌ Erro no upload:', error);
