@@ -1637,16 +1637,61 @@
                 
                 console.log(`🔐 Obtendo sessão para ${ipAddressWithPort} com login: ${login}`);
                 
-                const response = await fetch(`http://${ipAddressWithPort}/login.fcgi`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        login: login || 'admin',
-                        password: password || 'admin'
-                    })
-                });
+                // Detectar se estamos em ambiente HTTPS
+                const isHttps = window.location.protocol === 'https:';
+                let response;
+                
+                if (isHttps) {
+                    // Em ambiente HTTPS, usar proxy para evitar Mixed Content
+                    console.log('🔒 Ambiente HTTPS detectado - usando proxy para evitar Mixed Content');
+                    
+                    try {
+                        // Tentar proxy local primeiro
+                        response = await fetch('http://localhost:3001/proxy/fcgi', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                url: `http://${ipAddressWithPort}/login.fcgi`,
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    login: login || 'admin',
+                                    password: password || 'admin'
+                                })
+                            })
+                        });
+                    } catch (proxyError) {
+                        console.warn('⚠️ Proxy local não disponível, tentando chamada direta (pode falhar em HTTPS)');
+                        // Fallback para chamada direta (pode falhar em HTTPS)
+                        response = await fetch(`http://${ipAddressWithPort}/login.fcgi`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                login: login || 'admin',
+                                password: password || 'admin'
+                            })
+                        });
+                    }
+                } else {
+                    // Em ambiente HTTP, fazer chamada direta
+                    console.log('🔓 Ambiente HTTP - fazendo chamada direta');
+                    response = await fetch(`http://${ipAddressWithPort}/login.fcgi`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            login: login || 'admin',
+                            password: password || 'admin'
+                        })
+                    });
+                }
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1736,14 +1781,55 @@
                         
                         console.log(`🔄 [${deviceName}] Enviando foto com sessão autenticada...`);
                         
-                        const deviceResponse = await fetch(deviceUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/octet-stream'
-                            },
-                            body: arrayBuffer,
-                            signal: controller.signal
-                        });
+                        // Detectar se estamos em ambiente HTTPS
+                        const isHttps = window.location.protocol === 'https:';
+                        let deviceResponse;
+                        
+                        if (isHttps) {
+                            // Em ambiente HTTPS, usar proxy para evitar Mixed Content
+                            console.log(`🔒 [${deviceName}] Ambiente HTTPS - usando proxy para envio de foto`);
+                            
+                            try {
+                                // Tentar proxy local primeiro
+                                deviceResponse = await fetch('http://localhost:3001/proxy/fcgi', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        url: deviceUrl,
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/octet-stream'
+                                        },
+                                        body: Array.from(new Uint8Array(arrayBuffer)) // Converter ArrayBuffer para array
+                                    }),
+                                    signal: controller.signal
+                                });
+                            } catch (proxyError) {
+                                console.warn(`⚠️ [${deviceName}] Proxy local não disponível, tentando chamada direta (pode falhar em HTTPS)`);
+                                // Fallback para chamada direta (pode falhar em HTTPS)
+                                deviceResponse = await fetch(deviceUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/octet-stream'
+                                    },
+                                    body: arrayBuffer,
+                                    signal: controller.signal
+                                });
+                            }
+                        } else {
+                            // Em ambiente HTTP, fazer chamada direta
+                            console.log(`🔓 [${deviceName}] Ambiente HTTP - fazendo chamada direta`);
+                            deviceResponse = await fetch(deviceUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/octet-stream'
+                                },
+                                body: arrayBuffer,
+                                signal: controller.signal
+                            });
+                        }
 
                         clearTimeout(timeoutId);
 

@@ -2,10 +2,16 @@
   "name": "escola-log",
   "version": "1.0.0",
   "scripts": {
-    "dev": "node js/dev-server.js"
+    "dev": "node js/dev-server.js",
+    "proxy": "node proxy-server.js",
+    "start": "node proxy-server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
