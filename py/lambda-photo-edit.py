@@ -260,24 +260,52 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
     logger.info(f'Dispositivos atualizados: {success_count}/{total_devices}')
     return success_count > 0
 
+def create_response(status_code, body, cors_headers):
+    """Helper para criar resposta com CORS headers garantidos."""
+    return {
+        'statusCode': status_code,
+        'headers': cors_headers,
+        'body': json.dumps(body) if isinstance(body, dict) else body
+    }
+
 def lambda_handler(event, context):
     """Handler principal da Lambda para edição de fotos."""
     
-    # CORS dinâmico: libera qualquer origem e trata preflight corretamente
+    # CORS ultra-robusto: configuração específica para escolalog.com.br
     headers_in = event.get('headers') or {}
     # Normalizar headers para case-insensitive
     headers_normalized = {k.lower(): v for k, v in headers_in.items()}
-    origin = headers_normalized.get('origin') or '*'
-    requested_headers = headers_normalized.get('access-control-request-headers') or 'Content-Type,Authorization'
+    origin = headers_normalized.get('origin', '')
+    
+    # Lista de origens permitidas (incluindo variações)
+    allowed_origins = [
+        'https://www.escolalog.com.br',
+        'https://escolalog.com.br',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ]
+    
+    # Determinar origem para CORS
+    if origin in allowed_origins:
+        cors_origin = origin
+    elif origin.endswith('.escolalog.com.br'):
+        cors_origin = origin
+    else:
+        cors_origin = '*'
+    
+    # Headers CORS mais robustos
+    requested_headers = headers_normalized.get('access-control-request-headers', 'Content-Type,Authorization,X-Requested-With')
     
     cors_headers = {
-        'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Headers': requested_headers,
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,DELETE',
+        'Access-Control-Allow-Origin': cors_origin,
+        'Access-Control-Allow-Headers': f'{requested_headers},Content-Type,Authorization,X-Requested-With,Accept,Origin',
+        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,DELETE,PATCH',
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Max-Age': '86400',
-        'Vary': 'Origin',
-        'Content-Type': 'application/json'
+        'Access-Control-Expose-Headers': 'Content-Length,Content-Type',
+        'Vary': 'Origin,Access-Control-Request-Headers,Access-Control-Request-Method',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
     }
     
     # Log do evento recebido para debug
@@ -291,17 +319,16 @@ def lambda_handler(event, context):
         http_method = (
             event.get('httpMethod') or 
             event.get('requestContext', {}).get('http', {}).get('method') or
-            event.get('requestContext', {}).get('httpMethod')
+            event.get('requestContext', {}).get('httpMethod') or
+            'POST'  # Default para POST se não detectado
         )
         logger.info(f'Método HTTP detectado: {http_method}')
+        logger.info(f'Event keys: {list(event.keys())}')
+        logger.info(f'RequestContext: {event.get("requestContext", {})}')
         
         if http_method == 'OPTIONS':
-            logger.info('Processando requisição OPTIONS (preflight) - sem restrições')
-            return {
-                'statusCode': 204,
-                'headers': cors_headers,
-                'body': ''
-            }
+            logger.info('Processando requisição OPTIONS (preflight) - retornando CORS completo')
+            return create_response(204, '', cors_headers)
         
         # Verificar método HTTP (aceitar POST ou qualquer método)
         if http_method and http_method not in ['POST', 'GET']:
@@ -327,11 +354,7 @@ def lambda_handler(event, context):
             logger.info(f'Dados parseados: {data}')
         except json.JSONDecodeError:
             logger.error('Erro ao parsear JSON no body da requisição')
-            return {
-                'statusCode': 400,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'JSON inválido no body da requisição'})
-            }
+            return create_response(400, {'error': 'JSON inválido no body da requisição'}, cors_headers)
 
         # Validar parâmetros obrigatórios
         control_id = data.get('id_control_id')
@@ -361,27 +384,15 @@ def lambda_handler(event, context):
         logger.info(f'Config timeouts: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s, supabase_timeout={SUPABASE_TIMEOUT}s')
 
         if not control_id:
-            return {
-                'statusCode': 400,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'id_control_id é obrigatório'})
-            }
+            return create_response(400, {'error': 'id_control_id é obrigatório'}, cors_headers)
 
         if not photo_base64:
-            return {
-                'statusCode': 400,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'photo_base64 é obrigatório'})
-            }
+            return create_response(400, {'error': 'photo_base64 é obrigatório'}, cors_headers)
 
         # Buscar aluno pelo id_control_id
         student = get_student_by_control_id(control_id)
         if not student:
-            return {
-                'statusCode': 404,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'Aluno não encontrado'})
-            }
+            return create_response(404, {'error': 'Aluno não encontrado'}, cors_headers)
 
         # Decodificar imagem base64
         try:
@@ -390,11 +401,7 @@ def lambda_handler(event, context):
                 photo_base64 = photo_base64.split(',')[1]
             photo_data = base64.b64decode(photo_base64)
         except Exception:
-            return {
-                'statusCode': 400,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'Formato de imagem inválido'})
-            }
+            return create_response(400, {'error': 'Formato de imagem inválido'}, cors_headers)
 
         # Gerar nome único para o arquivo
         timestamp = int(datetime.now().timestamp())
@@ -422,19 +429,11 @@ def lambda_handler(event, context):
         # Upload da foto (após sincronização)
         photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
         if not photo_url:
-            return {
-                'statusCode': 500,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'Erro ao fazer upload da foto'})
-            }
+            return create_response(500, {'error': 'Erro ao fazer upload da foto'}, cors_headers)
 
         # Atualizar URL no banco de dados
         if not update_student_photo_url(student['id'], photo_url):
-            return {
-                'statusCode': 500,
-                'headers': cors_headers,
-                'body': json.dumps({'error': 'Erro ao atualizar foto no banco de dados'})
-            }
+            return create_response(500, {'error': 'Erro ao atualizar foto no banco de dados'}, cors_headers)
 
         # Preparar resposta com informações sobre dispositivos
         response_data = {
@@ -459,11 +458,7 @@ def lambda_handler(event, context):
                 response_data['message'] += ' (dispositivos não sincronizados)'
 
         # Sucesso
-        return {
-            'statusCode': 200,
-            'headers': cors_headers,
-            'body': json.dumps(response_data)
-        }
+        return create_response(200, response_data, cors_headers)
         
     except Exception as e:
         logger.error(f'Erro na Lambda: {str(e)}')
@@ -479,8 +474,4 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Credentials': 'true',
                 'Content-Type': 'application/json'
             }
-        return {
-            'statusCode': 500,
-            'headers': error_headers,
-            'body': json.dumps({'error': f'Erro interno: {str(e)}'})
-        }
+        return create_response(500, {'error': f'Erro interno: {str(e)}'}, error_headers)
