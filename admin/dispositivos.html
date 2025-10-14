@@ -1451,6 +1451,9 @@
                             <button class="btn btn-primary btn-sm" onclick="getSystemInfo()" id="systemInfoBtn">
                                 📊 Obter Informações
                             </button>
+                            <button class="btn btn-info btn-sm" onclick="testLambdaOnly()" id="testLambdaBtn">
+                                🌐 Testar Lambda
+                            </button>
                             <button class="btn btn-secondary btn-sm" onclick="testConnection()" id="testConnectionBtn">
                                 🔗 Testar Conexão
                             </button>
@@ -2098,7 +2101,21 @@
                 }
 
                 const data = await response.json();
-                // Não logar resposta da Lambda
+                console.log('📥 [loadDeviceUsers] Resposta da Lambda recebida:', {
+                    status: data.status,
+                    message: data.message,
+                    hasData: !!data.data,
+                    hasUsers: !!(data.data && data.data.users),
+                    usersCount: data.data && data.data.users ? data.data.users.length : 0
+                });
+                console.log('📊 [loadDeviceUsers] Dados completos da resposta:', JSON.stringify(data, null, 2));
+                
+                // Verificar se a mensagem contém "Configurações"
+                if (data.message && data.message.includes('Configurações')) {
+                    console.error('🚨 [loadDeviceUsers] DETECTADA MENSAGEM SUSPEITA:', data.message);
+                    console.error('🚨 [loadDeviceUsers] Esta mensagem pode estar vindo de outra função ou processo!');
+                    console.error('🚨 [loadDeviceUsers] Stack trace atual:', new Error().stack);
+                }
 
                 if (data.status === 'success' && data.data && data.data.users) {
                     deviceUsers = data.data.users;
@@ -2108,8 +2125,14 @@
                     document.getElementById('usersStats').style.display = 'flex';
                     document.getElementById('usersSearchContainer').style.display = 'block';
                     console.log(`✅ ${deviceUsers.length} usuários carregados`);
+                } else if (data.status === 'success') {
+                    // Lambda retornou sucesso mas sem dados de usuários
+                    console.warn('⚠️ Lambda retornou sucesso mas sem dados de usuários:', data);
+                    throw new Error(`Resposta inesperada da Lambda: ${data.message || 'Dados de usuários não encontrados'}`);
                 } else {
-                    throw new Error(data.message || 'Erro ao carregar usuários');
+                    // Lambda retornou erro
+                    console.error('❌ Lambda retornou erro:', data);
+                    throw new Error(data.message || data.error || 'Erro ao carregar usuários');
                 }
 
             } catch (error) {
@@ -2479,10 +2502,83 @@
             `;
         }
 
+        // Função para testar conectividade básica com Lambda
+        async function testLambdaConnectivity() {
+            try {
+                console.log('🔗 Testando conectividade básica com Lambda URL:', LAMBDA_URL);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+                const response = await fetch(LAMBDA_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'ping' }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                
+                console.log('📥 Resposta da Lambda - Status:', response.status);
+                
+                if (response.ok) {
+                    console.log('✅ Lambda URL está acessível');
+                    return true;
+                } else {
+                    console.error('❌ Lambda retornou erro:', response.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Erro ao testar Lambda:', error);
+                return false;
+            }
+        }
+
+        // Função para testar apenas a Lambda
+        async function testLambdaOnly() {
+            const testBtn = document.getElementById('testLambdaBtn');
+            setButtonLoading(testBtn, true);
+
+            try {
+                console.log('🌐 Testando apenas conectividade com Lambda...');
+                
+                const lambdaAccessible = await testLambdaConnectivity();
+                
+                if (lambdaAccessible) {
+                    alert('✅ Lambda URL está acessível e funcionando!\n\nURL: ' + LAMBDA_URL);
+                } else {
+                    alert('❌ Lambda URL não está acessível.\n\nVerifique:\n- Sua conexão com a internet\n- Se a URL está correta\n- Se o serviço está funcionando');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao testar Lambda:', error);
+                alert('❌ Erro ao testar Lambda: ' + error.message);
+            } finally {
+                setButtonLoading(testBtn, false);
+            }
+        }
+
         // Função para testar conexão
         async function testConnection() {
             if (!currentDevice) {
-                alert('Nenhum dispositivo selecionado');
+                alert('❌ Nenhum dispositivo selecionado. Por favor, selecione um dispositivo primeiro.');
+                return;
+            }
+
+            // Validar campos obrigatórios
+            if (!currentDevice.ip) {
+                alert('❌ IP do dispositivo não informado. Por favor, configure o IP do dispositivo.');
+                return;
+            }
+
+            if (!currentDevice.login) {
+                alert('❌ Login do dispositivo não informado. Por favor, configure o login do dispositivo.');
+                return;
+            }
+
+            if (!currentDevice.senha) {
+                alert('❌ Senha do dispositivo não informada. Por favor, configure a senha do dispositivo.');
                 return;
             }
 
@@ -2490,7 +2586,22 @@
             setButtonLoading(testBtn, true);
 
             try {
-                console.log('🔗 Testando conexão com dispositivo:', currentDevice);
+                console.log('🔗 Iniciando teste de conexão...');
+                
+                // Primeiro, testar conectividade básica com Lambda
+                console.log('🌐 Verificando conectividade com Lambda...');
+                const lambdaAccessible = await testLambdaConnectivity();
+                
+                if (!lambdaAccessible) {
+                    throw new Error('Lambda URL não está acessível. Verifique sua conexão com a internet e se a URL está correta.');
+                }
+                console.log('📱 Dispositivo:', {
+                    id: currentDevice.id,
+                    nome: currentDevice.nome,
+                    ip: currentDevice.ip,
+                    login: currentDevice.login,
+                    status: currentDevice.status
+                });
                 
                 const payload = {
                     action: 'test',
@@ -2499,32 +2610,72 @@
                     password: currentDevice.senha
                 };
 
-                console.log('📤 Enviando requisição para Lambda:', payload);
+                console.log('📤 Enviando requisição para Lambda URL:', LAMBDA_URL);
+                console.log('📦 Payload:', { ...payload, password: '***' }); // Não logar senha
+
+                // Adicionar timeout de 30 segundos
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
 
                 const response = await fetch(LAMBDA_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
+
+                console.log('📥 Resposta recebida - Status:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    let errorMessage = `Erro HTTP ${response.status}`;
+                    
+                    if (response.status === 404) {
+                        errorMessage = 'Lambda URL não encontrada (404). Verifique se a URL está correta.';
+                    } else if (response.status === 403) {
+                        errorMessage = 'Acesso negado (403). Verifique as permissões da Lambda.';
+                    } else if (response.status === 500) {
+                        errorMessage = 'Erro interno do servidor (500). Verifique os logs da Lambda.';
+                    } else if (response.status === 502) {
+                        errorMessage = 'Bad Gateway (502). A Lambda pode estar indisponível.';
+                    } else if (response.status === 503) {
+                        errorMessage = 'Serviço indisponível (503). Tente novamente em alguns minutos.';
+                    }
+                    
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
-                // Não logar resposta da Lambda
+                console.log('📋 Dados da resposta:', data);
 
                 if (data.status === 'success') {
-                    alert('✅ Conexão com o dispositivo bem-sucedida!');
+                    console.log('✅ Conexão bem-sucedida!');
+                    alert('✅ Conexão com o dispositivo bem-sucedida!\n\nDispositivo respondeu corretamente.');
                 } else {
-                    throw new Error(data.message || 'Erro na conexão');
+                    const errorMsg = data.message || data.error || 'Erro desconhecido na conexão';
+                    console.error('❌ Falha na conexão:', errorMsg);
+                    throw new Error(`Falha na conexão: ${errorMsg}`);
                 }
 
             } catch (error) {
                 console.error('❌ Erro ao testar conexão:', error);
-                alert('❌ Erro ao testar conexão: ' + error.message);
+                
+                let userMessage = 'Erro ao testar conexão: ';
+                
+                if (error.name === 'AbortError') {
+                    userMessage += 'Timeout - A conexão demorou mais de 30 segundos para responder.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    userMessage += 'Não foi possível conectar com o servidor. Verifique sua conexão com a internet.';
+                } else if (error.message.includes('NetworkError')) {
+                    userMessage += 'Erro de rede. Verifique sua conexão com a internet.';
+                } else {
+                    userMessage += error.message;
+                }
+                
+                alert('❌ ' + userMessage);
             } finally {
                 setButtonLoading(testBtn, false);
             }
@@ -2826,6 +2977,10 @@
 
             const fetchBtn = document.getElementById('getMonitorConfigBtn');
             setButtonLoading(fetchBtn, true);
+            console.log('🔧 [getMonitorConfig] Iniciando obtenção de configuração do monitor', {
+                device: currentDevice,
+                time: new Date().toISOString()
+            });
 
             const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
 
@@ -3041,6 +3196,15 @@
                 setText('monitorTimeoutCurrent', timeout);
                 setText('monitorEffectiveUrl', effectiveUrl);
 
+                console.log('✅ [getMonitorConfig] Configuração do monitor obtida e aplicada', {
+                    hostname,
+                    port,
+                    path,
+                    timeout,
+                    effectiveUrl,
+                    raw: cfg
+                });
+
                 // Atualizar inputs sugerindo os valores do equipamento
                 const monitorUrlInput = document.getElementById('monitorUrl');
                 const monitorTimeoutInput = document.getElementById('monitorTimeout');
@@ -3058,10 +3222,11 @@
                 }
 
             } catch (error) {
-                console.warn('⚠️ Falha na chamada direta ao dispositivo. Não será usada Lambda para este fluxo.', error);
-                alert('❌ Não foi possível obter a configuração diretamente do dispositivo. Verifique se a porta configurada no dispositivo está acessível e se a sessão está válida.');
+                console.warn('⚠️ [getMonitorConfig] Falha na chamada direta ao dispositivo. Não será usada Lambda para este fluxo.', error);
+                alert('❌ [getMonitorConfig] Não foi possível obter a configuração diretamente do dispositivo. Verifique se a porta configurada no dispositivo está acessível e se a sessão está válida.');
             } finally {
                 setButtonLoading(fetchBtn, false);
+                console.log('🧹 [getMonitorConfig] Finalizado', { time: new Date().toISOString() });
             }
         }
 
