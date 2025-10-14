@@ -2230,11 +2230,9 @@
 
                 console.log('🎉 Processo de edição de foto concluído com sucesso!');
                 
-                // Mensagem de sucesso com informação sobre dispositivos
+                // Mensagem de sucesso
                 if (devicesSynced) {
                     alert('✅ Foto atualizada com sucesso! Dispositivos sincronizados.');
-                } else if (currentStudent.id_control_id) {
-                    alert('✅ Foto atualizada com sucesso! ⚠️ Sincronização com dispositivos falhou (não afeta o sistema).');
                 } else {
                     alert('✅ Foto atualizada com sucesso!');
                 }
