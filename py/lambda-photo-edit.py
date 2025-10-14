@@ -314,6 +314,14 @@ def lambda_handler(event, context):
     logger.info(f'Origin detectado: {origin}')
     logger.info(f'CORS headers configurados: {cors_headers}')
     
+    # Wrapper para garantir CORS em qualquer situação
+    def safe_response(status_code, body):
+        return {
+            'statusCode': status_code,
+            'headers': cors_headers,
+            'body': json.dumps(body) if isinstance(body, dict) else body
+        }
+    
     try:
         # Tratar OPTIONS (preflight) - suporte para diferentes formatos de evento
         http_method = (
@@ -328,7 +336,7 @@ def lambda_handler(event, context):
         
         if http_method == 'OPTIONS':
             logger.info('Processando requisição OPTIONS (preflight) - retornando CORS completo')
-            return create_response(204, '', cors_headers)
+            return safe_response(204, '')
         
         # Verificar método HTTP (aceitar POST ou qualquer método)
         if http_method and http_method not in ['POST', 'GET']:
@@ -354,7 +362,7 @@ def lambda_handler(event, context):
             logger.info(f'Dados parseados: {data}')
         except json.JSONDecodeError:
             logger.error('Erro ao parsear JSON no body da requisição')
-            return create_response(400, {'error': 'JSON inválido no body da requisição'}, cors_headers)
+            return safe_response(400, {'error': 'JSON inválido no body da requisição'})
 
         # Validar parâmetros obrigatórios
         control_id = data.get('id_control_id')
@@ -384,15 +392,15 @@ def lambda_handler(event, context):
         logger.info(f'Config timeouts: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s, supabase_timeout={SUPABASE_TIMEOUT}s')
 
         if not control_id:
-            return create_response(400, {'error': 'id_control_id é obrigatório'}, cors_headers)
+            return safe_response(400, {'error': 'id_control_id é obrigatório'})
 
         if not photo_base64:
-            return create_response(400, {'error': 'photo_base64 é obrigatório'}, cors_headers)
+            return safe_response(400, {'error': 'photo_base64 é obrigatório'})
 
         # Buscar aluno pelo id_control_id
         student = get_student_by_control_id(control_id)
         if not student:
-            return create_response(404, {'error': 'Aluno não encontrado'}, cors_headers)
+            return safe_response(404, {'error': 'Aluno não encontrado'})
 
         # Decodificar imagem base64
         try:
@@ -401,7 +409,7 @@ def lambda_handler(event, context):
                 photo_base64 = photo_base64.split(',')[1]
             photo_data = base64.b64decode(photo_base64)
         except Exception:
-            return create_response(400, {'error': 'Formato de imagem inválido'}, cors_headers)
+            return safe_response(400, {'error': 'Formato de imagem inválido'})
 
         # Gerar nome único para o arquivo
         timestamp = int(datetime.now().timestamp())
@@ -429,11 +437,11 @@ def lambda_handler(event, context):
         # Upload da foto (após sincronização)
         photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
         if not photo_url:
-            return create_response(500, {'error': 'Erro ao fazer upload da foto'}, cors_headers)
+            return safe_response(500, {'error': 'Erro ao fazer upload da foto'})
 
         # Atualizar URL no banco de dados
         if not update_student_photo_url(student['id'], photo_url):
-            return create_response(500, {'error': 'Erro ao atualizar foto no banco de dados'}, cors_headers)
+            return safe_response(500, {'error': 'Erro ao atualizar foto no banco de dados'})
 
         # Preparar resposta com informações sobre dispositivos
         response_data = {
@@ -458,7 +466,7 @@ def lambda_handler(event, context):
                 response_data['message'] += ' (dispositivos não sincronizados)'
 
         # Sucesso
-        return create_response(200, response_data, cors_headers)
+        return safe_response(200, response_data)
         
     except Exception as e:
         logger.error(f'Erro na Lambda: {str(e)}')
@@ -474,4 +482,4 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Credentials': 'true',
                 'Content-Type': 'application/json'
             }
-        return create_response(500, {'error': f'Erro interno: {str(e)}'}, error_headers)
+        return safe_response(500, {'error': f'Erro interno: {str(e)}'})
