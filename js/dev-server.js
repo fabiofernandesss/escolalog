@@ -4,7 +4,7 @@ const http = require('http');
 const https = require('https');
 
 const app = express();
-const PORT = 3001;
+const PORT = 3000;
 
 // CORS
 app.use(cors());
