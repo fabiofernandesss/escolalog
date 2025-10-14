@@ -265,18 +265,26 @@ def lambda_handler(event, context):
     
     # CORS dinâmico: libera qualquer origem e trata preflight corretamente
     headers_in = event.get('headers') or {}
-    origin = headers_in.get('origin') or headers_in.get('Origin') or '*'
-    requested_headers = headers_in.get('access-control-request-headers', '*')
+    # Normalizar headers para case-insensitive
+    headers_normalized = {k.lower(): v for k, v in headers_in.items()}
+    origin = headers_normalized.get('origin') or '*'
+    requested_headers = headers_normalized.get('access-control-request-headers') or 'Content-Type,Authorization'
+    
     cors_headers = {
-        'Access-Control-Allow-Origin': origin if origin else '*',
+        'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Headers': requested_headers,
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,DELETE',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Max-Age': '86400',
         'Vary': 'Origin',
         'Content-Type': 'application/json'
     }
     
     # Log do evento recebido para debug
     logger.info(f'Evento recebido: {json.dumps(event)}')
+    logger.info(f'Headers recebidos: {headers_in}')
+    logger.info(f'Origin detectado: {origin}')
+    logger.info(f'CORS headers configurados: {cors_headers}')
     
     try:
         # Tratar OPTIONS (preflight) - suporte para diferentes formatos de evento
@@ -289,11 +297,9 @@ def lambda_handler(event, context):
         
         if http_method == 'OPTIONS':
             logger.info('Processando requisição OPTIONS (preflight) - sem restrições')
-            options_headers = dict(cors_headers)
-            options_headers['Access-Control-Max-Age'] = '86400'
             return {
                 'statusCode': 204,
-                'headers': options_headers,
+                'headers': cors_headers,
                 'body': ''
             }
         
@@ -461,8 +467,20 @@ def lambda_handler(event, context):
         
     except Exception as e:
         logger.error(f'Erro na Lambda: {str(e)}')
+        # Garantir que sempre temos CORS headers, mesmo em erro crítico
+        try:
+            error_headers = cors_headers
+        except:
+            # Fallback se cors_headers não foi definido
+            error_headers = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,DELETE',
+                'Access-Control-Allow-Credentials': 'true',
+                'Content-Type': 'application/json'
+            }
         return {
             'statusCode': 500,
-            'headers': cors_headers,
+            'headers': error_headers,
             'body': json.dumps({'error': f'Erro interno: {str(e)}'})
         }
