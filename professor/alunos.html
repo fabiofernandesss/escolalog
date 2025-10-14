@@ -2086,8 +2086,8 @@
                     id_control_id: currentStudent.id_control_id,
                     photo_base64: base64Data,
                     file_extension: fileExtension,
-                    // Sempre sincronizar dispositivos via Lambda (HTTPS) — Lambda usa HTTP para o dispositivo
-                    sync_devices: true
+                    // Sincronizar dispositivos apenas em ambiente HTTP (local/interno) para evitar timeouts externos
+                    sync_devices: (window.location.protocol === 'http:')
                 };
                 console.log('📦 Payload para Lambda:', {
                     id_control_id: lambdaPayload.id_control_id,
