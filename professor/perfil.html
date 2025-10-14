@@ -205,8 +205,11 @@
         </div>
         <div class="header-right">
             <a href="menu.html" class="back-btn" aria-label="Voltar">
-                <i data-lucide="arrow-left"></i>
+                <i data-lucide="chevron-left"></i>
             </a>
+            <button class="header-btn" onclick="logout()" title="Sair" aria-label="Sair">
+                <i data-lucide="log-out"></i>
+            </button>
         </div>
     </header>
 
@@ -351,6 +354,26 @@
             statusMsg.textContent = 'Erro ao salvar: ' + e.message;
         } finally {
             btn.disabled = false;
+        }
+    }
+
+    async function logout() {
+        try {
+            // Tentar encerrar sessão do Supabase, se disponível
+            if (supabase?.auth?.signOut) {
+                try { await supabase.auth.signOut(); } catch (_) {}
+            }
+            // Limpar storage local da aplicação
+            try { localStorage.removeItem('authToken'); } catch (_) {}
+            try { localStorage.removeItem('userSession'); } catch (_) {}
+            try { localStorage.removeItem('whatsapp_user'); } catch (_) {}
+            try { sessionStorage.clear(); } catch (_) {}
+
+            // Redirecionar para login
+            window.location.href = '../login.html';
+        } catch (e) {
+            // Em caso de falha, ainda redireciona
+            window.location.href = '../login.html';
         }
     }
 

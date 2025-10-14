@@ -365,10 +365,10 @@
                             Código de Verificação
                         </label>
                         <div class="flex justify-center space-x-2">
-                            <input type="text" maxlength="1" class="otp-input" data-index="0">
-                            <input type="text" maxlength="1" class="otp-input" data-index="1">
-                            <input type="text" maxlength="1" class="otp-input" data-index="2">
-                            <input type="text" maxlength="1" class="otp-input" data-index="3">
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" data-index="0" autocomplete="one-time-code">
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" data-index="1" autocomplete="one-time-code">
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" data-index="2" autocomplete="one-time-code">
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" data-index="3" autocomplete="one-time-code">
                         </div>
                         <div id="code-error" class="text-sm text-red-600 text-center hidden"></div>
                     </div>
@@ -519,7 +519,10 @@
         // Configurar inputs OTP
         otpInputs.forEach((input, index) => {
             input.addEventListener('input', function(e) {
-                const value = e.target.value;
+                // Filtrar apenas números
+                const value = e.target.value.replace(/\D/g, '');
+                e.target.value = value;
+                
                 if (value && index < otpInputs.length - 1) {
                     otpInputs[index + 1].focus();
                 }

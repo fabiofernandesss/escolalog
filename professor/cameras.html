@@ -240,6 +240,16 @@
             background: transparent;
             border-radius: 8px;
             margin-bottom: 12px;
+            /* Bloquear controles de áudio */
+            pointer-events: auto;
+        }
+        
+        /* Bloquear qualquer elemento de áudio dentro dos iframes */
+        .camera-iframe audio,
+        .camera-iframe video[controls] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
 
         .camera-info {
@@ -447,7 +457,7 @@
     <!-- Modal de Tela Cheia -->
     <div id="fullscreenModal" class="modal" aria-hidden="true">
         <button id="closeModal" class="close-btn" type="button">Fechar</button>
-        <iframe id="modalIframe" allowfullscreen></iframe>
+        <iframe id="modalIframe" allowfullscreen allow="camera; fullscreen" sandbox="allow-same-origin allow-scripts allow-presentation"></iframe>
     </div>
 
     <script>
@@ -692,7 +702,9 @@
                     <iframe 
                         class="camera-iframe" 
                         src="${streamSrc}" 
-                        allowfullscreen>
+                        allowfullscreen
+                        allow="camera; fullscreen"
+                        sandbox="allow-same-origin allow-scripts allow-presentation">
                     </iframe>
                     <div class="camera-info">
                         <span class="camera-location">${camera.localizacao || ''}</span>
@@ -831,6 +843,41 @@
                     console.log('🔄 Atualizando lista de câmeras automaticamente...');
                     await loadCamerasFromFirstTurma();
                 }, 5 * 60 * 1000); // 5 minutos em milissegundos
+                
+                // Segurança: Bloquear qualquer tentativa de habilitar áudio
+                const secureAudioBlock = () => {
+                    // Bloquear modificação dos atributos allow e sandbox dos iframes
+                    const iframes = document.querySelectorAll('iframe');
+                    iframes.forEach(iframe => {
+                        // Congelar atributos de segurança
+                        Object.defineProperty(iframe, 'allow', {
+                            value: 'camera; fullscreen',
+                            writable: false,
+                            configurable: false
+                        });
+                        Object.defineProperty(iframe, 'sandbox', {
+                            value: 'allow-same-origin allow-scripts allow-presentation',
+                            writable: false,
+                            configurable: false
+                        });
+                    });
+                    
+                    // Bloquear criação de elementos de áudio
+                    const originalCreateElement = document.createElement;
+                    document.createElement = function(tagName) {
+                        if (tagName.toLowerCase() === 'audio') {
+                            console.warn('🚫 Criação de elemento audio bloqueada por segurança');
+                            return null;
+                        }
+                        return originalCreateElement.call(this, tagName);
+                    };
+                };
+                
+                // Executar bloqueio de segurança
+                secureAudioBlock();
+                
+                // Re-executar a cada 1 segundo para garantir segurança contínua
+                setInterval(secureAudioBlock, 1000);
                 
                 console.log('✅ Visualização de câmeras inicializada com sucesso');
             } catch (error) {
