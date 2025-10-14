@@ -1630,6 +1630,12 @@
             });
         }
 
+        // Função para detectar dispositivos móveis
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   (window.innerWidth <= 768 && window.innerHeight <= 1024);
+        }
+
         // Função para obter sessão do dispositivo
         async function getDeviceSession(ipAddress, login, password) {
             try {
@@ -1637,8 +1643,18 @@
                 
                 console.log(`🔐 Obtendo sessão para ${ipAddressWithPort} com login: ${login}`);
                 
-                // Detectar se estamos em ambiente HTTPS
+                // Detectar ambiente e dispositivo
                 const isHttps = window.location.protocol === 'https:';
+                const isMobile = isMobileDevice();
+                
+                console.log(`📱 Dispositivo móvel: ${isMobile ? 'SIM' : 'NÃO'}`);
+                
+                // Em dispositivos móveis com HTTPS, pular autenticação de dispositivos
+                // pois não conseguem acessar o proxy local
+                if (isMobile && isHttps) {
+                    console.log('📱 Dispositivo móvel em HTTPS - pulando autenticação de dispositivos locais');
+                    throw new Error('MOBILE_SKIP_DEVICES');
+                }
                 let response;
                 
                 if (isHttps) {
@@ -1714,6 +1730,16 @@
 
         async function updatePhotoOnDevice(student, photoFile) {
             console.log('🔧 Iniciando atualização de foto nos dispositivos...');
+            
+            // Verificar se é dispositivo móvel em HTTPS
+            const isMobile = isMobileDevice();
+            const isHttps = window.location.protocol === 'https:';
+            
+            if (isMobile && isHttps) {
+                console.log('📱 Dispositivo móvel detectado em HTTPS - apenas atualizando Supabase Storage');
+                console.log('ℹ️ Dispositivos de controle de acesso não serão atualizados devido a limitações de segurança');
+                return true; // Foto já foi salva no Supabase Storage pela Lambda
+            }
             
             try {
                 // 1. Buscar TODOS os dispositivos associados ao aluno
@@ -2067,8 +2093,18 @@
                     console.log('✅ Foto atualizada no dispositivo com sucesso');
                 } catch (deviceError) {
                     console.error('⚠️ Erro ao atualizar foto no dispositivo:', deviceError);
-                    // Não interrompe o processo, apenas loga o erro
-                    alert('⚠️ Foto atualizada no sistema, mas houve erro ao sincronizar com o dispositivo: ' + deviceError.message);
+                    
+                    // Verificar se é dispositivo móvel para mostrar mensagem específica
+                    const isMobile = isMobileDevice();
+                    const isHttps = window.location.protocol === 'https:';
+                    
+                    if (isMobile && isHttps) {
+                        console.log('📱 Dispositivo móvel - foto salva apenas no sistema');
+                        alert('✅ Foto atualizada com sucesso!\n\n📱 Em dispositivos móveis, a foto é salva apenas no sistema. Para sincronizar com dispositivos de controle de acesso, use um computador.');
+                    } else {
+                        // Não interrompe o processo, apenas loga o erro
+                        alert('⚠️ Foto atualizada no sistema, mas houve erro ao sincronizar com o dispositivo: ' + deviceError.message);
+                    }
                 }
 
                 // Recarregar a lista de alunos para atualizar todos os cards
