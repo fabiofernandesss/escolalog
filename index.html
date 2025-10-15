@@ -663,6 +663,30 @@
     </style>
 </head>
 <body>
+    <script>
+        (function() {
+            try {
+                const stored = localStorage.getItem('whatsapp_user');
+                if (!stored) return;
+                const user = JSON.parse(stored);
+                if (!user || !user.tipo_usuario) return;
+
+                const routes = {
+                    admin: 'admin/dashboard.html',
+                    prefeito: 'prefeito/menu.html',
+                    secretario: 'secretario/menu.html',
+                    diretor: 'diretor/menu.html',
+                    professor: 'professor/menu.html',
+                    responsavel: 'responsavel/menu.html'
+                };
+
+                const route = routes[user.tipo_usuario] || 'dashboard.html';
+                window.location.href = route;
+            } catch (e) {
+                try { localStorage.removeItem('whatsapp_user'); } catch (_) {}
+            }
+        })();
+    </script>
     <!-- Header -->
     <header class="header">
         <div class="container">
