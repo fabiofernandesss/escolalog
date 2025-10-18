@@ -76,9 +76,10 @@ def send_whatsapp_response(phone_number: str, message: str) -> bool:
 def build_response_message() -> str:
     """Constrói a mensagem de resposta automática."""
     return (
-        "🤖 *Mensagem Automática*\n\n"
+        "*Mensagem Automática*\n\n"
         "Olá! Recebemos sua mensagem e estamos processando sua solicitação.\n\n"
         "📋 Nossa equipe analisará seu pedido e retornará em breve com uma resposta.\n\n"
+        "🚀 Esse passo é muito importante, você precisa salvar nosso número na sua agenda, para receber quando seu filho(a) passa em um de nossos dispositivos.\n\n"
         "⏰ Tempo estimado de resposta: até 24 horas úteis.\n\n"
         "Obrigado pela sua paciência!\n\n"
         "Equipe Escola Log 📚"
