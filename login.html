@@ -794,35 +794,66 @@
         }
         
         // Função para liberar acesso via WhatsApp
-        function liberarAcesso() {
-            // Número de suporte do WhatsApp
-            const numeroSuporte = '5511969039674';
-            
-            // Solicitar nome do usuário
-            const nomeUsuario = prompt('Digite seu nome:');
-            if (!nomeUsuario) {
-                alert('Nome é obrigatório para solicitar liberação de acesso.');
-                return;
+        async function liberarAcesso() {
+            try {
+                // Buscar número do administrador do banco de dados
+                let numeroSuporte = '5511969039674'; // Fallback padrão
+                
+                if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+                    try {
+                        const response = await fetch(`${SUPABASE_URL}/rest/v1/geral?select=cel_admin&limit=1`, {
+                            method: 'GET',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.length > 0 && data[0].cel_admin) {
+                                numeroSuporte = data[0].cel_admin;
+                                console.log('✅ Número do administrador obtido do banco:', numeroSuporte);
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Erro ao buscar número do administrador, usando fallback:', error);
+                    }
+                } else {
+                    console.warn('⚠️ Supabase não inicializado, usando número padrão');
+                }
+                
+                // Solicitar nome do usuário
+                const nomeUsuario = prompt('Digite seu nome:');
+                if (!nomeUsuario) {
+                    alert('Nome é obrigatório para solicitar liberação de acesso.');
+                    return;
+                }
+                
+                // Solicitar nome do filho
+                const nomeFilho = prompt('Digite o nome do seu filho:');
+                if (!nomeFilho) {
+                    alert('Nome do filho é obrigatório para solicitar liberação de acesso.');
+                    return;
+                }
+                
+                // Mensagem padrão
+                const mensagem = `Olá, meu nome é ${nomeUsuario} e o nome do meu filho é ${nomeFilho}. Eu quero liberar o acesso.`;
+                
+                // Codificar a mensagem para URL
+                const mensagemCodificada = encodeURIComponent(mensagem);
+                
+                // Criar URL do WhatsApp
+                const urlWhatsApp = `https://wa.me/${numeroSuporte}?text=${mensagemCodificada}`;
+                
+                // Abrir WhatsApp
+                window.open(urlWhatsApp, '_blank');
+                
+            } catch (error) {
+                console.error('❌ Erro na função liberarAcesso:', error);
+                alert('Erro ao processar solicitação. Tente novamente.');
             }
-            
-            // Solicitar nome do filho
-            const nomeFilho = prompt('Digite o nome do seu filho:');
-            if (!nomeFilho) {
-                alert('Nome do filho é obrigatório para solicitar liberação de acesso.');
-                return;
-            }
-            
-            // Mensagem padrão
-            const mensagem = `Olá, meu nome é ${nomeUsuario} e o nome do meu filho é ${nomeFilho}. Eu quero liberar o acesso.`;
-            
-            // Codificar a mensagem para URL
-            const mensagemCodificada = encodeURIComponent(mensagem);
-            
-            // Criar URL do WhatsApp
-            const urlWhatsApp = `https://wa.me/${numeroSuporte}?text=${mensagemCodificada}`;
-            
-            // Abrir WhatsApp
-            window.open(urlWhatsApp, '_blank');
         }
     </script>
     
