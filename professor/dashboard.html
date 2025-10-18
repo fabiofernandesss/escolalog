@@ -349,13 +349,31 @@
             .stat-label { font-size: 0.8rem; }
             .chart-canvas { height: 200px; }
             .chart-card.chart-square .chart-canvas { aspect-ratio: 1 / 1; height: auto; }
-            /* Garantir duas colunas para cards de métricas e alunos recentes no mobile */
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-            .stat-card { padding: 12px; }
-            .stat-card .icon { width: 32px; height: 32px; }
-            .stat-number { font-size: 1.2rem; }
-            .stat-label { font-size: 0.75rem; }
+            /* Três colunas para cards de métricas no mobile */
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .stat-card { padding: 10px; }
+            .stat-card .icon { width: 28px; height: 28px; }
+            .stat-number { font-size: 1.1rem; }
+            .stat-label { font-size: 0.7rem; }
             .student-avatar { width: 44px; height: 44px; }
+        }
+
+        /* Para dispositivos muito pequenos, manter 3 colunas mas com ajustes */
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+            .stat-card { padding: 8px; }
+            .stat-card .icon { width: 24px; height: 24px; }
+            .stat-number { font-size: 1rem; }
+            .stat-label { font-size: 0.65rem; line-height: 1.2; }
+        }
+
+        /* Para dispositivos extremamente pequenos */
+        @media (max-width: 360px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+            .stat-card { padding: 6px; }
+            .stat-card .icon { width: 20px; height: 20px; }
+            .stat-number { font-size: 0.9rem; }
+            .stat-label { font-size: 0.6rem; line-height: 1.1; }
         }
     </style>
     <style>
@@ -412,10 +430,10 @@
 
             <div class="stat-card schools">
                 <div class="icon">
-                    <i data-lucide="building"></i>
+                    <i data-lucide="users"></i>
                 </div>
-                <div class="stat-number" id="totalSchools">-</div>
-                <div class="stat-label">Escolas</div>
+                <div class="stat-number" id="totalClasses">-</div>
+                <div class="stat-label">Minhas Turmas</div>
             </div>
 
             <div class="stat-card">
@@ -428,10 +446,42 @@
 
             <div class="stat-card">
                 <div class="icon">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="check-circle"></i>
                 </div>
-                <div class="stat-number" id="uniqueSeries">-</div>
-                <div class="stat-label">Séries Únicas</div>
+                <div class="stat-number" id="presentToday">-</div>
+                <div class="stat-label">Presentes Hoje</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="x-circle"></i>
+                </div>
+                <div class="stat-number" id="absentToday">-</div>
+                <div class="stat-label">Faltas Hoje</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="trending-up"></i>
+                </div>
+                <div class="stat-number" id="attendanceRate">-</div>
+                <div class="stat-label">Taxa de Presença</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="activity"></i>
+                </div>
+                <div class="stat-number" id="totalRecords">-</div>
+                <div class="stat-label">Total de Registros</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="clock"></i>
+                </div>
+                <div class="stat-number" id="avgTimeInSchool">-</div>
+                <div class="stat-label">Tempo Médio na Escola</div>
             </div>
         </div>
 
@@ -905,44 +955,169 @@
 
         // Carregar estatísticas básicas
         async function loadBasicStats() {
-            // Total de alunos
-            const { data: students, error: studentsError } = await supabase
-                .from('alunos')
-                .select('id, sexo')
-                .is('soft_delete', false)
-                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+            // Verificar se há turmas permitidas
+            if (!turmaIds.length) {
+                // Se não há turmas, definir todos os valores como 0
+                dashboardData.totalStudents = 0;
+                dashboardData.maleStudents = 0;
+                dashboardData.femaleStudents = 0;
+                dashboardData.totalClasses = 0;
+                dashboardData.newStudents30 = 0;
+            } else {
+                // Total de alunos (apenas das turmas permitidas)
+                const { data: students, error: studentsError } = await supabase
+                    .from('alunos')
+                    .select('id, sexo')
+                    .is('soft_delete', false)
+                    .in('turma_id', turmaIds);
 
-            if (studentsError) {
-                console.error('Erro Supabase (alunos básicos):', studentsError);
-            }
+                if (studentsError) {
+                    console.error('Erro Supabase (alunos básicos):', studentsError);
+                    dashboardData.totalStudents = 0;
+                    dashboardData.maleStudents = 0;
+                    dashboardData.femaleStudents = 0;
+                } else if (students) {
+                    dashboardData.totalStudents = students.length;
+                    dashboardData.maleStudents = students.filter(s => s.sexo === 'M').length;
+                    dashboardData.femaleStudents = students.filter(s => s.sexo === 'F').length;
+                } else {
+                    dashboardData.totalStudents = 0;
+                    dashboardData.maleStudents = 0;
+                    dashboardData.femaleStudents = 0;
+                }
 
-            if (!studentsError && students) {
-                dashboardData.totalStudents = students.length;
-                dashboardData.maleStudents = students.filter(s => s.sexo === 'M').length;
-                dashboardData.femaleStudents = students.filter(s => s.sexo === 'F').length;
-                // created_at não existe na tabela alunos — manter métrica em 0
+                // Total de turmas do professor
+                dashboardData.totalClasses = turmas.length;
+
+                // Novos alunos (manter em 0 pois não temos created_at)
                 dashboardData.newStudents30 = 0;
             }
 
-            // Total de escolas
-            const { data: schools, error: schoolsError } = await supabase
-                .from('escolas')
-                .select('id')
-                .is('soft_delete', false);
-            if (schoolsError) {
-                console.error('Erro Supabase (escolas):', schoolsError);
-            }
-
-            if (!schoolsError && schools) {
-                dashboardData.totalSchools = schools.length;
-            }
+            // Carregar estatísticas de frequência
+            await loadFrequencyStats();
 
             // Atualizar UI
-            document.getElementById('totalStudents').textContent = dashboardData.totalStudents;
-            document.getElementById('maleStudents').textContent = dashboardData.maleStudents;
-            document.getElementById('femaleStudents').textContent = dashboardData.femaleStudents;
-            document.getElementById('totalSchools').textContent = dashboardData.totalSchools;
-            document.getElementById('newStudents30').textContent = dashboardData.newStudents30 ?? 0;
+            document.getElementById('totalStudents').textContent = dashboardData.totalStudents || 0;
+            document.getElementById('maleStudents').textContent = dashboardData.maleStudents || 0;
+            document.getElementById('femaleStudents').textContent = dashboardData.femaleStudents || 0;
+            document.getElementById('totalClasses').textContent = dashboardData.totalClasses || 0;
+            document.getElementById('newStudents30').textContent = dashboardData.newStudents30 || 0;
+        }
+
+        // Carregar estatísticas de frequência
+        async function loadFrequencyStats() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Presentes hoje
+                const { data: presentToday, error: presentError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('*')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                    .eq('dia', today)
+                    .eq('tipo_frequencia', 'Presente');
+
+                if (presentError) {
+                    console.error('Erro ao carregar presentes hoje:', presentError);
+                    dashboardData.presentToday = 0;
+                } else {
+                    dashboardData.presentToday = presentToday?.length || 0;
+                }
+
+                // Faltas hoje
+                const { data: absentToday, error: absentError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('*')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                    .eq('dia', today)
+                    .eq('tipo_frequencia', 'Falta');
+
+                if (absentError) {
+                    console.error('Erro ao carregar faltas hoje:', absentError);
+                    dashboardData.absentToday = 0;
+                } else {
+                    dashboardData.absentToday = absentToday?.length || 0;
+                }
+
+                // Total de registros de frequência
+                const { data: totalRecords, error: totalError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('*')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+
+                if (totalError) {
+                    console.error('Erro ao carregar total de registros:', totalError);
+                    dashboardData.totalRecords = 0;
+                } else {
+                    dashboardData.totalRecords = totalRecords?.length || 0;
+                }
+
+                // Calcular taxa de presença (últimos 30 dias)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+                const { data: recentRecords, error: recentError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('tipo_frequencia')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                    .gte('dia', thirtyDaysAgoStr);
+
+                if (recentError) {
+                    console.error('Erro ao carregar registros recentes:', recentError);
+                    dashboardData.attendanceRate = 0;
+                } else {
+                    const totalRecentRecords = recentRecords?.length || 0;
+                    const presentRecords = recentRecords?.filter(r => r.tipo_frequencia === 'Presente').length || 0;
+                    dashboardData.attendanceRate = totalRecentRecords > 0 ? Math.round((presentRecords / totalRecentRecords) * 100) : 0;
+                }
+
+                // Tempo médio na escola (últimos 30 dias)
+                const { data: timeRecords, error: timeError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('horas_na_escola')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                    .gte('dia', thirtyDaysAgoStr)
+                    .not('horas_na_escola', 'is', null);
+
+                if (timeError) {
+                    console.error('Erro ao carregar tempo na escola:', timeError);
+                    dashboardData.averageTimeInSchool = '0h 0m';
+                } else {
+                    const validTimes = timeRecords?.filter(r => r.horas_na_escola > 0) || [];
+                    if (validTimes.length > 0) {
+                        const totalHours = validTimes.reduce((sum, r) => sum + r.horas_na_escola, 0);
+                        const averageHours = totalHours / validTimes.length;
+                        const hours = Math.floor(averageHours);
+                        const minutes = Math.round((averageHours - hours) * 60);
+                        dashboardData.averageTimeInSchool = `${hours}h ${minutes}m`;
+                    } else {
+                        dashboardData.averageTimeInSchool = '0h 0m';
+                    }
+                }
+
+                // Atualizar UI das novas estatísticas
+                document.getElementById('presentToday').textContent = dashboardData.presentToday;
+                document.getElementById('absentToday').textContent = dashboardData.absentToday;
+                document.getElementById('attendanceRate').textContent = `${dashboardData.attendanceRate}%`;
+                document.getElementById('totalRecords').textContent = dashboardData.totalRecords;
+                document.getElementById('avgTimeInSchool').textContent = dashboardData.averageTimeInSchool;
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas de frequência:', error);
+                // Definir valores padrão em caso de erro
+                dashboardData.presentToday = 0;
+                dashboardData.absentToday = 0;
+                dashboardData.attendanceRate = 0;
+                dashboardData.totalRecords = 0;
+                dashboardData.averageTimeInSchool = '0h 0m';
+                
+                document.getElementById('presentToday').textContent = '0';
+                document.getElementById('absentToday').textContent = '0';
+                document.getElementById('attendanceRate').textContent = '0%';
+                document.getElementById('totalRecords').textContent = '0';
+                document.getElementById('avgTimeInSchool').textContent = '0h 0m';
+            }
         }
 
         // Carregar dados para gráficos
