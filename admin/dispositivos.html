@@ -1220,6 +1220,7 @@
                     <li><a href="turmas.html">Turmas</a></li>
                     <li><a href="series.html">Séries</a></li>
                     <li><a href="dispositivos.html" class="active">Dispositivos</a></li>
+                    <li><a href="cameras.html">Câmeras</a></li>
                     <li><a href="logs.html">Logs</a></li>
                     <li><a href="usuarios.html">Usuários</a></li>
                 </ul>
@@ -1450,9 +1451,6 @@
                         <div class="system-actions">
                             <button class="btn btn-primary btn-sm" onclick="getSystemInfo()" id="systemInfoBtn">
                                 📊 Obter Informações
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="testLambdaOnly()" id="testLambdaBtn">
-                                🌐 Testar Lambda
                             </button>
                             <button class="btn btn-secondary btn-sm" onclick="testConnection()" id="testConnectionBtn">
                                 🔗 Testar Conexão
@@ -1706,8 +1704,7 @@
         let deviceUsers = [];
         let currentDevice = null;
         
-        // URL da Lambda para operações de dispositivo
-        const LAMBDA_URL = 'https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/';
+
         
         // Função para buscar chaves do Supabase (sem chamadas externas)
         async function getSupabaseKeys() {
@@ -1743,6 +1740,67 @@
             });
             
             return supabase;
+        }
+
+        // Função de teste para debug de inserção aluno_dispositivo
+        async function testAlunoDispositivoInsert() {
+            try {
+                console.log('🧪 Testando inserção na tabela aluno_dispositivo...');
+                
+                // Garantir que o Supabase está inicializado
+                if (!supabase) {
+                    await initializeSupabase();
+                }
+                
+                console.log('🔧 Cliente Supabase:', {
+                    url: supabase.supabaseUrl,
+                    hasKey: !!supabase.supabaseKey,
+                    keyType: supabase.supabaseKey?.includes('eyJ') ? 'JWT (anon)' : 'Unknown'
+                });
+                
+                // Dados de teste
+                const testData = {
+                    id_dispositivo: 9,
+                    aluno: 'ba41f3d3-9188-4b6e-bd1a-c3e50cfec9b5',
+                    escola: null,
+                    id_do_aluno_no_dispositivo: 'TEST123',
+                    numero_de_quem_cadastrou: 'TESTE_DEBUG'
+                };
+                
+                console.log('📝 Dados de teste:', testData);
+                
+                // Tentar inserir
+                const { data: result, error } = await supabase
+                    .from('aluno_dispositivo')
+                    .insert([testData])
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Erro na inserção de teste:', {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint
+                    });
+                    return { success: false, error };
+                } else {
+                    console.log('✅ Inserção de teste bem-sucedida:', result);
+                    
+                    // Limpar o registro de teste
+                    if (result && result[0] && result[0].id) {
+                        await supabase
+                            .from('aluno_dispositivo')
+                            .delete()
+                            .eq('id', result[0].id);
+                        console.log('🧹 Registro de teste removido');
+                    }
+                    
+                    return { success: true, data: result };
+                }
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+                return { success: false, error };
+            }
         }
 
         // Função para carregar dispositivos
@@ -2056,7 +2114,42 @@
             console.log(`📑 Tab ${tabName} ativada`);
         }
 
-        // Função para carregar usuários do dispositivo via Lambda
+        // Helper para chamadas FCGI com fallback via proxy local (CORS)
+        async function postFcgiWithProxy(url, payload, timeoutMs = 5000) {
+            try {
+                const controller = new AbortController();
+                const tId = setTimeout(() => controller.abort(), timeoutMs);
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                clearTimeout(tId);
+                const text = await resp.text();
+                let data;
+                try { data = JSON.parse(text); } catch (_) { throw new Error(`Resposta inválida: ${text}`); }
+                if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+                return data;
+            } catch (err) {
+                const msg = (err && err.message || '').toLowerCase();
+                if (msg.includes('cors') || msg.includes('failed to fetch') || err.name === 'TypeError') {
+                    const proxyResp = await fetch('http://localhost:3001/proxy/fcgi', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ targetUrl: url, payload, headers: { 'Content-Type': 'application/json' } })
+                    });
+                    const text = await proxyResp.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch (_) { throw new Error(`Resposta inválida via proxy: ${text}`); }
+                    if (!proxyResp.ok) throw new Error(data?.error || `HTTP ${proxyResp.status}`);
+                    return data;
+                }
+                throw err;
+            }
+        }
+
+        // Função para carregar usuários do dispositivo diretamente (sem Lambda)
         async function loadDeviceUsers(limit = null) {
             if (!currentDevice) {
                 alert('Nenhum dispositivo selecionado');
@@ -2069,71 +2162,51 @@
             setButtonLoading(limitBtn, true);
 
             try {
-                console.log('👥 Carregando usuários do dispositivo:', currentDevice);
+                console.log('👥 Carregando usuários do dispositivo (local):', currentDevice);
                 if (limit) {
                     console.log(`📊 Limite de usuários: ${limit}`);
                 }
-                
+
+                let session = await getDeviceSession(
+                    currentDevice.ip,
+                    currentDevice.login || 'admin',
+                    currentDevice.senha || 'admin'
+                );
+
+                const ipWithPort = currentDevice.ip.includes(':') ? currentDevice.ip : `${currentDevice.ip}:80`;
+                const baseUrl = `http://${ipWithPort}`;
+                const url = `${baseUrl}/load_objects.fcgi?session=${session}`;
                 const payload = {
-                    action: 'load_users',
-                    device_ip: currentDevice.ip,
-                    login: currentDevice.login,
-                    password: currentDevice.senha
+                    object: 'users',
+                    select: { users: ['id', 'name', 'registration', 'password', 'last_access'] }
                 };
 
-                // Adicionar limite se especificado
-                if (limit) {
-                    payload.limit = limit;
+                let usersData = await postFcgiWithProxy(url, payload);
+
+                // Se sessão inválida, renovar e tentar novamente
+                if ((usersData?.error || usersData?.message || '').includes('Invalid session')) {
+                    console.warn('⚠️ Sessão inválida, renovando...');
+                    session = await getDeviceSession(
+                        currentDevice.ip,
+                        currentDevice.login || 'admin',
+                        currentDevice.senha || 'admin'
+                    );
+                    usersData = await postFcgiWithProxy(`${baseUrl}/load_objects.fcgi?session=${session}`, payload);
                 }
 
-                console.log('📤 Enviando requisição para Lambda:', payload);
+                const users = Array.isArray(usersData?.users)
+                    ? usersData.users
+                    : (Array.isArray(usersData?.data?.users) ? usersData.data.users : []);
 
-                const response = await fetch(LAMBDA_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const finalUsers = (limit && users.length > limit) ? users.slice(0, limit) : users;
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('📥 [loadDeviceUsers] Resposta da Lambda recebida:', {
-                    status: data.status,
-                    message: data.message,
-                    hasData: !!data.data,
-                    hasUsers: !!(data.data && data.data.users),
-                    usersCount: data.data && data.data.users ? data.data.users.length : 0
-                });
-                console.log('📊 [loadDeviceUsers] Dados completos da resposta:', JSON.stringify(data, null, 2));
-                
-                // Verificar se a mensagem contém "Configurações"
-                if (data.message && data.message.includes('Configurações')) {
-                    console.error('🚨 [loadDeviceUsers] DETECTADA MENSAGEM SUSPEITA:', data.message);
-                    console.error('🚨 [loadDeviceUsers] Esta mensagem pode estar vindo de outra função ou processo!');
-                    console.error('🚨 [loadDeviceUsers] Stack trace atual:', new Error().stack);
-                }
-
-                if (data.status === 'success' && data.data && data.data.users) {
-                    deviceUsers = data.data.users;
-                    deviceUsers.session = data.data.session; // Armazenar sessão para fotos
-                    await renderDeviceUsers(deviceUsers);
-                    updateUsersStats(deviceUsers);
-                    document.getElementById('usersStats').style.display = 'flex';
-                    document.getElementById('usersSearchContainer').style.display = 'block';
-                    console.log(`✅ ${deviceUsers.length} usuários carregados`);
-                } else if (data.status === 'success') {
-                    // Lambda retornou sucesso mas sem dados de usuários
-                    console.warn('⚠️ Lambda retornou sucesso mas sem dados de usuários:', data);
-                    throw new Error(`Resposta inesperada da Lambda: ${data.message || 'Dados de usuários não encontrados'}`);
-                } else {
-                    // Lambda retornou erro
-                    console.error('❌ Lambda retornou erro:', data);
-                    throw new Error(data.message || data.error || 'Erro ao carregar usuários');
-                }
+                deviceUsers = finalUsers;
+                deviceUsers.session = session; // Armazenar sessão para fotos
+                await renderDeviceUsers(deviceUsers);
+                updateUsersStats(deviceUsers);
+                document.getElementById('usersStats').style.display = 'flex';
+                document.getElementById('usersSearchContainer').style.display = 'block';
+                console.log(`✅ ${deviceUsers.length} usuários carregados (local)`);
 
             } catch (error) {
                 console.error('❌ Erro ao carregar usuários:', error);
@@ -2420,36 +2493,49 @@
             try {
                 console.log('📊 Obtendo informações do sistema:', currentDevice);
                 
-                const payload = {
-                    action: 'get_system_info',
-                    device_ip: currentDevice.ip,
-                    login: currentDevice.login,
-                    password: currentDevice.senha
-                };
-
-                console.log('📤 Enviando requisição para Lambda:', payload);
-
-                const response = await fetch(LAMBDA_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Obter sessão primeiro
+                const sessionData = await getDeviceSession(currentDevice.ip, currentDevice.login, currentDevice.senha);
+                if (!sessionData || !sessionData.session) {
+                    throw new Error('Falha ao obter sessão do dispositivo');
                 }
 
-                const data = await response.json();
-                // Não logar resposta da Lambda
+                // Fazer chamada direta para obter informações do sistema
+                const systemUrl = `http://${currentDevice.ip}/cgi-bin/AccessControl.cgi?action=getSystemInfo&session=${sessionData.session}`;
+                
+                let systemData = null;
+                try {
+                    const response = await fetch(systemUrl);
+                    if (response.ok) {
+                        const text = await response.text();
+                        systemData = parseSystemInfo(text);
+                        console.log('✅ Informações do sistema obtidas diretamente');
+                    }
+                } catch (directError) {
+                    console.log('⚠️ Falha na chamada direta, tentando proxy...');
+                    
+                    // Fallback para proxy
+                    const proxyResponse = await fetch('/proxy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: systemUrl,
+                            method: 'GET'
+                        })
+                    });
+                    
+                    if (proxyResponse.ok) {
+                        const proxyData = await proxyResponse.json();
+                        systemData = parseSystemInfo(proxyData.body);
+                        console.log('✅ Informações do sistema obtidas via proxy');
+                    }
+                }
 
-                if (data.status === 'success' && data.data) {
-                    renderSystemInfo(data.data);
+                if (systemData) {
+                    renderSystemInfo(systemData);
                     document.getElementById('systemInfo').style.display = 'block';
                     console.log('✅ Informações do sistema carregadas');
                 } else {
-                    throw new Error(data.message || 'Erro ao obter informações do sistema');
+                    throw new Error('Não foi possível obter informações do sistema');
                 }
 
             } catch (error) {
@@ -2458,6 +2544,28 @@
             } finally {
                 setButtonLoading(systemBtn, false);
             }
+        }
+
+        // Função auxiliar para parsear informações do sistema
+        function parseSystemInfo(responseText) {
+            const data = {};
+            
+            // Parse básico das informações do sistema
+            const lines = responseText.split('\n');
+            for (const line of lines) {
+                if (line.includes('=')) {
+                    const [key, value] = line.split('=', 2);
+                    const cleanKey = key.trim().toLowerCase();
+                    const cleanValue = value ? value.trim() : '';
+                    
+                    if (cleanKey.includes('version')) data.version = cleanValue;
+                    if (cleanKey.includes('uptime')) data.uptime = cleanValue;
+                    if (cleanKey.includes('memory')) data.memory = cleanValue;
+                    if (cleanKey.includes('storage')) data.storage = cleanValue;
+                }
+            }
+            
+            return data;
         }
 
         // Função para renderizar informações do sistema
@@ -2502,62 +2610,7 @@
             `;
         }
 
-        // Função para testar conectividade básica com Lambda
-        async function testLambdaConnectivity() {
-            try {
-                console.log('🔗 Testando conectividade básica com Lambda URL:', LAMBDA_URL);
-                
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                const response = await fetch(LAMBDA_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: 'ping' }),
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-                
-                console.log('📥 Resposta da Lambda - Status:', response.status);
-                
-                if (response.ok) {
-                    console.log('✅ Lambda URL está acessível');
-                    return true;
-                } else {
-                    console.error('❌ Lambda retornou erro:', response.status);
-                    return false;
-                }
-            } catch (error) {
-                console.error('❌ Erro ao testar Lambda:', error);
-                return false;
-            }
-        }
-
-        // Função para testar apenas a Lambda
-        async function testLambdaOnly() {
-            const testBtn = document.getElementById('testLambdaBtn');
-            setButtonLoading(testBtn, true);
-
-            try {
-                console.log('🌐 Testando apenas conectividade com Lambda...');
-                
-                const lambdaAccessible = await testLambdaConnectivity();
-                
-                if (lambdaAccessible) {
-                    alert('✅ Lambda URL está acessível e funcionando!\n\nURL: ' + LAMBDA_URL);
-                } else {
-                    alert('❌ Lambda URL não está acessível.\n\nVerifique:\n- Sua conexão com a internet\n- Se a URL está correta\n- Se o serviço está funcionando');
-                }
-            } catch (error) {
-                console.error('❌ Erro ao testar Lambda:', error);
-                alert('❌ Erro ao testar Lambda: ' + error.message);
-            } finally {
-                setButtonLoading(testBtn, false);
-            }
-        }
 
         // Função para testar conexão
         async function testConnection() {
@@ -4391,8 +4444,20 @@
         async function checkAndCreateAlunoDispositivo(alunoId, dispositivoId) {
             try {
                 console.log('🔍 Verificando vínculo aluno_dispositivo:', { alunoId, dispositivoId });
+                console.log('🔧 Cliente Supabase atual:', {
+                    url: supabase?.supabaseUrl,
+                    hasKey: !!supabase?.supabaseKey,
+                    keyType: supabase?.supabaseKey?.includes('eyJ') ? 'JWT (anon)' : 'Unknown'
+                });
+                
+                // Garantir que temos um cliente Supabase válido
+                if (!supabase) {
+                    console.log('⚠️ Cliente Supabase não inicializado, inicializando...');
+                    await initializeSupabase();
+                }
                 
                 // Buscar dados completos do aluno para obter o id_control_id
+                console.log('📋 Buscando dados do aluno...');
                 const { data: alunoData, error: alunoError } = await supabase
                     .from('alunos')
                     .select('id_control_id')
@@ -4408,7 +4473,10 @@
                     throw new Error(`Aluno ID ${alunoId} não possui ID Control-ID. É necessário ter um ID de 8 dígitos para vincular ao dispositivo.`);
                 }
                 
+                console.log('✅ Dados do aluno obtidos:', { id_control_id: alunoData.id_control_id });
+                
                 // Verificar se já existe o vínculo
+                console.log('🔍 Verificando se vínculo já existe...');
                 const { data: existingRel, error: existError } = await supabase
                     .from('aluno_dispositivo')
                     .select('id')
@@ -4435,6 +4503,7 @@
                     escolaId = currentDevice.escola_id;
                 } else {
                     // Buscar escola do dispositivo
+                    console.log('🏫 Buscando escola do dispositivo...');
                     const { data: deviceData, error: deviceError } = await supabase
                         .from('dispositivos')
                         .select('escola_id')
@@ -4446,27 +4515,47 @@
                     }
                 }
 
-                // Criar o vínculo
-                const { error: insertError } = await supabase
+                const insertData = {
+                    id_dispositivo: dispositivoId,
+                    aluno: alunoId,
+                    escola: escolaId,
+                    id_do_aluno_no_dispositivo: alunoData.id_control_id.toString(),
+                    numero_de_quem_cadastrou: whatsappUser.whatsapp || 'UPLOAD_MASSA'
+                };
+                
+                console.log('📝 Dados para inserção:', insertData);
+                console.log('🚀 Tentando criar vínculo aluno_dispositivo...');
+
+                // Forçar criação de um novo cliente Supabase para garantir que não há cache de autenticação
+                const freshSupabase = window.supabase.createClient(
+                    'https://sntyndufbxfzasnqvayc.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                );
+
+                // Criar o vínculo usando o cliente fresh
+                const { data: insertResult, error: insertError } = await freshSupabase
                     .from('aluno_dispositivo')
-                    .insert([{
-                        id_dispositivo: dispositivoId,
-                        aluno: alunoId,
-                        escola: escolaId,
-                        id_do_aluno_no_dispositivo: alunoData.id_control_id.toString(), // Usar id_control_id de 8 dígitos
-                        numero_de_quem_cadastrou: whatsappUser.whatsapp || 'UPLOAD_MASSA'
-                    }]);
+                    .insert([insertData])
+                    .select();
 
                 if (insertError) {
-                    console.error('❌ Erro ao criar vínculo aluno_dispositivo:', insertError);
-                    if (String(insertError.message || '').toLowerCase().includes('permission')) {
+                    console.error('❌ Erro detalhado ao criar vínculo:', {
+                        code: insertError.code,
+                        message: insertError.message,
+                        details: insertError.details,
+                        hint: insertError.hint
+                    });
+                    
+                    if (insertError.code === '42501') {
+                        throw new Error('Erro de política RLS: Verifique se as políticas de segurança permitem inserção anônima na tabela aluno_dispositivo');
+                    } else if (String(insertError.message || '').toLowerCase().includes('permission')) {
                         throw new Error('Permissão negada ao criar vínculo aluno-dispositivo. Confirme que o usuário logado é "admin" e está ativo.');
                     } else {
                         throw new Error('Erro ao criar vínculo aluno-dispositivo: ' + insertError.message);
                     }
                 }
 
-                console.log('✅ Vínculo aluno_dispositivo criado com sucesso');
+                console.log('✅ Vínculo aluno_dispositivo criado com sucesso:', insertResult);
             } catch (error) {
                 console.error('❌ Erro na verificação/criação do vínculo aluno_dispositivo:', error);
                 // Não interromper o upload por erro de vínculo, apenas logar

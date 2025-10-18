@@ -801,6 +801,80 @@
                 flex-direction: column;
             }
         }
+
+        /* Estilos para seção de informações do admin */
+        .admin-info {
+            margin: 1.5rem 0;
+            padding: 0 1rem;
+        }
+
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .turmas-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .turmas-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .turma-badge {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .turma-badge:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .turma-badge.selected {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -818,6 +892,7 @@
                     <li><a href="turmas.html">Turmas</a></li>
                     <li><a href="series.html">Séries</a></li>
                     <li><a href="dispositivos.html">Dispositivos</a></li>
+                    <li><a href="cameras.html">Câmeras</a></li>
                     <li><a href="logs.html">Logs</a></li>
                     <li><a href="usuarios.html">Usuários</a></li>
                 </ul>
@@ -844,6 +919,19 @@
                 <button class="btn btn-primary" onclick="openModal('add')">
                     ➕ Novo Aluno
                 </button>
+            </div>
+        </div>
+
+        <!-- Seção de Informações do Admin -->
+        <div class="admin-info" id="adminInfo" style="display: none;">
+            <div class="info-card">
+                <div class="info-header">
+                    <h3>Turmas do Sistema</h3>
+                    <span class="turmas-count" id="turmasCount">0 turmas</span>
+                </div>
+                <div class="turmas-list" id="turmasList">
+                    <!-- Badges das turmas serão inseridas aqui -->
+                </div>
             </div>
         </div>
 
@@ -2288,7 +2376,7 @@
                     .from('fotos')
                     .getPublicUrl(fileName);
 
-                console.log('✅ Upload concluído:', urlData.publicUrl);
+                // Upload concluído
                 return urlData.publicUrl;
 
             } catch (error) {

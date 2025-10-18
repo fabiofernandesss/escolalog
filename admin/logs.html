@@ -669,6 +669,7 @@
                     <li><a href="turmas.html">Turmas</a></li>
                     <li><a href="series.html">Séries</a></li>
                     <li><a href="dispositivos.html">Dispositivos</a></li>
+                    <li><a href="cameras.html">Câmeras</a></li>
                     <li><a href="logs.html" class="active">Logs</a></li>
                     <li><a href="usuarios.html">Usuários</a></li>
                 </ul>
@@ -866,8 +867,8 @@
                 const { data, error } = await supabase
                     .from('frequencia_diaria')
                     .select('*')
+                    .order('entrada', { ascending: false })
                     .order('dia', { ascending: false })
-                    .order('nome_aluno', { ascending: true })
                     .limit(1000);
 
                 console.log('Resultado da consulta de frequência:', { data, error });

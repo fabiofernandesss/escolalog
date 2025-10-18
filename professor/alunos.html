@@ -148,8 +148,8 @@
         }
 
         .turma-badge {
-            background: #3b82f6;
-            color: white;
+            background: #e2e8f0;
+            color: #64748b;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 0.85rem;
@@ -158,6 +158,26 @@
             display: flex;
             align-items: center;
             box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .turma-badge:hover {
+            background: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+        .turma-badge.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .turma-badge.active:hover {
+            background: #2563eb;
         }
 
         .search-filters {
@@ -1308,17 +1328,73 @@
             }
         }
 
+        // Array para armazenar turmas selecionadas
+        let selectedTurmas = [];
+
         // Mostrar informações do professor
         function showProfessorInfo() {
             const professorInfo = document.getElementById('professorInfo');
             const turmasList = document.getElementById('turmasList');
             
             turmasList.innerHTML = turmas.map(turma => 
-                `<span class="turma-badge">${turma.nome}</span>`
+                `<span class="turma-badge" data-turma-id="${turma.id}" onclick="toggleTurmaFilter('${turma.id}')">${turma.nome}${turma.series?.nome ? ` - ${turma.series.nome}` : ''}</span>`
             ).join('');
             
             professorInfo.style.display = 'block';
         }
+
+        // Função para alternar filtro de turma
+         function toggleTurmaFilter(turmaId) {
+             const turmaElement = document.querySelector(`[data-turma-id="${turmaId}"]`);
+             
+             if (selectedTurmas.includes(turmaId)) {
+                 // Remover turma da seleção
+                 selectedTurmas = selectedTurmas.filter(id => id !== turmaId);
+                 turmaElement.classList.remove('active');
+             } else {
+                 // Adicionar turma à seleção
+                 selectedTurmas.push(turmaId);
+                 turmaElement.classList.add('active');
+             }
+             
+             // Atualizar lista de alunos baseada no filtro
+             updateStudentList();
+         }
+
+         // Função para atualizar lista de alunos baseada no filtro de turmas
+         function updateStudentList() {
+             let filteredStudents = students;
+             
+             // Se há turmas selecionadas, filtrar por elas
+             if (selectedTurmas.length > 0) {
+                 filteredStudents = students.filter(student => 
+                     selectedTurmas.includes(student.turma_id)
+                 );
+             }
+             
+             // Aplicar outros filtros existentes se houver
+             const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+             const selectedClass = document.getElementById('filterClass')?.value || '';
+             const selectedSerie = document.getElementById('filterSerie')?.value || '';
+             
+             if (searchTerm) {
+                 filteredStudents = filteredStudents.filter(student =>
+                     student.nome.toLowerCase().includes(searchTerm) ||
+                     student.matricula.toLowerCase().includes(searchTerm)
+                 );
+             }
+             
+             if (selectedClass && selectedClass !== '') {
+                 filteredStudents = filteredStudents.filter(student => student.turma_id === selectedClass);
+             }
+             
+             if (selectedSerie && selectedSerie !== '') {
+                 filteredStudents = filteredStudents.filter(student => student.serie_id === selectedSerie);
+             }
+             
+             renderStudents(filteredStudents);
+             updateStudentsCount(filteredStudents.length);
+         }
 
         // Popular filtro de turmas
         function populateClassFilter() {

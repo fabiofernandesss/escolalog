@@ -223,6 +223,7 @@
         .menu-card.dashboard { --card-color: #8b5cf6; }
         .menu-card.alunos { --card-color: #10b981; }
         .menu-card.frequencia { --card-color: #f59e0b; }
+        .menu-card.metricas { --card-color: #0ea5e9; }
         .menu-card.chamada { --card-color: #3b82f6; }
         .menu-card.cameras { --card-color: #ef4444; }
         .menu-card.perfil { --card-color: #6b7280; }
@@ -589,14 +590,7 @@
                 <p class="menu-description">Fazer chamada e registrar presença dos alunos</p>
             </div>
 
-            <!-- Frequência com IA (Em breve) -->
-            <div class="menu-card frequencia" onclick="showSoonToast()">
-                <div class="menu-icon">
-                    <i data-lucide="brain"></i>
-                </div>
-                <h2 class="menu-title">Frequência com IA</h2>
-                <p class="menu-description">Em breve: presença automática via reconhecimento</p>
-            </div>
+
 
             <!-- Câmeras -->
             <div class="menu-card cameras" onclick="navigateTo('cameras.html')">
@@ -605,6 +599,15 @@
                 </div>
                 <h2 class="menu-title">Câmeras</h2>
                 <p class="menu-description">Monitoramento das câmeras das suas turmas</p>
+            </div>
+
+            <!-- Busca Segura -->
+            <div class="menu-card busca-segura" onclick="showSoonToast()">
+                <div class="menu-icon">
+                    <i data-lucide="search"></i>
+                </div>
+                <h2 class="menu-title">Busca Segura</h2>
+                <p class="menu-description">Em breve</p>
             </div>
 
             <!-- Perfil -->
@@ -703,7 +706,13 @@
                 await initializeSupabase();
                 
                 // Inicializar ícones Lucide
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    // Forçar reinicialização após um pequeno delay
+                    setTimeout(() => {
+                        lucide.createIcons();
+                    }, 100);
+                }
                 
                 // Verificar autenticação
                 const isAuthenticated = await checkAuthentication();
@@ -888,6 +897,8 @@
             }
             lastTouchEnd = now;
         }, false);
+
+
     </script>
     
     <!-- PWA Status Bar -->

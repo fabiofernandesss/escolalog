@@ -1079,7 +1079,7 @@
             const video = document.getElementById(videoId);
             if (!video || !streamUrl) return;
             
-            console.log(`Inicializando stream M3U8 para ${videoId}:`, streamUrl);
+            // Stream M3U8 inicializado
             
             // Verificar se HLS.js está disponível e é suportado
             if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -1093,7 +1093,7 @@
                 hls.attachMedia(video);
                 
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log(`Stream M3U8 carregado com sucesso para ${videoId}`);
+                    // Stream carregado com sucesso
                     video.play().catch(e => {
                         console.log(`Erro ao reproduzir automaticamente ${videoId}:`, e);
                     });
@@ -1143,7 +1143,7 @@
         function tryNativePlayback(video, streamUrl) {
             video.src = streamUrl;
             video.addEventListener('loadedmetadata', function() {
-                console.log('Stream nativo carregado');
+                // Stream nativo carregado
                 video.play().catch(e => {
                     console.log('Erro ao reproduzir automaticamente:', e);
                 });

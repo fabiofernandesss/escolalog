@@ -436,13 +436,7 @@
                 <div class="stat-label">Minhas Turmas</div>
             </div>
 
-            <div class="stat-card">
-                <div class="icon">
-                    <i data-lucide="calendar"></i>
-                </div>
-                <div class="stat-number" id="newStudents30">-</div>
-                <div class="stat-label">Novos (30 dias)</div>
-            </div>
+
 
             <div class="stat-card">
                 <div class="icon">
@@ -962,7 +956,6 @@
                 dashboardData.maleStudents = 0;
                 dashboardData.femaleStudents = 0;
                 dashboardData.totalClasses = 0;
-                dashboardData.newStudents30 = 0;
             } else {
                 // Total de alunos (apenas das turmas permitidas)
                 const { data: students, error: studentsError } = await supabase
@@ -988,9 +981,6 @@
 
                 // Total de turmas do professor
                 dashboardData.totalClasses = turmas.length;
-
-                // Novos alunos (manter em 0 pois não temos created_at)
-                dashboardData.newStudents30 = 0;
             }
 
             // Carregar estatísticas de frequência
@@ -1001,7 +991,6 @@
             document.getElementById('maleStudents').textContent = dashboardData.maleStudents || 0;
             document.getElementById('femaleStudents').textContent = dashboardData.femaleStudents || 0;
             document.getElementById('totalClasses').textContent = dashboardData.totalClasses || 0;
-            document.getElementById('newStudents30').textContent = dashboardData.newStudents30 || 0;
         }
 
         // Carregar estatísticas de frequência

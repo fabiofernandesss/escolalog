@@ -767,6 +767,73 @@
             cursor: not-allowed;
         }
 
+        /* Informações do Diretor */
+        .director-info {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .info-card {
+            padding: 20px;
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .info-header h3 {
+            margin: 0;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .turmas-count {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .turmas-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .turma-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .turma-badge:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .turma-badge.selected {
+            background: #059669;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+            transform: translateY(-1px);
+        }
+
         /* Responsive para captura de foto */
         @media (max-width: 768px) {
             .face-preview-container {
@@ -800,6 +867,19 @@
                 <i data-lucide="chevron-left"></i>
             </a>
         </header>
+
+        <!-- Informações do Diretor -->
+        <div class="director-info" id="directorInfo" style="display: none;">
+            <div class="info-card">
+                <div class="info-header">
+                    <h3>Turmas da Escola</h3>
+                    <span class="turmas-count" id="turmasCount">0 turmas</span>
+                </div>
+                <div class="turmas-list" id="turmasList">
+                    <!-- Badges de turmas serão inseridas aqui -->
+                </div>
+            </div>
+        </div>
 
         <!-- Menu de Opções -->
         <div class="menu-grid">
@@ -1335,6 +1415,9 @@
                 populateSelect('filterClass', turmas, 'nome');
                 populateSelect('turmaId', turmas, 'nome');
                 console.log(`✅ ${turmas.length} turmas carregadas`);
+                
+                // Mostrar informações do diretor
+                showDirectorInfo();
 
             } catch (error) {
                 console.error('❌ Erro ao carregar turmas:', error);
@@ -1394,6 +1477,51 @@
             } else {
                 console.warn(`⚠️ Nenhum dado para popular ${selectId}`);
             }
+        }
+
+        // Mostrar informações do diretor
+        function showDirectorInfo() {
+            const directorInfo = document.getElementById('directorInfo');
+            const turmasList = document.getElementById('turmasList');
+            const turmasCount = document.getElementById('turmasCount');
+            
+            turmasCount.textContent = `${turmas.length} turma${turmas.length !== 1 ? 's' : ''}`;
+            
+            turmasList.innerHTML = turmas.map(turma => 
+                `<span class="turma-badge" data-turma-id="${turma.id}" style="cursor: pointer;" title="Clique para filtrar por esta turma">${turma.nome}</span>`
+            ).join('');
+            
+            // Adicionar eventos de clique nas badges de turma
+            turmasList.querySelectorAll('.turma-badge').forEach(badge => {
+                badge.addEventListener('click', function() {
+                    const turmaId = this.getAttribute('data-turma-id');
+                    filterByTurma(turmaId);
+                });
+            });
+            
+            directorInfo.style.display = 'block';
+        }
+
+        // Filtrar alunos por turma específica
+        function filterByTurma(turmaId) {
+            // Atualizar o filtro de turma
+            const filterClass = document.getElementById('filterClass');
+            filterClass.value = turmaId;
+            
+            // Destacar a badge selecionada
+            document.querySelectorAll('.turma-badge').forEach(badge => {
+                badge.classList.remove('selected');
+                if (badge.getAttribute('data-turma-id') === turmaId) {
+                    badge.classList.add('selected');
+                }
+            });
+            
+            // Aplicar o filtro
+            filterStudents();
+            
+            // Mostrar feedback visual
+            const turmaNome = turmas.find(t => t.id == turmaId)?.nome || 'Turma';
+            showToast(`Filtrando alunos da turma: ${turmaNome}`, 'info');
         }
 
         // Renderizar alunos
@@ -1736,7 +1864,7 @@
                 .getPublicUrl(filePath);
             
             uploadedPhotoUrl = urlData.publicUrl;
-            console.log('✅ Upload concluído:', uploadedPhotoUrl);
+            // Upload concluído
             
             return uploadedPhotoUrl;
         }
@@ -2035,7 +2163,7 @@
                     }
                 });
                 
-                console.log('✅ Stream obtido:', currentStream);
+                // Stream obtido
                 
                 video.srcObject = currentStream;
                 video.style.display = 'block';
@@ -2353,7 +2481,7 @@
                     console.log('📤 Fazendo upload da foto antes de salvar...');
                     try {
                         photoUrl = await uploadPhotoToStorage();
-                        console.log('✅ Upload concluído:', photoUrl);
+                        // Upload concluído
                     } catch (error) {
                         console.error('❌ Erro no upload:', error);
                         alert('Erro ao fazer upload da foto: ' + error.message);
@@ -2409,7 +2537,7 @@
                 }
 
                 console.log('✅ Aluno salvo com sucesso!');
-                console.log('📸 Foto URL salva:', photoUrl);
+                // Foto URL salva
                 
                 // Atualizar interface com métricas faciais
                 if (photoUrl) {

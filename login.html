@@ -341,6 +341,16 @@
                             Enviando código...
                         </span>
                     </button>
+                    
+                    <!-- Botão Liberar Acesso -->
+                    <button 
+                        type="button" 
+                        id="liberar-acesso-btn"
+                        onclick="liberarAcesso()"
+                        class="w-full h-12 rounded-md font-medium transition-colors mt-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        Liberar Acesso
+                    </button>
                 </form>
             </div>
 
@@ -781,6 +791,38 @@
             } catch (error) {
                 localStorage.removeItem('whatsapp_user');
             }
+        }
+        
+        // Função para liberar acesso via WhatsApp
+        function liberarAcesso() {
+            // Número de suporte do WhatsApp
+            const numeroSuporte = '5511969039674';
+            
+            // Solicitar nome do usuário
+            const nomeUsuario = prompt('Digite seu nome:');
+            if (!nomeUsuario) {
+                alert('Nome é obrigatório para solicitar liberação de acesso.');
+                return;
+            }
+            
+            // Solicitar nome do filho
+            const nomeFilho = prompt('Digite o nome do seu filho:');
+            if (!nomeFilho) {
+                alert('Nome do filho é obrigatório para solicitar liberação de acesso.');
+                return;
+            }
+            
+            // Mensagem padrão
+            const mensagem = `Olá, meu nome é ${nomeUsuario} e o nome do meu filho é ${nomeFilho}. Eu quero liberar o acesso.`;
+            
+            // Codificar a mensagem para URL
+            const mensagemCodificada = encodeURIComponent(mensagem);
+            
+            // Criar URL do WhatsApp
+            const urlWhatsApp = `https://wa.me/${numeroSuporte}?text=${mensagemCodificada}`;
+            
+            // Abrir WhatsApp
+            window.open(urlWhatsApp, '_blank');
         }
     </script>
     

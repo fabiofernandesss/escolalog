@@ -44,7 +44,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -686,35 +686,11 @@
             background: #000;
         }
 
-        .camera-video {
+        .camera-iframe {
             width: 100%;
             height: 300px;
             background: #000;
-            object-fit: cover;
-        }
-
-        .camera-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 0.5rem;
-            z-index: 10;
-        }
-
-        .mute-button {
-            background: rgba(0, 0, 0, 0.7) !important;
-            color: white !important;
-            border: none !important;
-            padding: 0.5rem !important;
-            border-radius: 4px !important;
-            font-size: 0.75rem !important;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .mute-button:hover {
-            background: rgba(0, 0, 0, 0.9) !important;
+            border: none;
         }
 
         .camera-placeholder {
@@ -871,7 +847,9 @@
                         <div class="form-group form-grid-full" id="streamTestContainer" style="display: none;">
                             <label class="form-label">Teste do Stream</label>
                             <div style="background: #000; border-radius: 8px; padding: 10px; margin-top: 10px;">
-                                <video id="streamTestVideo" controls style="width: 100%; max-height: 200px; border-radius: 4px;" muted></video>
+                                <iframe id="streamTestIframe" style="width: 100%; height: 200px; border: none; border-radius: 4px;" frameborder="0" title="RTSP Stream Player" allowfullscreen>
+                                    Iframes not supported. Broadcasting <a href="https://rtsp.me/" title="rtsp video streaming service">rtsp.me</a> player
+                                </iframe>
                                 <div id="streamTestStatus" style="color: #666; font-size: 12px; margin-top: 5px;">Aguardando URL...</div>
                             </div>
                         </div>
@@ -1134,8 +1112,6 @@
             // Renderizar visualização das câmeras
             camerasGrid.innerHTML = camerasData.map((camera, index) => {
                 const escolaNome = camera.escolas?.nome || 'N/A';
-                const videoId = `video-${camera.id}-${index}`;
-                const muteButtonId = `mute-btn-${camera.id}-${index}`;
                 
                 return `
                     <div class="camera-card">
@@ -1145,44 +1121,25 @@
                         </div>
                         ${camera.url_m3u8 ? `
                             <div class="camera-video-container">
-                                <video 
-                                    id="${videoId}"
-                                    class="camera-video" 
-                                    controls 
-                                    muted
-                                    autoplay
-                                    playsinline
-                                    data-stream-url="${camera.url_m3u8}">
-                                    Seu navegador não suporta reprodução de vídeo.
-                                </video>
-                                <div class="camera-controls">
-                                    <button 
-                                        id="${muteButtonId}"
-                                        class="btn btn-sm btn-secondary mute-button"
-                                        onclick="toggleMute('${videoId}', '${muteButtonId}')"
-                                        title="Alternar áudio">
-                                        🔇 Mudo
-                                    </button>
-                                </div>
+                                <iframe 
+                                    class="camera-iframe"
+                                    src="${camera.url_m3u8}" 
+                                    frameborder="0" 
+                                    title="RTSP Stream Player" 
+                                    allowfullscreen
+                                    allow="camera; fullscreen" 
+                                    sandbox="allow-same-origin allow-scripts allow-presentation">
+                                    Iframes not supported. Broadcasting <a href="https://rtsp.me/" title="rtsp video steaming service">rtsp.me</a> player
+                                </iframe>
                             </div>
                         ` : `
                             <div class="camera-placeholder">
-                                📹 URL M3U8 não configurada
+                                📹 URL RTSP.me não configurada
                             </div>
                         `}
                     </div>
                 `;
             }).join('');
-            
-            // Inicializar streams M3U8 após renderizar
-            setTimeout(() => {
-                camerasData.forEach((camera, index) => {
-                    if (camera.url_m3u8) {
-                        const videoId = `video-${camera.id}-${index}`;
-                        initializeM3U8Stream(videoId, camera.url_m3u8);
-                    }
-                });
-            }, 100);
         }
 
         // Função para mostrar estado vazio
@@ -1278,10 +1235,10 @@
                 
                 // Testar stream se houver URL
                 if (camera.url_m3u8) {
-                    console.log('Testando stream:', camera.url_m3u8);
+                    // Testando stream
                     setTimeout(() => testStream(), 500);
                 } else {
-                    console.log('Nenhuma URL de monitor encontrada');
+                    // Nenhuma URL de monitor encontrada
                 }
 
             } catch (error) {
@@ -1489,17 +1446,15 @@
             window.location.href = '../login.html';
         }
         
-        // Função para testar stream M3U8
+        // Função para testar stream RTSP.me
         function testStream() {
             const streamUrl = document.getElementById('url_m3u8').value;
             const container = document.getElementById('streamTestContainer');
-            const video = document.getElementById('streamTestVideo');
+            const iframe = document.getElementById('streamTestIframe');
             const status = document.getElementById('streamTestStatus');
             
-            console.log('Testando stream:', streamUrl);
-            
             if (!streamUrl) {
-                console.log('URL vazia');
+                // URL vazia
                 container.style.display = 'none';
                 return;
             }
@@ -1508,81 +1463,15 @@
             status.textContent = 'Carregando stream...';
             status.style.color = '#f59e0b';
             
-            // Limpar vídeo anterior
-            video.src = '';
-            video.load();
-            
-            // Tentar diferentes métodos de reprodução
-            let streamLoaded = false;
-            
-            // Método 1: HLS.js
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-                console.log('Tentando HLS.js para stream');
-                const hls = new Hls({
-                    debug: false,
-                    enableWorker: true,
-                    lowLatencyMode: true
-                });
-                
-                hls.loadSource(streamUrl);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log('Manifesto HLS carregado com sucesso');
-                    streamLoaded = true;
-                    status.textContent = '✅ Stream HLS carregado com sucesso!';
-                    status.style.color = '#10b981';
-                    video.play().catch(e => {
-                        console.log('Erro ao reproduzir automaticamente:', e);
-                        status.textContent = '⚠️ Stream carregado, mas não pôde reproduzir automaticamente';
-                        status.style.color = '#f59e0b';
-                    });
-                });
-                
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error('Erro no HLS:', data);
-                    if (!streamLoaded) {
-                        // Tentar método nativo se HLS falhar
-                        tryNativeStream();
-                    }
-                });
-                
+            // Verificar se é uma URL do RTSP.me
+            if (streamUrl.includes('rtsp.me/embed/')) {
+                iframe.src = streamUrl;
+                status.textContent = '✅ Stream RTSP.me carregado!';
+                status.style.color = '#10b981';
             } else {
-                // Método 2: Suporte nativo
-                tryNativeStream();
-            }
-            
-            function tryNativeStream() {
-                console.log('Tentando suporte nativo para stream');
-                video.src = streamUrl;
-                
-                video.addEventListener('loadedmetadata', function() {
-                    console.log('Metadados carregados (nativo)');
-                    streamLoaded = true;
-                    status.textContent = '✅ Stream carregado com sucesso!';
-                    status.style.color = '#10b981';
-                    video.play().catch(e => {
-                        console.log('Erro ao reproduzir automaticamente:', e);
-                        status.textContent = '⚠️ Stream carregado, mas não pôde reproduzir automaticamente';
-                        status.style.color = '#f59e0b';
-                    });
-                });
-                
-                video.addEventListener('error', function(e) {
-                    console.error('Erro no vídeo nativo:', e);
-                    if (!streamLoaded) {
-                        status.textContent = '❌ Erro ao carregar stream - URL pode não ser válida';
-                        status.style.color = '#ef4444';
-                    }
-                });
-                
-                // Timeout para detectar se não carregou
-                setTimeout(() => {
-                    if (!streamLoaded && video.readyState === 0) {
-                        status.textContent = '⚠️ Stream não respondeu - pode ser uma URL inválida';
-                        status.style.color = '#f59e0b';
-                    }
-                }, 5000);
+                status.textContent = '⚠️ URL deve ser do formato: https://rtsp.me/embed/ID/';
+                status.style.color = '#f59e0b';
+                iframe.src = '';
             }
         }
 
@@ -1609,96 +1498,10 @@
             }
         }
 
-        // Função para inicializar stream M3U8
-        function initializeM3U8Stream(videoId, streamUrl) {
-            const video = document.getElementById(videoId);
-            if (!video || !streamUrl) return;
-            
-            console.log(`Inicializando stream M3U8 para ${videoId}:`, streamUrl);
-            
-            // Verificar se HLS.js está disponível e é suportado
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 90
-                });
-                
-                hls.loadSource(streamUrl);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log(`Stream M3U8 carregado com sucesso para ${videoId}`);
-                    video.play().catch(e => {
-                        console.log(`Erro ao reproduzir automaticamente ${videoId}:`, e);
-                    });
-                });
-                
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error(`Erro no HLS para ${videoId}:`, data);
-                    if (data.fatal) {
-                        switch(data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Erro de rede, tentando recuperar...');
-                                hls.startLoad();
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Erro de mídia, tentando recuperar...');
-                                hls.recoverMediaError();
-                                break;
-                            default:
-                                console.log('Erro fatal, tentando suporte nativo...');
-                                tryNativePlayback(video, streamUrl);
-                                break;
-                        }
-                    }
-                });
-                
-                // Armazenar referência do HLS no elemento de vídeo
-                video.hlsInstance = hls;
-                
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Suporte nativo para Safari
-                console.log(`Usando suporte nativo para ${videoId}`);
-                tryNativePlayback(video, streamUrl);
-            } else {
-                console.warn(`HLS não suportado para ${videoId}`);
-                video.style.display = 'none';
-                video.parentElement.innerHTML = `
-                    <div class="camera-placeholder">
-                        ⚠️ Reprodução M3U8 não suportada neste navegador
-                    </div>
-                `;
-            }
-        }
-        
-        // Função para tentar reprodução nativa
-        function tryNativePlayback(video, streamUrl) {
-            video.src = streamUrl;
-            video.addEventListener('loadedmetadata', function() {
-                console.log('Stream nativo carregado');
-                video.play().catch(e => {
-                    console.log('Erro ao reproduzir automaticamente:', e);
-                });
-            });
-        }
-        
-        // Função para alternar mute/unmute
+        // Função para alternar mute/unmute (não aplicável para iframes)
         function toggleMute(videoId, buttonId) {
-            const video = document.getElementById(videoId);
-            const button = document.getElementById(buttonId);
-            
-            if (!video || !button) return;
-            
-            video.muted = !video.muted;
-            
-            if (video.muted) {
-                button.innerHTML = '🔇 Mudo';
-                button.title = 'Ativar áudio';
-            } else {
-                button.innerHTML = '🔊 Som';
-                button.title = 'Desativar áudio';
-            }
+            // Esta função não é mais necessária para iframes RTSP.me
+            console.log('Controle de áudio não disponível para iframes RTSP.me');
         }
 
         // Inicializar aplicação

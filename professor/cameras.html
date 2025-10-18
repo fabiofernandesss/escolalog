@@ -31,8 +31,7 @@
     <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- HLS.js para reprodução M3U8 -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
 
     <style>
         * {
@@ -265,12 +264,22 @@
             pointer-events: auto;
         }
         
-        /* Bloquear qualquer elemento de áudio dentro dos iframes */
+        /* Bloquear qualquer elemento de áudio e controles de vídeo */
         .camera-iframe audio,
-        .camera-iframe video[controls] {
+        .camera-iframe video[controls],
+        .camera-video::-webkit-media-controls,
+        .camera-video::-webkit-media-controls-enclosure,
+        .camera-video::-webkit-media-controls-panel,
+        .camera-video::-webkit-media-controls-play-button,
+        .camera-video::-webkit-media-controls-volume-slider,
+        .camera-video::-webkit-media-controls-mute-button,
+        .camera-video::-webkit-media-controls-timeline,
+        .camera-video::-webkit-media-controls-current-time-display,
+        .camera-video::-webkit-media-controls-time-remaining-display {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         .camera-placeholder {
@@ -721,8 +730,8 @@
             }
 
             const camerasHTML = camerasData.map(camera => {
-                // Usar URL M3U8 do campo monitor ou url_m3u8
-                const streamUrl = camera.monitor || camera.url_m3u8 || 'https://ipservice.aovivonanet.com.br:4433/hls/bastos-praca-da-juventude/index.m3u8';
+                // Usar URL do RTSP.me do campo monitor ou url_m3u8
+                const streamUrl = camera.monitor || camera.url_m3u8 || '';
                 
                 const isOnline = !!streamUrl;
                 const statusClass = isOnline ? 'online' : 'offline';
@@ -738,19 +747,20 @@
                     </div>
                     <div class="camera-video-container">
                         ${streamUrl ? `
-                            <video 
-                                id="video-${camera.id}"
-                                class="camera-video"
-                                muted
-                                autoplay
-                                playsinline
-                                controls>
-                                Seu navegador não suporta reprodução de vídeo.
-                            </video>
+                            <iframe 
+                                class="camera-iframe"
+                                src="${streamUrl}" 
+                                frameborder="0" 
+                                title="RTSP Stream Player" 
+                                allowfullscreen
+                                allow="camera; fullscreen" 
+                                sandbox="allow-same-origin allow-scripts allow-presentation">
+                                Iframes not supported. Broadcasting <a href="https://rtsp.me/" title="rtsp video steaming service">rtsp.me</a> player
+                            </iframe>
                         ` : `
                             <div class="camera-placeholder">
                                 <i data-lucide="wifi-off" class="icon"></i>
-                                <span>📹 URL M3U8 não configurada</span>
+                                <span>📹 URL RTSP.me não configurada</span>
                             </div>
                         `}
                     </div>
@@ -767,16 +777,6 @@
 
             camerasGrid.innerHTML = camerasHTML;
             lucide.createIcons();
-            
-            // Inicializar streams M3U8 após renderização
-            setTimeout(() => {
-                camerasData.forEach(camera => {
-                    const streamUrl = camera.monitor || camera.url_m3u8;
-                    if (streamUrl) {
-                        initializeM3U8Stream(`video-${camera.id}`, streamUrl);
-                    }
-                });
-            }, 100);
         }
 
         // Atualizar contador de câmeras
@@ -862,6 +862,8 @@
             window.location.href = 'menu.html';
         }
 
+
+
         // Inicialização da aplicação
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🎯 Inicializando visualização de câmeras...');
@@ -869,82 +871,6 @@
             try {
                 await initializeSupabase();
                 lucide.createIcons();
-
-                // Função para inicializar stream M3U8 (sem áudio)
-        function initializeM3U8Stream(videoId, streamUrl) {
-            const video = document.getElementById(videoId);
-            if (!video || !streamUrl) return;
-            
-            console.log(`Inicializando stream M3U8 para ${videoId}:`, streamUrl);
-            
-            // Verificar se HLS.js está disponível e é suportado
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 90
-                });
-                
-                hls.loadSource(streamUrl);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log(`Stream M3U8 carregado com sucesso para ${videoId}`);
-                    video.play().catch(e => {
-                        console.log(`Erro ao reproduzir automaticamente ${videoId}:`, e);
-                    });
-                });
-                
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error(`Erro no HLS para ${videoId}:`, data);
-                    if (data.fatal) {
-                        switch(data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Erro de rede, tentando recuperar...');
-                                hls.startLoad();
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Erro de mídia, tentando recuperar...');
-                                hls.recoverMediaError();
-                                break;
-                            default:
-                                console.log('Erro fatal, tentando suporte nativo...');
-                                tryNativePlayback(video, streamUrl);
-                                break;
-                        }
-                    }
-                });
-                
-                // Armazenar referência do HLS no elemento de vídeo
-                video.hlsInstance = hls;
-                
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Suporte nativo para Safari
-                console.log(`Usando suporte nativo para ${videoId}`);
-                tryNativePlayback(video, streamUrl);
-            } else {
-                console.warn(`HLS não suportado para ${videoId}`);
-                video.style.display = 'none';
-                video.parentElement.innerHTML = `
-                    <div class="camera-placeholder">
-                        <i data-lucide="wifi-off" class="icon"></i>
-                        <span>⚠️ Reprodução M3U8 não suportada neste navegador</span>
-                    </div>
-                `;
-                lucide.createIcons();
-            }
-        }
-        
-        // Função para tentar reprodução nativa
-        function tryNativePlayback(video, streamUrl) {
-            video.src = streamUrl;
-            video.addEventListener('loadedmetadata', function() {
-                console.log('Stream nativo carregado');
-                video.play().catch(e => {
-                    console.log('Erro ao reproduzir automaticamente:', e);
-                });
-            });
-        }
 
         // Eventos do modal
         document.getElementById('closeModal')?.addEventListener('click', closeFullscreen);
