@@ -73,6 +73,26 @@ def send_whatsapp_response(phone_number: str, message: str) -> bool:
         logger.error(f'Erro no envio WhatsApp: {str(e)}')
         return False
 
+def is_access_request_message(message: str) -> bool:
+    """Verifica se a mensagem segue o padrão de solicitação de liberação de acesso."""
+    import re
+    
+    if not message:
+        return False
+    
+    # Padrão: "Olá, meu nome é [Nome] e o nome do meu filho é [Nome]. Eu quero liberar o acesso."
+    # Permite variações de pontuação e espaçamento
+    pattern = r'ol[aá],?\s+meu\s+nome\s+[eé]\s+(.+?)\s+e\s+o\s+nome\s+do\s+meu\s+filho\s+[eé]\s+(.+?)\.\s*eu\s+quero\s+liberar\s+o?\s*acesso\.?'
+    
+    # Busca case-insensitive
+    match = re.search(pattern, message.lower().strip())
+    
+    if match:
+        logger.info(f"Mensagem de liberação de acesso detectada - Pai: {match.group(1).strip()}, Filho: {match.group(2).strip()}")
+        return True
+    
+    return False
+
 def build_response_message() -> str:
     """Constrói a mensagem de resposta automática."""
     return (
@@ -151,6 +171,15 @@ def lambda_handler(event, context):
                 "statusCode": 200,
                 "headers": get_cors_headers(),
                 "body": json.dumps({"message": "Mensagem de grupo ignorada"})
+            }
+        
+        # Verificar se a mensagem segue o padrão de liberação de acesso
+        if not is_access_request_message(message_body):
+            logger.info("Mensagem não segue o padrão de liberação de acesso; não enviando resposta automática")
+            return {
+                "statusCode": 200,
+                "headers": get_cors_headers(),
+                "body": json.dumps({"message": "Mensagem não é uma solicitação de liberação de acesso válida"})
             }
         
         # Extrair número de telefone limpo

@@ -824,17 +824,17 @@
                     console.warn('⚠️ Supabase não inicializado, usando número padrão');
                 }
                 
-                // Solicitar nome do usuário
-                const nomeUsuario = prompt('Digite seu nome:');
-                if (!nomeUsuario) {
-                    alert('Nome é obrigatório para solicitar liberação de acesso.');
+                // Solicitar nome completo do usuário
+                const nomeUsuario = prompt('Digite seu nome completo:');
+                if (!nomeUsuario || nomeUsuario.trim().length < 3) {
+                    alert('Nome completo é obrigatório para solicitar liberação de acesso.');
                     return;
                 }
                 
-                // Solicitar nome do filho
-                const nomeFilho = prompt('Digite o nome do seu filho:');
-                if (!nomeFilho) {
-                    alert('Nome do filho é obrigatório para solicitar liberação de acesso.');
+                // Solicitar nome completo do filho
+                const nomeFilho = prompt('Digite o nome completo do seu filho:');
+                if (!nomeFilho || nomeFilho.trim().length < 3) {
+                    alert('Nome completo do filho é obrigatório para solicitar liberação de acesso.');
                     return;
                 }
                 
