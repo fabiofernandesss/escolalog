@@ -109,8 +109,8 @@ def update_student_photo_url(student_id, photo_url):
         logger.error(f'Erro ao atualizar foto no banco: {str(e)}')
         return False
 
-def get_student_devices(student_id):
-    """Busca todos os dispositivos associados ao aluno."""
+def get_student_school_id(student_id):
+    """Busca o ID da escola do aluno."""
     try:
         headers = {
             "apikey": SUPABASE_API_KEY,
@@ -118,8 +118,43 @@ def get_student_devices(student_id):
             "Content-Type": "application/json"
         }
         
-        # Buscar dispositivos do aluno
-        url = f"{SUPABASE_URL}/rest/v1/aluno_dispositivo?select=id_do_aluno_no_dispositivo,dispositivos!inner(id,nome,ip,login,senha,status)&aluno=eq.{student_id}&dispositivos.status=eq.ATIVO"
+        # Buscar escola do aluno
+        url = f"{SUPABASE_URL}/rest/v1/alunos?select=escola_id&id=eq.{student_id}"
+        
+        req = urllib.request.Request(url=url, method="GET", headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
+            body = response.read().decode()
+            data = json.loads(body)
+            
+            if isinstance(data, list) and len(data) > 0:
+                return data[0].get('escola_id')
+            return None
+            
+    except Exception as e:
+        logger.error(f'Erro ao buscar escola do aluno: {str(e)}')
+        return None
+
+def get_student_devices(student_id):
+    """Busca todos os dispositivos da escola do aluno para sincronização completa."""
+    try:
+        headers = {
+            "apikey": SUPABASE_API_KEY,
+            "Authorization": f"Bearer {SUPABASE_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        # Primeiro, buscar a escola do aluno
+        escola_id = get_student_school_id(student_id)
+        if not escola_id:
+            logger.error(f'Não foi possível encontrar a escola do aluno {student_id}')
+            return []
+        
+        logger.info(f'Aluno {student_id} pertence à escola {escola_id}')
+        
+        # Buscar TODOS os dispositivos ATIVOS da escola (não apenas os do aluno específico)
+        # Isso garante que a foto seja sincronizada em todos os dispositivos da escola
+        url = f"{SUPABASE_URL}/rest/v1/dispositivos?select=id,nome,ip,login,senha,status&escola_id=eq.{escola_id}&status=eq.ATIVO"
         
         req = urllib.request.Request(url=url, method="GET", headers=headers)
         
@@ -128,12 +163,23 @@ def get_student_devices(student_id):
             data = json.loads(body)
             
             if isinstance(data, list):
-                logger.info(f'Encontrados {len(data)} dispositivos para aluno {student_id}')
-                return data
+                logger.info(f'Encontrados {len(data)} dispositivos ATIVOS na escola {escola_id} para sincronização')
+                
+                # Transformar os dados para manter compatibilidade com o resto do código
+                # Cada dispositivo precisa ter um id_do_aluno_no_dispositivo (usaremos o id_control_id do aluno)
+                formatted_devices = []
+                for device in data:
+                    formatted_device = {
+                        'id_do_aluno_no_dispositivo': None,  # Será preenchido com id_control_id na função update_devices_photos
+                        'dispositivos': device
+                    }
+                    formatted_devices.append(formatted_device)
+                
+                return formatted_devices
             return []
             
     except Exception as e:
-        logger.error(f'Erro ao buscar dispositivos: {str(e)}')
+        logger.error(f'Erro ao buscar dispositivos da escola: {str(e)}')
         return []
 
 def get_device_session(device_ip, login, password, retries=DEVICE_RETRIES_DEFAULT, timeout_seconds=DEVICE_LOGIN_TIMEOUT_DEFAULT):
@@ -223,12 +269,41 @@ def update_photo_on_device(device_ip, student_device_id, session, photo_data, re
     return False
 
 def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT, login_timeout=DEVICE_LOGIN_TIMEOUT_DEFAULT, update_timeout=DEVICE_UPDATE_TIMEOUT_DEFAULT):
-    """Atualiza foto em todos os dispositivos do aluno. Falha se nenhum dispositivo sincronizar."""
+    """Atualiza foto em todos os dispositivos da escola do aluno. Falha se nenhum dispositivo sincronizar."""
     devices = get_student_devices(student_id)
     
     if not devices:
         logger.error(f'Nenhum dispositivo encontrado para aluno {student_id}')
         return False
+    
+    # Buscar o id_control_id do aluno para usar como student_device_id
+    student_data = None
+    try:
+        headers = {
+            "apikey": SUPABASE_API_KEY,
+            "Authorization": f"Bearer {SUPABASE_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{SUPABASE_URL}/rest/v1/alunos?select=id_control_id&id=eq.{student_id}"
+        req = urllib.request.Request(url=url, method="GET", headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
+            body = response.read().decode()
+            data = json.loads(body)
+            
+            if isinstance(data, list) and len(data) > 0:
+                student_data = data[0]
+    except Exception as e:
+        logger.error(f'Erro ao buscar dados do aluno: {str(e)}')
+        return False
+    
+    if not student_data or not student_data.get('id_control_id'):
+        logger.error(f'id_control_id não encontrado para aluno {student_id}')
+        return False
+    
+    student_control_id = student_data['id_control_id']
+    logger.info(f'Usando id_control_id {student_control_id} para sincronização em todos dispositivos da escola')
     
     success_count = 0
     total_devices = len(devices)
@@ -237,9 +312,11 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
         try:
             device_info = device['dispositivos']
             device_ip = device_info['ip'].rstrip('/')
-            student_device_id = device['id_do_aluno_no_dispositivo']
             
-            logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip})...')
+            # Usar id_control_id do aluno como student_device_id para todos os dispositivos da escola
+            student_device_id = device.get('id_do_aluno_no_dispositivo') or student_control_id
+            
+            logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip}) com student_device_id: {student_device_id}...')
             
             # Obter sessão com retries
             session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=retries, timeout_seconds=login_timeout)
