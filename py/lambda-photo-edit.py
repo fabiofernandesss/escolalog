@@ -377,14 +377,6 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
         logger.error(f'❌ SINCRONIZAÇÃO FALHOU: Nenhum dispositivo foi atualizado com sucesso')
         return False
 
-def create_response(status_code, body, cors_headers):
-    """Helper para criar resposta com CORS headers garantidos."""
-    return {
-        'statusCode': status_code,
-        'headers': cors_headers,
-        'body': json.dumps(body) if isinstance(body, dict) else body
-    }
-
 def lambda_handler(event, context):
     """Handler principal da Lambda para edição de fotos."""
     
@@ -399,7 +391,11 @@ def lambda_handler(event, context):
         'https://www.escolalog.com.br',
         'https://escolalog.com.br',
         'http://localhost:3000',
-        'http://127.0.0.1:3000'
+        'http://127.0.0.1:3000',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080'
     ]
     
     # Determinar origem para CORS
@@ -461,25 +457,38 @@ def lambda_handler(event, context):
         
         # Continuar processamento independente do método
         
-        # Parse do body
-        body = event.get('body', '{}')
-        # Alguns provedores enviam body em base64
-        if event.get('isBase64Encoded'):
+        # Processar dados do corpo da requisição
+        body = event.get('body', '')
+        logger.info(f'Corpo da requisição recebido (primeiros 200 chars): {str(body)[:200]}...')
+        
+        if not body:
+            logger.error('Corpo da requisição vazio')
+            return safe_response(400, {'error': 'Corpo da requisição é obrigatório'})
+        
+        # Tentar decodificar base64 se necessário
+        if event.get('isBase64Encoded', False):
             try:
+                logger.info('Decodificando corpo base64...')
                 body = base64.b64decode(body).decode('utf-8')
+                logger.info('Decodificação base64 bem-sucedida')
             except Exception as e:
-                logger.warning(f'Falha ao decodificar body base64: {str(e)}')
-        logger.info(f'Body recebido (tipo: {type(body)}): {body}')
-
+                logger.error(f'Erro ao decodificar base64: {str(e)}')
+                return safe_response(400, {'error': 'Erro na decodificação base64'})
+        
+        # Parse JSON
         try:
+            logger.info('Fazendo parse do JSON...')
             if isinstance(body, str):
                 data = json.loads(body)
             else:
                 data = body
-            logger.info(f'Dados parseados: {data}')
-        except json.JSONDecodeError:
-            logger.error('Erro ao parsear JSON no body da requisição')
-            return safe_response(400, {'error': 'JSON inválido no body da requisição'})
+            logger.info('Parse JSON bem-sucedido')
+        except json.JSONDecodeError as e:
+            logger.error(f'Erro ao fazer parse do JSON: {str(e)}')
+            logger.error(f'Corpo que causou erro: {body[:500]}...')
+            return safe_response(400, {'error': f'JSON inválido: {str(e)}'})
+        
+        logger.info(f'Dados recebidos - id_control_id: {data.get("id_control_id", "N/A")}, photo_base64 length: {len(data.get("photo_base64", ""))}, sync_only: {data.get("sync_only", False)}')
 
         # Validar parâmetros obrigatórios
         control_id = data.get('id_control_id')
@@ -511,21 +520,29 @@ def lambda_handler(event, context):
         logger.info(f'Modo sync_only: {sync_only}')
         logger.info(f'Config timeouts: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s, supabase_timeout={SUPABASE_TIMEOUT}s')
 
+        # Validar campos obrigatórios
         if not control_id:
+            logger.error('Campo id_control_id ausente ou vazio')
             return safe_response(400, {'error': 'id_control_id é obrigatório'})
 
         # Se for modo sync_only, não precisa de photo_base64, mas precisa de photo_url
         if sync_only:
             if not photo_url:
+                logger.error('Campo photo_url ausente para modo sync_only')
                 return safe_response(400, {'error': 'photo_url é obrigatório para sync_only'})
         else:
             if not photo_base64:
+                logger.error('Campo photo_base64 ausente para modo normal')
                 return safe_response(400, {'error': 'photo_base64 é obrigatório'})
 
         # Buscar aluno pelo id_control_id
+        logger.info(f'Buscando aluno com id_control_id: {control_id}')
         student = get_student_by_control_id(control_id)
         if not student:
+            logger.error(f'Aluno não encontrado para id_control_id: {control_id}')
             return safe_response(404, {'error': 'Aluno não encontrado'})
+        
+        logger.info(f'Aluno encontrado: {student["nome"]} (ID: {student["id"]})')
 
         # Se for modo sync_only, usar photo_url fornecida e pular upload
         if sync_only:
@@ -546,17 +563,24 @@ def lambda_handler(event, context):
                     photo_data = None
         else:
             # Modo normal - decodificar imagem base64
+            logger.info('Processando imagem base64...')
             try:
                 # Remover prefixo data:image se existir
                 if ',' in photo_base64:
+                    logger.info('Removendo prefixo data:image da string base64')
                     photo_base64 = photo_base64.split(',')[1]
+                
+                logger.info(f'Decodificando base64 (tamanho: {len(photo_base64)} chars)')
                 photo_data = base64.b64decode(photo_base64)
-            except Exception:
-                return safe_response(400, {'error': 'Formato de imagem inválido'})
+                logger.info(f'Imagem decodificada com sucesso (tamanho: {len(photo_data)} bytes)')
+            except Exception as e:
+                logger.error(f'Erro ao decodificar imagem base64: {str(e)}')
+                return safe_response(400, {'error': f'Formato de imagem inválido: {str(e)}'})
 
             # Gerar nome único para o arquivo
             timestamp = int(datetime.now().timestamp())
             file_name = f"aluno_{control_id}_{timestamp}.{file_extension}"
+            logger.info(f'Nome do arquivo gerado: {file_name}')
 
             # Determinar content-type
             content_type_map = {
@@ -566,29 +590,45 @@ def lambda_handler(event, context):
                 'gif': 'image/gif'
             }
             content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
+            logger.info(f'Content-type determinado: {content_type}')
 
             # Upload da foto
+            logger.info('Iniciando upload da foto para o storage...')
             final_photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
             if not final_photo_url:
+                logger.error('Falha no upload da foto')
                 return safe_response(500, {'error': 'Erro ao fazer upload da foto'})
+            
+            logger.info(f'Upload concluído com sucesso. URL: {final_photo_url}')
 
             # Atualizar URL no banco de dados (apenas em modo normal)
+            logger.info('Atualizando URL da foto no banco de dados...')
             if not update_student_photo_url(student['id'], final_photo_url):
+                logger.error('Falha ao atualizar URL da foto no banco')
                 return safe_response(500, {'error': 'Erro ao atualizar foto no banco de dados'})
+            
+            logger.info('URL da foto atualizada no banco com sucesso')
 
         # Sincronização com dispositivos (se habilitada e temos dados da imagem)
         devices_updated = None
         if sync_devices and photo_data:
             logger.info('Iniciando sincronização de foto com dispositivos...')
-            devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
-            if not devices_updated:
-                logger.warning('Nenhum dispositivo foi atualizado.')
+            try:
+                devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
+                if not devices_updated:
+                    logger.warning('Nenhum dispositivo foi atualizado.')
+                else:
+                    logger.info('Sincronização com dispositivos concluída com sucesso')
+            except Exception as e:
+                logger.error(f'Erro durante sincronização com dispositivos: {str(e)}')
+                devices_updated = False
         elif sync_devices and not photo_data:
             logger.warning('Sincronização solicitada mas dados da imagem não disponíveis')
         else:
             logger.info('Sincronização de dispositivos desativada pelo cliente.')
 
         # Preparar resposta com informações sobre dispositivos
+        logger.info('Preparando resposta final...')
         response_data = {
             'success': True,
             'message': 'Sincronização concluída com sucesso' if sync_only else 'Foto atualizada com sucesso',
@@ -611,11 +651,17 @@ def lambda_handler(event, context):
             else:
                 response_data['message'] += ' (dispositivos não sincronizados)'
 
+        logger.info(f'Operação concluída com sucesso. Resposta: {json.dumps(response_data, indent=2)}')
+        
         # Sucesso
         return safe_response(200, response_data)
         
     except Exception as e:
-        logger.error(f'Erro na Lambda: {str(e)}')
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f'Erro crítico na Lambda: {str(e)}')
+        logger.error(f'Traceback completo: {error_traceback}')
+        
         # Garantir que sempre temos CORS headers, mesmo em erro crítico
         try:
             error_headers = cors_headers
@@ -628,4 +674,11 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Credentials': 'true',
                 'Content-Type': 'application/json'
             }
-        return safe_response(500, {'error': f'Erro interno: {str(e)}'})
+        
+        error_response = {
+            'error': f'Erro interno: {str(e)}',
+            'type': type(e).__name__,
+            'traceback': error_traceback.split('\n')[-10:]  # Últimas 10 linhas do traceback
+        }
+        
+        return safe_response(500, error_response)
