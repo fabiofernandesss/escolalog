@@ -62,15 +62,15 @@ def upload_photo_to_storage(file_data, file_name, content_type):
             "Content-Type": content_type
         }
         
-        # Upload para o bucket fotos_alunos
-        url = f"{SUPABASE_URL}/storage/v1/object/fotos_alunos/alunos/{file_name}"
+        # Upload para o bucket fotos (corrigido para usar o bucket correto)
+        url = f"{SUPABASE_URL}/storage/v1/object/fotos/{file_name}"
         
         req = urllib.request.Request(url=url, data=file_data, method="POST", headers=headers)
         
         with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
             if response.status in [200, 201]:
                 # Retornar URL pública
-                public_url = f"{SUPABASE_URL}/storage/v1/object/public/fotos_alunos/alunos/{file_name}"
+                public_url = f"{SUPABASE_URL}/storage/v1/object/public/fotos/{file_name}"
                 return public_url
             else:
                 logger.error(f'Erro no upload: status={response.status}')
