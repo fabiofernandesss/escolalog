@@ -163,7 +163,11 @@ def get_student_devices(student_id):
             data = json.loads(body)
             
             if isinstance(data, list):
-                logger.info(f'Encontrados {len(data)} dispositivos ATIVOS na escola {escola_id} para sincronização')
+                logger.info(f'🔍 DISPOSITIVOS ENCONTRADOS: {len(data)} dispositivos ATIVOS na escola {escola_id}')
+                
+                # Log detalhado de cada dispositivo encontrado
+                for i, device in enumerate(data, 1):
+                    logger.info(f'📱 Dispositivo {i}: {device["nome"]} (ID: {device["id"]}, IP: {device["ip"]})')
                 
                 # Transformar os dados para manter compatibilidade com o resto do código
                 # Cada dispositivo precisa ter um id_do_aluno_no_dispositivo (usaremos o id_control_id do aluno)
@@ -175,8 +179,11 @@ def get_student_devices(student_id):
                     }
                     formatted_devices.append(formatted_device)
                 
+                logger.info(f'✅ Retornando {len(formatted_devices)} dispositivos formatados para sincronização')
                 return formatted_devices
-            return []
+            else:
+                logger.warning(f'⚠️ Resposta inesperada da API: {data}')
+                return []
             
     except Exception as e:
         logger.error(f'Erro ao buscar dispositivos da escola: {str(e)}')
@@ -270,11 +277,15 @@ def update_photo_on_device(device_ip, student_device_id, session, photo_data, re
 
 def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT, login_timeout=DEVICE_LOGIN_TIMEOUT_DEFAULT, update_timeout=DEVICE_UPDATE_TIMEOUT_DEFAULT):
     """Atualiza foto em todos os dispositivos da escola do aluno. Falha se nenhum dispositivo sincronizar."""
+    logger.info(f'🚀 INICIANDO SINCRONIZAÇÃO DE FOTO para aluno {student_id}')
+    
     devices = get_student_devices(student_id)
     
     if not devices:
-        logger.error(f'Nenhum dispositivo encontrado para aluno {student_id}')
+        logger.error(f'❌ ERRO: Nenhum dispositivo encontrado para aluno {student_id}')
         return False
+    
+    logger.info(f'📊 TOTAL DE DISPOSITIVOS PARA SINCRONIZAÇÃO: {len(devices)}')
     
     # Buscar o id_control_id do aluno para usar como student_device_id
     student_data = None
@@ -285,7 +296,7 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
             "Content-Type": "application/json"
         }
         
-        url = f"{SUPABASE_URL}/rest/v1/alunos?select=id_control_id&id=eq.{student_id}"
+        url = f"{SUPABASE_URL}/rest/v1/alunos?select=id_control_id,nome&id=eq.{student_id}"
         req = urllib.request.Request(url=url, method="GET", headers=headers)
         
         with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
@@ -295,47 +306,76 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
             if isinstance(data, list) and len(data) > 0:
                 student_data = data[0]
     except Exception as e:
-        logger.error(f'Erro ao buscar dados do aluno: {str(e)}')
+        logger.error(f'❌ Erro ao buscar dados do aluno: {str(e)}')
         return False
     
     if not student_data or not student_data.get('id_control_id'):
-        logger.error(f'id_control_id não encontrado para aluno {student_id}')
+        logger.error(f'❌ id_control_id não encontrado para aluno {student_id}')
         return False
     
     student_control_id = student_data['id_control_id']
-    logger.info(f'Usando id_control_id {student_control_id} para sincronização em todos dispositivos da escola')
+    student_name = student_data.get('nome', 'Nome não encontrado')
+    logger.info(f'👤 ALUNO: {student_name} (ID Control: {student_control_id})')
+    logger.info(f'🔄 Usando id_control_id {student_control_id} para sincronização em TODOS os dispositivos da escola')
     
     success_count = 0
+    failed_count = 0
     total_devices = len(devices)
     
-    for device in devices:
+    logger.info(f'🎯 INICIANDO PROCESSO DE SINCRONIZAÇÃO EM {total_devices} DISPOSITIVOS:')
+    
+    for i, device in enumerate(devices, 1):
         try:
             device_info = device['dispositivos']
             device_ip = device_info['ip'].rstrip('/')
+            device_name = device_info['nome']
+            device_id = device_info['id']
             
             # Usar id_control_id do aluno como student_device_id para todos os dispositivos da escola
             student_device_id = device.get('id_do_aluno_no_dispositivo') or student_control_id
             
-            logger.info(f'Atualizando dispositivo {device_info["nome"]} ({device_ip}) com student_device_id: {student_device_id}...')
+            logger.info(f'📱 [{i}/{total_devices}] PROCESSANDO DISPOSITIVO: {device_name}')
+            logger.info(f'   ├─ ID: {device_id}')
+            logger.info(f'   ├─ IP: {device_ip}')
+            logger.info(f'   ├─ Login: {device_info["login"]}')
+            logger.info(f'   └─ Student Device ID: {student_device_id}')
             
             # Obter sessão com retries
+            logger.info(f'🔐 Obtendo sessão para {device_name}...')
             session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=retries, timeout_seconds=login_timeout)
             if not session:
-                logger.error(f'Falha ao obter sessão do dispositivo {device_ip}')
+                logger.error(f'❌ [{i}/{total_devices}] FALHA ao obter sessão do dispositivo {device_name} ({device_ip})')
+                failed_count += 1
                 continue
             
+            logger.info(f'✅ Sessão obtida para {device_name}: {session[:10]}...')
+            
             # Atualizar foto com retries
+            logger.info(f'📸 Atualizando foto no dispositivo {device_name}...')
             if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=retries, timeout_seconds=update_timeout):
                 success_count += 1
-                logger.info(f'Sucesso no dispositivo {device_info["nome"]}')
+                logger.info(f'✅ [{i}/{total_devices}] SUCESSO: Foto atualizada no dispositivo {device_name}')
             else:
-                logger.error(f'Falha ao atualizar foto no dispositivo {device_info["nome"]}')
+                failed_count += 1
+                logger.error(f'❌ [{i}/{total_devices}] FALHA: Não foi possível atualizar foto no dispositivo {device_name}')
                 
         except Exception as e:
-            logger.error(f'Erro ao processar dispositivo: {str(e)}')
+            failed_count += 1
+            logger.error(f'❌ [{i}/{total_devices}] ERRO CRÍTICO ao processar dispositivo: {str(e)}')
     
-    logger.info(f'Dispositivos atualizados: {success_count}/{total_devices}')
-    return success_count > 0
+    # Log final detalhado
+    logger.info(f'📊 RESULTADO FINAL DA SINCRONIZAÇÃO:')
+    logger.info(f'   ├─ Total de dispositivos: {total_devices}')
+    logger.info(f'   ├─ Sucessos: {success_count}')
+    logger.info(f'   ├─ Falhas: {failed_count}')
+    logger.info(f'   └─ Taxa de sucesso: {(success_count/total_devices*100):.1f}%')
+    
+    if success_count > 0:
+        logger.info(f'✅ SINCRONIZAÇÃO CONCLUÍDA: {success_count}/{total_devices} dispositivos atualizados com sucesso')
+        return True
+    else:
+        logger.error(f'❌ SINCRONIZAÇÃO FALHOU: Nenhum dispositivo foi atualizado com sucesso')
+        return False
 
 def create_response(status_code, body, cors_headers):
     """Helper para criar resposta com CORS headers garantidos."""
