@@ -494,6 +494,13 @@ def lambda_handler(event, context):
         control_id = data.get('id_control_id')
         photo_base64 = data.get('photo_base64')
         photo_url = data.get('photo_url')  # Nova opção para sync_only
+        
+        # Limpar photo_url removendo caracteres especiais que podem causar problemas
+        if photo_url:
+            # Remover backticks, aspas e espaços extras
+            photo_url = photo_url.strip().strip('`').strip('"').strip("'").strip()
+            logger.info(f'Photo URL limpa: {photo_url}')
+        
         sync_only = bool(data.get('sync_only', False))  # Modo apenas sincronização
         file_extension = data.get('file_extension', 'jpg')
         # Permitir controle via payload; padrão True para ambientes administrados
@@ -554,12 +561,33 @@ def lambda_handler(event, context):
             if sync_devices:
                 try:
                     logger.info(f'Baixando imagem da URL para sincronização: {photo_url}')
-                    req = urllib.request.Request(photo_url)
-                    with urllib.request.urlopen(req, timeout=10) as response:
-                        photo_data = response.read()
-                    logger.info('Imagem baixada com sucesso para sincronização')
+                    
+                    # Verificar se a URL é válida
+                    if not photo_url.startswith(('http://', 'https://')):
+                        logger.error(f'URL inválida (não começa com http/https): {photo_url}')
+                        photo_data = None
+                    else:
+                        req = urllib.request.Request(photo_url)
+                        req.add_header('User-Agent', 'Mozilla/5.0 (compatible; EscolaLog/1.0)')
+                        
+                        with urllib.request.urlopen(req, timeout=15) as response:
+                            if response.status == 200:
+                                photo_data = response.read()
+                                logger.info(f'Imagem baixada com sucesso para sincronização (tamanho: {len(photo_data)} bytes)')
+                            else:
+                                logger.error(f'Erro HTTP ao baixar imagem: status {response.status}')
+                                photo_data = None
+                except urllib.error.HTTPError as e:
+                    logger.error(f'Erro HTTP ao baixar imagem: {e.code} - {e.reason}')
+                    logger.error(f'URL que causou erro: {photo_url}')
+                    photo_data = None
+                except urllib.error.URLError as e:
+                    logger.error(f'Erro de URL ao baixar imagem: {e.reason}')
+                    logger.error(f'URL que causou erro: {photo_url}')
+                    photo_data = None
                 except Exception as e:
-                    logger.warning(f'Erro ao baixar imagem para sincronização: {e}')
+                    logger.error(f'Erro inesperado ao baixar imagem para sincronização: {e}')
+                    logger.error(f'URL que causou erro: {photo_url}')
                     photo_data = None
         else:
             # Modo normal - decodificar imagem base64
@@ -609,21 +637,23 @@ def lambda_handler(event, context):
             
             logger.info('URL da foto atualizada no banco com sucesso')
 
-        # Sincronização com dispositivos (se habilitada e temos dados da imagem)
+        # Sincronização com dispositivos (se habilitada)
         devices_updated = None
-        if sync_devices and photo_data:
-            logger.info('Iniciando sincronização de foto com dispositivos...')
-            try:
-                devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
-                if not devices_updated:
-                    logger.warning('Nenhum dispositivo foi atualizado.')
-                else:
-                    logger.info('Sincronização com dispositivos concluída com sucesso')
-            except Exception as e:
-                logger.error(f'Erro durante sincronização com dispositivos: {str(e)}')
+        if sync_devices:
+            if photo_data:
+                logger.info('Iniciando sincronização de foto com dispositivos...')
+                try:
+                    devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
+                    if not devices_updated:
+                        logger.warning('Nenhum dispositivo foi atualizado.')
+                    else:
+                        logger.info('Sincronização com dispositivos concluída com sucesso')
+                except Exception as e:
+                    logger.error(f'Erro durante sincronização com dispositivos: {str(e)}')
+                    devices_updated = False
+            else:
+                logger.warning('Sincronização solicitada mas dados da imagem não disponíveis (falha no download)')
                 devices_updated = False
-        elif sync_devices and not photo_data:
-            logger.warning('Sincronização solicitada mas dados da imagem não disponíveis')
         else:
             logger.info('Sincronização de dispositivos desativada pelo cliente.')
 
