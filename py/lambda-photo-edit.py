@@ -495,14 +495,35 @@ def lambda_handler(event, context):
         photo_base64 = data.get('photo_base64')
         photo_url = data.get('photo_url')  # Nova opção para sync_only
         
+        # Log da photo_url ANTES da limpeza
+        if photo_url:
+            logger.info(f'🔍 PHOTO_URL EXTRAÍDA DO JSON: {repr(photo_url)}')
+        
         # Limpar photo_url removendo caracteres especiais que podem causar problemas
         if photo_url:
             original_url = photo_url
-            # Remover backticks, aspas e espaços extras
-            photo_url = photo_url.strip().strip('`').strip('"').strip("'").strip()
-            logger.info(f'🧹 LIMPEZA DA URL:')
+            # Limpeza mais robusta: remover backticks, aspas, espaços e caracteres de controle
+            photo_url = photo_url.strip()  # Remove espaços das extremidades
+            
+            # Remover backticks múltiplos
+            while '`' in photo_url:
+                photo_url = photo_url.replace('`', '')
+            
+            # Remover aspas múltiplas
+            while '"' in photo_url:
+                photo_url = photo_url.replace('"', '')
+            
+            while "'" in photo_url:
+                photo_url = photo_url.replace("'", '')
+            
+            # Remover espaços extras novamente
+            photo_url = photo_url.strip()
+            
+            logger.info(f'🧹 LIMPEZA ROBUSTA DA URL:')
             logger.info(f'   ├─ Original: {repr(original_url)}')
-            logger.info(f'   └─ Limpa: {repr(photo_url)}')
+            logger.info(f'   ├─ Tamanho original: {len(original_url)}')
+            logger.info(f'   ├─ Limpa: {repr(photo_url)}')
+            logger.info(f'   └─ Tamanho limpa: {len(photo_url)}')
         
         sync_only = bool(data.get('sync_only', False))  # Modo apenas sincronização
         file_extension = data.get('file_extension', 'jpg')
