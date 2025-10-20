@@ -14,7 +14,7 @@
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="../img/favicon.png">
     <link rel="shortcut icon" type="image/png" href="../img/favicon.png">
-    <link rel="apple-touch-icon" href="../img/metatag.png">
+    <link rel="apple-touch-icon" href="https://www.escolalog.com.br/img/metatag.png">
     
     <!-- Manifest -->
     <link rel="manifest" href="../manifest.json">
@@ -1007,35 +1007,51 @@
         // Carregar estatísticas de frequência
         async function loadFrequencyStats() {
             try {
-                const todayStart = new Date();
-                todayStart.setHours(0, 0, 0, 0);
-                const todayEnd = new Date();
-                todayEnd.setHours(23, 59, 59, 999);
+                // Função para obter a data local do navegador em formato YYYY-MM-DD
+                function getTodayLocalISODate() {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
 
-                // Presentes hoje via logs (alunos com alguma "entrada" hoje nas turmas do professor)
-                const { data: presentLogs, error: presentLogsError } = await supabase
-                    .from('logs')
-                    .select('internal_id, event, data_do_log, turma_id')
+                const today = getTodayLocalISODate();
+
+                // Presentes hoje via view frequencia_diaria (mesma fonte que chamada.html)
+                const { data: frequenciaData, error: frequenciaError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('user_id, tipo_frequencia, entrada, saida')
                     .in('turma_id', turmaIds.length ? turmaIds : [-1])
-                    .not('internal_id', 'is', null)
-                    .gte('data_do_log', todayStart.toISOString())
-                    .lte('data_do_log', todayEnd.toISOString())
-                    .eq('event', 7);
+                    .eq('dia', today);
 
-                if (presentLogsError) {
-                    console.error('Erro ao carregar logs de entrada hoje:', presentLogsError);
+                if (frequenciaError) {
+                    console.error('Erro ao carregar dados de frequência hoje:', frequenciaError);
                     dashboardData.presentToday = 0;
                 } else {
-                    const uniquePresentIds = new Set((presentLogs || []).map(l => l.internal_id).filter(Boolean));
+                    // Aplicar a mesma lógica de presença que chamada.html usa
+                    const uniquePresentIds = new Set();
+                    
+                    (frequenciaData || []).forEach(row => {
+                        // Presença baseada no tipo_frequencia da VIEW (mesma lógica do chamada.html)
+                        const hasPresentTipo = ['APENAS_ENTRADA', 'ENTRADA_SAIDA', 'ENTRADA_SAIDA_FILTRADA'].includes(row.tipo_frequencia);
+                        const hasEntrada = !!row.entrada;
+                        const hasSaida = !!row.saida;
+                        
+                        const isPresent = hasPresentTipo || hasEntrada || hasSaida;
+                        
+                        if (isPresent && row.user_id) {
+                            uniquePresentIds.add(row.user_id);
+                        }
+                    });
+                    
                     dashboardData.presentToday = uniquePresentIds.size;
                 }
 
                 const totalStudentsToday = dashboardData.totalStudents || 0;
                 dashboardData.absentToday = Math.max(0, totalStudentsToday - (dashboardData.presentToday || 0));
-                
 
-
-                // Calcular taxa de presença (hoje) com base em logs
+                // Calcular taxa de presença (hoje) com base na view frequencia_diaria
                 dashboardData.attendanceRate = totalStudentsToday > 0
                     ? Math.round(((dashboardData.presentToday || 0) / totalStudentsToday) * 100)
                     : 0;
