@@ -7,7 +7,7 @@
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#2563eb">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Sistema Escolar">
     
@@ -428,6 +428,14 @@
                 <div class="stat-label">Femininos</div>
             </div>
 
+            <div class="stat-card">
+                <div class="icon">
+                    <i data-lucide="help-circle"></i>
+                </div>
+                <div class="stat-number" id="unknownStudents">-</div>
+                <div class="stat-label">Não Informado</div>
+            </div>
+
             <div class="stat-card schools">
                 <div class="icon">
                     <i data-lucide="users"></i>
@@ -460,14 +468,6 @@
                 </div>
                 <div class="stat-number" id="attendanceRate">-</div>
                 <div class="stat-label">Taxa de Presença</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="icon">
-                    <i data-lucide="activity"></i>
-                </div>
-                <div class="stat-number" id="totalRecords">-</div>
-                <div class="stat-label">Total de Registros</div>
             </div>
 
             <div class="stat-card">
@@ -578,6 +578,7 @@
             totalStudents: 0,
             maleStudents: 0,
             femaleStudents: 0,
+            unknownGender: 0,
             totalSchools: 0,
             genderData: [],
             seriesData: [],
@@ -971,8 +972,16 @@
                     dashboardData.femaleStudents = 0;
                 } else if (students) {
                     dashboardData.totalStudents = students.length;
-                    dashboardData.maleStudents = students.filter(s => s.sexo === 'M').length;
-                    dashboardData.femaleStudents = students.filter(s => s.sexo === 'F').length;
+                    const genderCounts = { male: 0, female: 0, unknown: 0 };
+                    (students || []).forEach(s => {
+                        const sex = (s.sexo || '').toString().trim().toLowerCase();
+                        if (sex === 'm' || sex === 'masculino') genderCounts.male++;
+                        else if (sex === 'f' || sex === 'feminino') genderCounts.female++;
+                        else genderCounts.unknown++;
+                    });
+                    dashboardData.maleStudents = genderCounts.male;
+                    dashboardData.femaleStudents = genderCounts.female;
+                    dashboardData.unknownGender = genderCounts.unknown;
                 } else {
                     dashboardData.totalStudents = 0;
                     dashboardData.maleStudents = 0;
@@ -990,76 +999,51 @@
             document.getElementById('totalStudents').textContent = dashboardData.totalStudents || 0;
             document.getElementById('maleStudents').textContent = dashboardData.maleStudents || 0;
             document.getElementById('femaleStudents').textContent = dashboardData.femaleStudents || 0;
+            const unknownEl = document.getElementById('unknownStudents');
+            if (unknownEl) { unknownEl.textContent = dashboardData.unknownGender || 0; }
             document.getElementById('totalClasses').textContent = dashboardData.totalClasses || 0;
         }
 
         // Carregar estatísticas de frequência
         async function loadFrequencyStats() {
             try {
-                const today = new Date().toISOString().split('T')[0];
-                
-                // Presentes hoje
-                const { data: presentToday, error: presentError } = await supabase
-                    .from('frequencia_diaria')
-                    .select('*')
-                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
-                    .eq('dia', today)
-                    .eq('tipo_frequencia', 'Presente');
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const todayEnd = new Date();
+                todayEnd.setHours(23, 59, 59, 999);
 
-                if (presentError) {
-                    console.error('Erro ao carregar presentes hoje:', presentError);
+                // Presentes hoje via logs (alunos com alguma "entrada" hoje nas turmas do professor)
+                const { data: presentLogs, error: presentLogsError } = await supabase
+                    .from('logs')
+                    .select('internal_id, event, data_do_log, turma_id')
+                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
+                    .not('internal_id', 'is', null)
+                    .gte('data_do_log', todayStart.toISOString())
+                    .lte('data_do_log', todayEnd.toISOString())
+                    .eq('event', 7);
+
+                if (presentLogsError) {
+                    console.error('Erro ao carregar logs de entrada hoje:', presentLogsError);
                     dashboardData.presentToday = 0;
                 } else {
-                    dashboardData.presentToday = presentToday?.length || 0;
+                    const uniquePresentIds = new Set((presentLogs || []).map(l => l.internal_id).filter(Boolean));
+                    dashboardData.presentToday = uniquePresentIds.size;
                 }
 
-                // Faltas hoje
-                const { data: absentToday, error: absentError } = await supabase
-                    .from('frequencia_diaria')
-                    .select('*')
-                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
-                    .eq('dia', today)
-                    .eq('tipo_frequencia', 'Falta');
+                const totalStudentsToday = dashboardData.totalStudents || 0;
+                dashboardData.absentToday = Math.max(0, totalStudentsToday - (dashboardData.presentToday || 0));
+                
 
-                if (absentError) {
-                    console.error('Erro ao carregar faltas hoje:', absentError);
-                    dashboardData.absentToday = 0;
-                } else {
-                    dashboardData.absentToday = absentToday?.length || 0;
-                }
 
-                // Total de registros de frequência
-                const { data: totalRecords, error: totalError } = await supabase
-                    .from('frequencia_diaria')
-                    .select('*')
-                    .in('turma_id', turmaIds.length ? turmaIds : [-1]);
+                // Calcular taxa de presença (hoje) com base em logs
+                dashboardData.attendanceRate = totalStudentsToday > 0
+                    ? Math.round(((dashboardData.presentToday || 0) / totalStudentsToday) * 100)
+                    : 0;
 
-                if (totalError) {
-                    console.error('Erro ao carregar total de registros:', totalError);
-                    dashboardData.totalRecords = 0;
-                } else {
-                    dashboardData.totalRecords = totalRecords?.length || 0;
-                }
-
-                // Calcular taxa de presença (últimos 30 dias)
+                // Referência de 30 dias para cálculo de tempo médio na escola
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-
-                const { data: recentRecords, error: recentError } = await supabase
-                    .from('frequencia_diaria')
-                    .select('tipo_frequencia')
-                    .in('turma_id', turmaIds.length ? turmaIds : [-1])
-                    .gte('dia', thirtyDaysAgoStr);
-
-                if (recentError) {
-                    console.error('Erro ao carregar registros recentes:', recentError);
-                    dashboardData.attendanceRate = 0;
-                } else {
-                    const totalRecentRecords = recentRecords?.length || 0;
-                    const presentRecords = recentRecords?.filter(r => r.tipo_frequencia === 'Presente').length || 0;
-                    dashboardData.attendanceRate = totalRecentRecords > 0 ? Math.round((presentRecords / totalRecentRecords) * 100) : 0;
-                }
 
                 // Tempo médio na escola (últimos 30 dias)
                 const { data: timeRecords, error: timeError } = await supabase
@@ -1089,7 +1073,6 @@
                 document.getElementById('presentToday').textContent = dashboardData.presentToday;
                 document.getElementById('absentToday').textContent = dashboardData.absentToday;
                 document.getElementById('attendanceRate').textContent = `${dashboardData.attendanceRate}%`;
-                document.getElementById('totalRecords').textContent = dashboardData.totalRecords;
                 document.getElementById('avgTimeInSchool').textContent = dashboardData.averageTimeInSchool;
 
             } catch (error) {
@@ -1098,146 +1081,88 @@
                 dashboardData.presentToday = 0;
                 dashboardData.absentToday = 0;
                 dashboardData.attendanceRate = 0;
-                dashboardData.totalRecords = 0;
                 dashboardData.averageTimeInSchool = '0h 0m';
                 
                 document.getElementById('presentToday').textContent = '0';
                 document.getElementById('absentToday').textContent = '0';
                 document.getElementById('attendanceRate').textContent = '0%';
-                document.getElementById('totalRecords').textContent = '0';
                 document.getElementById('avgTimeInSchool').textContent = '0h 0m';
             }
         }
 
         // Carregar dados para gráficos
         async function loadChartData() {
-            // Dados por série
-            const { data: seriesData, error: seriesError } = await supabase
-                .from('alunos')
-                .select(`
-                    id,
-                    series:serie_id (
-                        nome
-                    )
-                `)
-                .is('soft_delete', false)
-                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
-            if (seriesError) {
-                console.error('Erro Supabase (séries):', seriesError);
-            }
+            try {
+                if (!turmaIds || turmaIds.length === 0) {
+                    // Se não há turmas, definir dados vazios
+                    dashboardData.seriesData = [];
+                    dashboardData.classData = [];
+                    dashboardData.neighborhoodData = [];
+                    return;
+                }
 
-            if (!seriesError && seriesData) {
+                // Carregar dados de alunos das turmas do professor
+                const { data: students, error: studentsError } = await supabase
+                    .from('alunos')
+                    .select(`
+                        id,
+                        nome,
+                        bairro,
+                        turma_id,
+                        turmas!inner(nome, serie_id),
+                        series!inner(nome)
+                    `)
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false);
+
+                if (studentsError) {
+                    console.error('Erro ao carregar dados para gráficos:', studentsError);
+                    dashboardData.seriesData = [];
+                    dashboardData.classData = [];
+                    dashboardData.neighborhoodData = [];
+                    return;
+                }
+
+                // Processar dados por série
                 const seriesCount = {};
-                seriesData.forEach(student => {
+                const classCount = {};
+                const neighborhoodCount = {};
+
+                (students || []).forEach(student => {
+                    // Contar por série
                     const serieName = student.series?.nome || 'Sem série';
                     seriesCount[serieName] = (seriesCount[serieName] || 0) + 1;
-                });
-                const sorted = Object.entries(seriesCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
-                dashboardData.seriesData = sorted;
-                dashboardData.uniqueSeries = Object.keys(seriesCount).length;
-            }
 
-            // Dados por turma
-            const { data: classData, error: classError } = await supabase
-                .from('alunos')
-                .select(`
-                    id,
-                    turmas:turma_id (
-                        nome
-                    )
-                `)
-                .is('soft_delete', false)
-                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
-            if (classError) {
-                console.error('Erro Supabase (turmas):', classError);
-            }
-
-            if (!classError && classData) {
-                const classCount = {};
-                classData.forEach(student => {
+                    // Contar por turma
                     const className = student.turmas?.nome || 'Sem turma';
                     classCount[className] = (classCount[className] || 0) + 1;
-                });
-                dashboardData.classData = Object.entries(classCount).sort((a,b)=>b[1]-a[1]).slice(0, 8);
-            }
 
-            // Dados por bairro
-            const { data: neighborhoodData, error: neighborhoodError } = await supabase
-                .from('alunos')
-                .select('bairro')
-                .eq('soft_delete', false)
-                .in('turma_id', turmaIds.length ? turmaIds : [-1]);
-            if (neighborhoodError) {
-                console.error('Erro Supabase (bairros):', neighborhoodError);
-            }
-
-            if (!neighborhoodError && neighborhoodData) {
-                const neighborhoodCount = {};
-                neighborhoodData.forEach(student => {
-                    const neighborhood = student.bairro || 'Não informado';
-                    neighborhoodCount[neighborhood] = (neighborhoodCount[neighborhood] || 0) + 1;
-                });
-                // Pegar apenas os 5 bairros com mais alunos
-                const sortedNeighborhoods = Object.entries(neighborhoodCount)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5);
-                dashboardData.neighborhoodData = sortedNeighborhoods;
-            }
-        }
-
-        // Carregar alunos recentes
-        async function loadRecentStudents() {
-            const { data: students, error } = await supabase
-                .from('alunos')
-                .select(`
-                    id,
-                    nome,
-                    matricula,
-                    foto_url,
-                    turmas:turma_id (
-                        nome
-                    ),
-                    series:serie_id (
-                        nome
-                    )
-                `)
-                .is('soft_delete', false)
-                .in('turma_id', turmaIds.length ? turmaIds : [-1])
-                .order('id', { ascending: false })
-                .limit(6);
-            if (error) {
-                console.error('Erro Supabase (alunos recentes):', error);
-            }
-
-            if (!error && students) {
-                dashboardData.recentStudents = students;
-                renderRecentStudents();
-            }
-        }
-
-        // Renderizar lista de alunos recentes
-        function renderRecentStudents() {
-            const container = document.getElementById('recentStudents');
-            
-            if (dashboardData.recentStudents.length === 0) {
-                container.innerHTML = '<div class="loading">Nenhum aluno encontrado</div>';
-                return;
-            }
-
-            container.innerHTML = dashboardData.recentStudents.map(student => `
-                <div class="student-item">
-                    ${student.foto_url 
-                        ? `<img src="${student.foto_url}" alt="${student.nome}" class="student-avatar">`
-                        : `<div class="student-avatar">${student.nome.charAt(0).toUpperCase()}</div>`
+                    // Contar por bairro
+                    if (student.bairro && student.bairro.trim()) {
+                        const neighborhood = student.bairro.trim();
+                        neighborhoodCount[neighborhood] = (neighborhoodCount[neighborhood] || 0) + 1;
                     }
-                    <div class="student-info">
-                        <div class="student-name">${student.nome}</div>
-                        <div class="student-details">
-                            ${student.turmas?.nome || 'Sem turma'} • ${student.series?.nome || 'Sem série'}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                });
+
+                // Converter para formato de array [nome, quantidade]
+                dashboardData.seriesData = Object.entries(seriesCount)
+                    .sort((a, b) => b[1] - a[1]) // Ordenar por quantidade decrescente
+                    .slice(0, 10); // Limitar a 10 itens
+
+                dashboardData.classData = Object.entries(classCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                dashboardData.neighborhoodData = Object.entries(neighborhoodCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+            } catch (error) {
+                console.error('Erro ao carregar dados dos gráficos:', error);
+                dashboardData.seriesData = [];
+                dashboardData.classData = [];
+                dashboardData.neighborhoodData = [];
+            }
         }
 
         // Renderizar gráficos com ApexCharts
@@ -1245,9 +1170,13 @@
             // Gênero (donut)
             const genderOptions = {
                 chart: { type: 'donut', height: 280 },
-                series: [dashboardData.maleStudents || 0, dashboardData.femaleStudents || 0],
-                labels: ['Masculinos', 'Femininos'],
-                colors: ['#4FACFE', '#FA709A'],
+                series: [
+                    dashboardData.maleStudents || 0,
+                    dashboardData.femaleStudents || 0,
+                    dashboardData.unknownGender || 0
+                ],
+                labels: ['Masculinos', 'Femininos', 'Não Informado'],
+                colors: ['#4FACFE', '#FA709A', '#A0AEC0'],
                 legend: { position: 'bottom' },
                 dataLabels: { enabled: true },
                 responsive: [{ breakpoint: 640, options: { chart: { height: 200 }, legend: { position: 'bottom' } } }]
