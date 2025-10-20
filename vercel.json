@@ -1,0 +1,135 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/saudacao",
+      "destination": "/saudacao.html"
+    },
+    {
+      "source": "/admin/dashboard",
+      "destination": "/admin/dashboard.html"
+    },
+    {
+      "source": "/admin/alunos",
+      "destination": "/admin/alunos.html"
+    },
+    {
+      "source": "/admin/usuarios",
+      "destination": "/admin/usuarios.html"
+    },
+    {
+      "source": "/admin/escolas",
+      "destination": "/admin/escolas.html"
+    },
+    {
+      "source": "/admin/series",
+      "destination": "/admin/series.html"
+    },
+    {
+      "source": "/admin/turmas",
+      "destination": "/admin/turmas.html"
+    },
+    {
+      "source": "/admin/cameras",
+      "destination": "/admin/cameras.html"
+    },
+    {
+      "source": "/admin/dispositivos",
+      "destination": "/admin/dispositivos.html"
+    },
+    {
+      "source": "/admin/logs",
+      "destination": "/admin/logs.html"
+    },
+    {
+      "source": "/admin/excel-import",
+      "destination": "/admin/excel-import.html"
+    },
+    {
+      "source": "/professor/dashboard",
+      "destination": "/professor/dashboard.html"
+    },
+    {
+      "source": "/professor/alunos",
+      "destination": "/professor/alunos.html"
+    },
+    {
+      "source": "/professor/chamada",
+      "destination": "/professor/chamada.html"
+    },
+    {
+      "source": "/professor/cameras",
+      "destination": "/professor/cameras.html"
+    },
+    {
+      "source": "/professor/menu",
+      "destination": "/professor/menu.html"
+    },
+    {
+      "source": "/professor/perfil",
+      "destination": "/professor/perfil.html"
+    },
+    {
+      "source": "/professor/busca-segura",
+      "destination": "/professor/busca-segura.html"
+    },
+    {
+      "source": "/diretor/dashboard",
+      "destination": "/diretor/dashboard.html"
+    },
+    {
+      "source": "/diretor/alunos",
+      "destination": "/diretor/alunos.html"
+    },
+    {
+      "source": "/diretor/frequencia",
+      "destination": "/diretor/frequencia.html"
+    },
+    {
+      "source": "/diretor/cameras",
+      "destination": "/diretor/cameras.html"
+    },
+    {
+      "source": "/diretor/logs",
+      "destination": "/diretor/logs.html"
+    },
+    {
+      "source": "/diretor/menu",
+      "destination": "/diretor/menu.html"
+    },
+    {
+      "source": "/diretor/perfil",
+      "destination": "/diretor/perfil.html"
+    },
+    {
+      "source": "/responsavel/busca-segura",
+      "destination": "/responsavel/busca-segura.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
+}
