@@ -514,25 +514,18 @@
     </style>
 </head>
 <body>
-    <div class="header">
+    <header class="header">
         <div class="header-left">
             <div class="logo" onclick="window.location.href='menu.html'" style="cursor: pointer;">
-                <img src="../img/logo-horizonal.png" alt="Logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log">
             </div>
-            <h1 class="page-title">
-                <i data-lucide="shield-check"></i>
-            </h1>
         </div>
         <div class="header-right">
-            <a href="dashboard.html" class="back-btn">
-                <i data-lucide="arrow-left"></i>
+            <a href="menu.html" class="back-btn" aria-label="Voltar">
+                <i data-lucide="chevron-left"></i>
             </a>
-            <div class="user-info" onclick="window.location.href='perfil.html'">
-                <i data-lucide="user"></i>
-                <span class="user-name" id="userName">Carregando...</span>
-            </div>
         </div>
-    </div>
+    </header>
 
     <div class="container">
 
@@ -639,7 +632,8 @@
                 }
 
                 console.log('✅ Usuário autorizado:', currentUser.nome);
-                document.getElementById('userName').textContent = currentUser.nome;
+                const nameEl = document.getElementById('userName');
+                if (nameEl) { nameEl.textContent = currentUser.nome; }
                 
                 // Não precisamos autenticar no Supabase - vamos usar uma abordagem diferente
                 
