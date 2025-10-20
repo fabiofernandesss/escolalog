@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Segura - Sistema Escolar</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sistema Escolar">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #3b82f6;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-subtitle {
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: rgba(249, 250, 251, 0.8);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .file-upload-text {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 8px;
+            color: #059669;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #059669;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px 16px;
+            }
+
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 32px;
+                flex-shrink: 0;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-left: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .user-info {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .user-name {
+                display: none;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="window.location.reload()">
+                <img src="../img/logo-horizonal.png" alt="Logo">
+            </div>
+            <h1 class="page-title">
+                <i data-lucide="shield-check"></i>
+                Busca Segura
+            </h1>
+        </div>
+        <div class="header-right">
+            <div class="user-info" onclick="window.location.href='perfil.html'">
+                <i data-lucide="user"></i>
+                <span class="user-name" id="userName">Carregando...</span>
+            </div>
+            <a href="../login.html" class="logout-btn">
+                <i data-lucide="log-out"></i>
+                Sair
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-card">
+            <h2 class="form-title">
+                <i data-lucide="user-plus"></i>
+                Nova Solicitação de Busca Segura
+            </h2>
+            <p class="form-subtitle">
+                Preencha os dados da pessoa que irá buscar seu filho(a) na escola. 
+                Esta solicitação será analisada pelos professores.
+            </p>
+
+            <div id="alertContainer"></div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Enviando solicitação...</p>
+            </div>
+
+            <form id="buscaSeguraForm">
+                <!-- Dados do Buscador -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <i data-lucide="camera"></i>
+                        Foto do Buscador *
+                    </label>
+                    <div class="file-upload">
+                        <input type="file" id="fotoBuscador" class="file-upload-input" accept="image/*" required>
+                        <label for="fotoBuscador" class="file-upload-label">
+                            <i data-lucide="upload"></i>
+                            <span class="file-upload-text">Clique para selecionar a foto</span>
+                        </label>
+                        <div class="file-preview" id="fotoPreview"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="nomeBuscador">
+                            <i data-lucide="user"></i>
+                            Nome do Buscador *
+                        </label>
+                        <input type="text" id="nomeBuscador" class="form-input" required 
+                               placeholder="Nome completo da pessoa">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="docBuscador">
+                            <i data-lucide="credit-card"></i>
+                            Documento do Buscador *
+                        </label>
+                        <input type="text" id="docBuscador" class="form-input" required 
+                               placeholder="CPF ou RG">
+                    </div>
+                </div>
+
+                <!-- Dados do Solicitante -->
+                <div class="form-group">
+                    <label class="form-label" for="nomeSolicitante">
+                        <i data-lucide="user-check"></i>
+                        Seu Nome (Solicitante) *
+                    </label>
+                    <input type="text" id="nomeSolicitante" class="form-input" required 
+                           placeholder="Seu nome completo">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i data-lucide="video"></i>
+                        Vídeo de Confirmação
+                    </label>
+                    <div class="file-upload">
+                        <input type="file" id="videoSolicitante" class="file-upload-input" accept="video/*">
+                        <label for="videoSolicitante" class="file-upload-label">
+                            <i data-lucide="video"></i>
+                            <span class="file-upload-text">Grave um vídeo confirmando a autorização (opcional)</span>
+                        </label>
+                        <div class="file-preview" id="videoPreview"></div>
+                    </div>
+                </div>
+
+                <!-- Aluno e Detalhes -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="aluno">
+                            <i data-lucide="graduation-cap"></i>
+                            Aluno *
+                        </label>
+                        <select id="aluno" class="form-select" required>
+                            <option value="">Selecione o aluno</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="grauParentesco">
+                            <i data-lucide="users"></i>
+                            Grau de Parentesco *
+                        </label>
+                        <select id="grauParentesco" class="form-select" required>
+                            <option value="">Selecione</option>
+                            <option value="pai">Pai</option>
+                            <option value="mae">Mãe</option>
+                            <option value="avo">Avô</option>
+                            <option value="ava">Avó</option>
+                            <option value="tio">Tio</option>
+                            <option value="tia">Tia</option>
+                            <option value="responsavel_legal">Responsável Legal</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="observacao">
+                        <i data-lucide="message-square"></i>
+                        Observações
+                    </label>
+                    <textarea id="observacao" class="form-textarea" 
+                              placeholder="Informações adicionais sobre a solicitação..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i data-lucide="send"></i>
+                    Enviar Solicitação
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://sntyndufbxfzasnqvayc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQ2MzQ4NzQsImV4cCI6MjA0MDIxMDg3NH0.Ej8JcnftGJjlJpamb6VvnNJGHynLilMJKqzjJzwUMpE';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Inicializar ícones Lucide
+        lucide.createIcons();
+
+        // Variáveis globais
+        let currentUser = null;
+
+        // Função para mostrar alertas
+        function showAlert(message, type = 'error') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        // Função para verificar autenticação
+        async function checkAuth() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                // Buscar dados do usuário
+                const { data: usuario, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('auth_uid', session.user.id)
+                    .single();
+
+                if (error || !usuario) {
+                    console.error('Erro ao buscar usuário:', error);
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                if (usuario.tipo_usuario !== 'responsavel') {
+                    showAlert('Acesso negado. Esta área é exclusiva para responsáveis.');
+                    setTimeout(() => {
+                        window.location.href = '../login.html';
+                    }, 2000);
+                    return;
+                }
+
+                currentUser = usuario;
+                document.getElementById('userName').textContent = usuario.nome;
+                
+                // Carregar alunos do responsável
+                await loadAlunos();
+                
+            } catch (error) {
+                console.error('Erro na autenticação:', error);
+                window.location.href = '../login.html';
+            }
+        }
+
+        // Função para carregar alunos do responsável
+        async function loadAlunos() {
+            try {
+                const { data: alunos, error } = await supabase
+                    .from('alunos')
+                    .select('id, nome, matricula')
+                    .or(`telefone_responsavel_1.eq.${currentUser.whatsapp},telefone_responsavel_2.eq.${currentUser.whatsapp}`)
+                    .eq('soft_delete', false);
+
+                if (error) {
+                    console.error('Erro ao carregar alunos:', error);
+                    showAlert('Erro ao carregar lista de alunos');
+                    return;
+                }
+
+                const alunoSelect = document.getElementById('aluno');
+                alunoSelect.innerHTML = '<option value="">Selecione o aluno</option>';
+                
+                alunos.forEach(aluno => {
+                    const option = document.createElement('option');
+                    option.value = aluno.id;
+                    option.textContent = `${aluno.nome} - ${aluno.matricula || 'S/N'}`;
+                    alunoSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar alunos:', error);
+                showAlert('Erro ao carregar lista de alunos');
+            }
+        }
+
+        // Função para upload de arquivo
+        async function uploadFile(file, folder) {
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `${folder}/${fileName}`;
+
+                const { data, error } = await supabase.storage
+                    .from('escola-log')
+                    .upload(filePath, file);
+
+                if (error) {
+                    throw error;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('escola-log')
+                    .getPublicUrl(filePath);
+
+                return publicUrl;
+            } catch (error) {
+                console.error('Erro no upload:', error);
+                throw error;
+            }
+        }
+
+        // Handlers para preview de arquivos
+        document.getElementById('fotoBuscador').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('fotoPreview');
+            
+            if (file) {
+                preview.innerHTML = `<i data-lucide="check"></i> Foto selecionada: ${file.name}`;
+                preview.style.display = 'block';
+                lucide.createIcons();
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        document.getElementById('videoSolicitante').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('videoPreview');
+            
+            if (file) {
+                preview.innerHTML = `<i data-lucide="check"></i> Vídeo selecionado: ${file.name}`;
+                preview.style.display = 'block';
+                lucide.createIcons();
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        // Handler do formulário
+        document.getElementById('buscaSeguraForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const submitBtn = e.target.querySelector('.submit-btn');
+            
+            try {
+                loading.style.display = 'block';
+                submitBtn.disabled = true;
+
+                // Coletar dados do formulário
+                const formData = {
+                    nome_buscador: document.getElementById('nomeBuscador').value,
+                    doc_buscador: document.getElementById('docBuscador').value,
+                    nome_solicitante: document.getElementById('nomeSolicitante').value,
+                    aluno_id: document.getElementById('aluno').value,
+                    grau_parentesco: document.getElementById('grauParentesco').value,
+                    observacao: document.getElementById('observacao').value || null
+                };
+
+                // Upload da foto do buscador (obrigatória)
+                const fotoFile = document.getElementById('fotoBuscador').files[0];
+                if (!fotoFile) {
+                    throw new Error('Foto do buscador é obrigatória');
+                }
+
+                formData.foto_buscador_url = await uploadFile(fotoFile, 'busca-segura/fotos');
+
+                // Upload do vídeo (opcional)
+                const videoFile = document.getElementById('videoSolicitante').files[0];
+                if (videoFile) {
+                    formData.video_solicitante_url = await uploadFile(videoFile, 'busca-segura/videos');
+                }
+
+                // Inserir no banco
+                const { data, error } = await supabase
+                    .from('busca_segura')
+                    .insert([formData])
+                    .select();
+
+                if (error) {
+                    throw error;
+                }
+
+                showAlert('Solicitação enviada com sucesso! Os professores irão analisar em breve.', 'success');
+                
+                // Limpar formulário
+                e.target.reset();
+                document.getElementById('fotoPreview').style.display = 'none';
+                document.getElementById('videoPreview').style.display = 'none';
+
+            } catch (error) {
+                console.error('Erro ao enviar solicitação:', error);
+                showAlert(error.message || 'Erro ao enviar solicitação. Tente novamente.');
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

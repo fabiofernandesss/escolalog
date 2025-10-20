@@ -133,6 +133,8 @@
             .container { margin: 12px; }
             .row { grid-template-columns: 1fr; }
             
+            .logo img { height: 32px; }
+            
             .header {
                 flex-direction: row;
                 gap: 8px;
@@ -199,7 +201,7 @@
 <body data-pwa-ui="off">
     <header class="header">
         <div class="header-left">
-            <div class="logo">
+            <div class="logo" onclick="window.location.href='menu.html'" style="cursor: pointer;">
                 <img src="../img/logo-horizonal.png" alt="Escola Log">
             </div>
         </div>
@@ -232,7 +234,6 @@
                 </div>
             </div>
             <div class="actions">
-                <button class="btn" onclick="resetForm()">Cancelar</button>
                 <button id="saveBtn" class="btn primary" onclick="saveProfile()">Salvar alterações</button>
             </div>
             <div id="statusMsg" class="status"></div>

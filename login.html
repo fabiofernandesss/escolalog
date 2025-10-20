@@ -342,15 +342,16 @@
                         </span>
                     </button>
                     
-                    <!-- Botão Liberar Acesso -->
-                    <button 
-                        type="button" 
-                        id="liberar-acesso-btn"
-                        onclick="liberarAcesso()"
-                        class="w-full h-12 rounded-md font-medium transition-colors mt-1 bg-green-600 hover:bg-green-700 text-white"
+                    <!-- Link de Acesso para Responsável -->
+                    <a 
+                        href="#" 
+                        id="liberar-acesso-link"
+                        onclick="liberarAcesso(); return false;"
+                        class="inline-block -mt-1.5 text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                        aria-label="Sou responsável e preciso de acesso"
                     >
-                        Liberar Acesso
-                    </button>
+                        Sou responsável e preciso de acesso
+                    </a>
                 </form>
             </div>
 

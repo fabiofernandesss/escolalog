@@ -226,6 +226,7 @@
         .menu-card.metricas { --card-color: #0ea5e9; }
         .menu-card.chamada { --card-color: #3b82f6; }
         .menu-card.cameras { --card-color: #ef4444; }
+        .menu-card.busca-segura { --card-color: #f97316; }
         .menu-card.perfil { --card-color: #6b7280; }
 
         .menu-icon {
@@ -300,7 +301,7 @@
             }
 
             .logo img {
-                height: 40px;
+                height: 32px;
             }
 
             .user-info {
@@ -367,7 +368,7 @@
             }
 
             .logo img {
-                height: 35px;
+                height: 32px;
             }
 
             .user-info {
@@ -549,7 +550,7 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <div class="logo">
+                <div class="logo" onclick="window.location.reload()" style="cursor: pointer;">
                     <img src="../img/logo-horizonal.png" alt="Escola Log">
                 </div>
             </div>
@@ -602,12 +603,12 @@
             </div>
 
             <!-- Busca Segura -->
-            <div class="menu-card busca-segura" onclick="showSoonToast()">
+            <div class="menu-card busca-segura" onclick="navigateTo('busca-segura.html')">
                 <div class="menu-icon">
-                    <i data-lucide="search"></i>
+                    <i data-lucide="shield-check"></i>
                 </div>
                 <h2 class="menu-title">Busca Segura</h2>
-                <p class="menu-description">Em breve</p>
+                <p class="menu-description">Aprovar solicitações de liberação de alunos</p>
             </div>
 
             <!-- Perfil -->

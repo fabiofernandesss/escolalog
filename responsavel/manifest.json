@@ -1,0 +1,41 @@
+{
+  "name": "Escola Log - Responsável",
+  "short_name": "Escola Log",
+  "description": "Sistema de gestão escolar para responsáveis",
+  "start_url": "./busca-segura.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "scope": "./",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "../img/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../img/metatag.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Busca Segura",
+      "short_name": "Busca Segura",
+      "description": "Solicitar liberação de aluno",
+      "url": "./busca-segura.html",
+      "icons": [
+        {
+          "src": "../img/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

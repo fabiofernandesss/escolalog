@@ -1,15 +1,10 @@
 // Service Worker para Escola Log PWA
-const CACHE_NAME = 'escola-log-v1.0.0';
-const STATIC_CACHE = 'escola-log-static-v1.0.0';
-const DYNAMIC_CACHE = 'escola-log-dynamic-v1.0.0';
+const CACHE_NAME = 'escola-log-v1.1.0';
+const STATIC_CACHE = 'escola-log-static-v1.1.0';
+const DYNAMIC_CACHE = 'escola-log-dynamic-v1.1.0';
 
 // Arquivos estáticos para cache
 const STATIC_FILES = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/admin/dashboard.html',
-  '/admin/alunos.html',
   '/manifest.json',
   '/img/favicon.png',
   '/img/metatag.png',
@@ -67,29 +62,31 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   
-  // Estratégia de cache para diferentes tipos de recursos
   if (request.method === 'GET') {
-    // Arquivos estáticos - Cache First
-    if (STATIC_FILES.includes(url.pathname) || 
-        url.pathname.endsWith('.html') ||
-        url.pathname.endsWith('.css') ||
-        url.pathname.endsWith('.js') ||
-        url.pathname.endsWith('.png') ||
-        url.pathname.endsWith('.jpg') ||
-        url.pathname.endsWith('.jpeg') ||
-        url.pathname.endsWith('.gif') ||
-        url.pathname.endsWith('.svg')) {
+    // HTML e rota raiz: Network First para evitar versões antigas
+    if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+      event.respondWith(networkFirst(request));
+    }
+    // Arquivos estáticos: Cache First
+    else if (STATIC_FILES.includes(url.pathname) || 
+             url.pathname.endsWith('.css') ||
+             url.pathname.endsWith('.js') ||
+             url.pathname.endsWith('.png') ||
+             url.pathname.endsWith('.jpg') ||
+             url.pathname.endsWith('.jpeg') ||
+             url.pathname.endsWith('.gif') ||
+             url.pathname.endsWith('.svg')) {
       
       event.respondWith(cacheFirst(request));
     }
-    // APIs - Network First
+    // APIs: Network First
     else if (url.pathname.includes('/rest/v1/') || 
              url.pathname.includes('/functions/v1/') ||
              url.pathname.includes('/storage/v1/')) {
       
       event.respondWith(networkFirst(request));
     }
-    // Outros recursos - Stale While Revalidate
+    // Outros recursos: Stale While Revalidate
     else {
       event.respondWith(staleWhileRevalidate(request));
     }

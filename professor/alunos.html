@@ -1034,7 +1034,7 @@
     <div class="container">
         <header class="header">
             <div class="header-left">
-                <div class="logo">
+                <div class="logo" onclick="window.location.href='menu.html'" style="cursor: pointer;">
                     <img src="../img/logo-horizonal.png" alt="Escola Log">
                 </div>
             </div>
@@ -2150,42 +2150,113 @@
             }
         }
 
-        // Função para sincronizar com dispositivos via Lambda
+        // Função para sincronizar com dispositivos via Lambda (NOVA VERSÃO - Múltiplas chamadas)
         async function syncPhotoWithDevices(studentData) {
             try {
-                console.log('🔧 Sincronizando com dispositivos...');
+                console.log('🔧 Iniciando sincronização com dispositivos...');
                 
-                // Preparar dados para a lambda (apenas sincronização)
-                const lambdaPayload = {
-                    id_control_id: studentData.id_control_id,
-                    photo_url: studentData.foto_url,
-                    sync_only: true, // Flag para indicar que é apenas sincronização
-                    device_retries: 3,
-                    device_update_timeout: 12,
-                    device_login_timeout: 6
+                // 1. Primeiro, listar todos os dispositivos disponíveis
+                console.log('📋 Listando dispositivos disponíveis...');
+                const listDevicesPayload = {
+                    operation: 'list_devices',
+                    student_id: currentStudent.id
                 };
 
-                const lambdaResponse = await fetch('https://so2m6ipkdtqex3td5z75x27gfa0qjont.lambda-url.us-east-2.on.aws/', {
+                const listResponse = await fetch('https://so2m6ipkdtqex3td5z75x27gfa0qjont.lambda-url.us-east-2.on.aws/', {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(lambdaPayload)
+                    body: JSON.stringify(listDevicesPayload)
                 });
 
-                const lambdaResult = await lambdaResponse.json();
+                const listResult = await listResponse.json();
                 
-                if (lambdaResponse.ok && lambdaResult.success) {
-                    console.log('✅ Sincronização com dispositivos concluída');
-                    return true;
-                } else {
-                    console.warn('⚠️ Falha na sincronização com dispositivos:', lambdaResult.error);
+                if (!listResponse.ok || !listResult.devices) {
+                    console.warn('⚠️ Falha ao listar dispositivos:', listResult.error);
                     return false;
                 }
 
+                const devices = listResult.devices;
+                console.log(`📱 Encontrados ${devices.length} dispositivos:`, devices);
+
+                if (devices.length === 0) {
+                    console.log('ℹ️ Nenhum dispositivo encontrado para sincronização');
+                    return true; // Não é erro, apenas não há dispositivos
+                }
+
+                // 2. Sincronizar cada dispositivo individualmente com intervalo de 1s
+                let successCount = 0;
+                let failureCount = 0;
+
+                for (let i = 0; i < devices.length; i++) {
+                    const device = devices[i];
+                    console.log(`📱 [${i + 1}/${devices.length}] Sincronizando dispositivo: ${device.nome} (ID: ${device.id})`);
+
+                    try {
+                        // Preparar dados para sincronização do dispositivo específico
+                        const deviceSyncPayload = {
+                            operation: 'update_single_device',
+                            student_id: currentStudent.id,
+                            device_id: device.id,
+                            photo_url: studentData.foto_url,
+                            retries: 2,
+                            device_update_timeout: 20,
+                            device_login_timeout: 10
+                        };
+
+                        const deviceResponse = await fetch('https://so2m6ipkdtqex3td5z75x27gfa0qjont.lambda-url.us-east-2.on.aws/', {
+                            method: 'POST',
+                            mode: 'cors',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(deviceSyncPayload)
+                        });
+
+                        const deviceResult = await deviceResponse.json();
+                        
+                        if (deviceResponse.ok && deviceResult.message) {
+                            console.log(`✅ [${i + 1}/${devices.length}] Dispositivo ${device.nome} sincronizado com sucesso`);
+                            successCount++;
+                        } else {
+                            console.warn(`❌ [${i + 1}/${devices.length}] Falha ao sincronizar dispositivo ${device.nome}:`, deviceResult.error);
+                            failureCount++;
+                        }
+
+                    } catch (error) {
+                        console.error(`❌ [${i + 1}/${devices.length}] Erro ao sincronizar dispositivo ${device.nome}:`, error);
+                        failureCount++;
+                    }
+
+                    // Aguardar 1 segundo antes do próximo dispositivo (exceto no último)
+                    if (i < devices.length - 1) {
+                        console.log('⏱️ Aguardando 1 segundo antes do próximo dispositivo...');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                // 3. Log do resultado final
+                console.log(`📊 RESULTADO DA SINCRONIZAÇÃO:`);
+                console.log(`   ├─ Total de dispositivos: ${devices.length}`);
+                console.log(`   ├─ Sucessos: ${successCount}`);
+                console.log(`   ├─ Falhas: ${failureCount}`);
+                console.log(`   └─ Taxa de sucesso: ${((successCount / devices.length) * 100).toFixed(1)}%`);
+
+                // Considerar sucesso se pelo menos um dispositivo foi sincronizado
+                const success = successCount > 0;
+                
+                if (success) {
+                    console.log('🎉 Sincronização concluída com sucesso!');
+                } else {
+                    console.warn('⚠️ Nenhum dispositivo foi sincronizado com sucesso');
+                }
+
+                return success;
+
             } catch (error) {
-                console.warn('⚠️ Erro na sincronização com dispositivos:', error);
+                console.error('❌ Erro crítico na sincronização com dispositivos:', error);
                 return false;
             }
         }

@@ -14,11 +14,11 @@ SUPABASE_URL = "https://sntyndufbxfzasnqvayc.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM"
 
 # Timeouts (podem ser ajustados dinamicamente via payload)
-# Recomenda-se configurar o timeout da Lambda >= 20s no AWS
-SUPABASE_TIMEOUT = 20.0
-DEVICE_LOGIN_TIMEOUT_DEFAULT = 6.0
-DEVICE_UPDATE_TIMEOUT_DEFAULT = 12.0
-DEVICE_RETRIES_DEFAULT = 3
+# Recomenda-se configurar o timeout da Lambda >= 60s no AWS para múltiplos dispositivos
+SUPABASE_TIMEOUT = 30.0
+DEVICE_LOGIN_TIMEOUT_DEFAULT = 10.0
+DEVICE_UPDATE_TIMEOUT_DEFAULT = 20.0
+DEVICE_RETRIES_DEFAULT = 2
 
 def safe_int_cast(value, default=0):
     """Converte valor para int de forma segura."""
@@ -135,8 +135,8 @@ def get_student_school_id(student_id):
         logger.error(f'Erro ao buscar escola do aluno: {str(e)}')
         return None
 
-def get_student_devices(student_id):
-    """Busca todos os dispositivos da escola do aluno para sincronização completa."""
+def get_student_devices(student_id, device_id=None):
+    """Busca dispositivos da escola do aluno. Se device_id for especificado, retorna apenas esse dispositivo."""
     try:
         headers = {
             "apikey": SUPABASE_API_KEY,
@@ -152,9 +152,15 @@ def get_student_devices(student_id):
         
         logger.info(f'Aluno {student_id} pertence à escola {escola_id}')
         
-        # Buscar TODOS os dispositivos ATIVOS da escola (não apenas os do aluno específico)
-        # Isso garante que a foto seja sincronizada em todos os dispositivos da escola
-        url = f"{SUPABASE_URL}/rest/v1/dispositivos?select=id,nome,ip,login,senha,status&escola_id=eq.{escola_id}&status=eq.ATIVO"
+        # Construir query baseada se device_id foi especificado
+        if device_id:
+            # Buscar apenas o dispositivo específico
+            url = f"{SUPABASE_URL}/rest/v1/dispositivos?select=id,nome,ip,login,senha,status&escola_id=eq.{escola_id}&id=eq.{device_id}&status=eq.ATIVO"
+            logger.info(f'🎯 BUSCANDO DISPOSITIVO ESPECÍFICO: ID {device_id} na escola {escola_id}')
+        else:
+            # Buscar TODOS os dispositivos ATIVOS da escola
+            url = f"{SUPABASE_URL}/rest/v1/dispositivos?select=id,nome,ip,login,senha,status&escola_id=eq.{escola_id}&status=eq.ATIVO"
+            logger.info(f'🔍 BUSCANDO TODOS OS DISPOSITIVOS na escola {escola_id}')
         
         req = urllib.request.Request(url=url, method="GET", headers=headers)
         
@@ -163,14 +169,16 @@ def get_student_devices(student_id):
             data = json.loads(body)
             
             if isinstance(data, list):
-                logger.info(f'🔍 DISPOSITIVOS ENCONTRADOS: {len(data)} dispositivos ATIVOS na escola {escola_id}')
+                if device_id:
+                    logger.info(f'🔍 DISPOSITIVO ESPECÍFICO: {len(data)} dispositivo(s) encontrado(s)')
+                else:
+                    logger.info(f'🔍 DISPOSITIVOS ENCONTRADOS: {len(data)} dispositivos ATIVOS na escola {escola_id}')
                 
                 # Log detalhado de cada dispositivo encontrado
                 for i, device in enumerate(data, 1):
                     logger.info(f'📱 Dispositivo {i}: {device["nome"]} (ID: {device["id"]}, IP: {device["ip"]})')
                 
                 # Transformar os dados para manter compatibilidade com o resto do código
-                # Cada dispositivo precisa ter um id_do_aluno_no_dispositivo (usaremos o id_control_id do aluno)
                 formatted_devices = []
                 for device in data:
                     formatted_device = {
@@ -275,17 +283,42 @@ def update_photo_on_device(device_ip, student_device_id, session, photo_data, re
     logger.error(f'Falha ao atualizar foto no dispositivo {device_ip} após {retries} tentativas')
     return False
 
-def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT, login_timeout=DEVICE_LOGIN_TIMEOUT_DEFAULT, update_timeout=DEVICE_UPDATE_TIMEOUT_DEFAULT):
-    """Atualiza foto em todos os dispositivos da escola do aluno. Falha se nenhum dispositivo sincronizar."""
-    logger.info(f'🚀 INICIANDO SINCRONIZAÇÃO DE FOTO para aluno {student_id}')
+def list_student_devices(student_id):
+    """Lista todos os dispositivos da escola do aluno para o frontend fazer chamadas individuais."""
+    logger.info(f'📋 LISTANDO DISPOSITIVOS para aluno {student_id}')
     
     devices = get_student_devices(student_id)
     
     if not devices:
         logger.error(f'❌ ERRO: Nenhum dispositivo encontrado para aluno {student_id}')
+        return []
+    
+    # Extrair apenas as informações necessárias para o frontend
+    device_list = []
+    for device in devices:
+        device_info = device['dispositivos']
+        device_list.append({
+            'id': device_info['id'],
+            'nome': device_info['nome'],
+            'ip': device_info['ip']
+        })
+    
+    logger.info(f'✅ Retornando lista de {len(device_list)} dispositivos')
+    return device_list
+
+def update_single_device_photo(student_id, device_id, photo_data, retries=DEVICE_RETRIES_DEFAULT, login_timeout=DEVICE_LOGIN_TIMEOUT_DEFAULT, update_timeout=DEVICE_UPDATE_TIMEOUT_DEFAULT):
+    """Atualiza foto em um dispositivo específico."""
+    logger.info(f'🚀 INICIANDO SINCRONIZAÇÃO DE FOTO para aluno {student_id} no dispositivo {device_id}')
+    
+    devices = get_student_devices(student_id, device_id)
+    
+    if not devices:
+        logger.error(f'❌ ERRO: Dispositivo {device_id} não encontrado para aluno {student_id}')
         return False
     
-    logger.info(f'📊 TOTAL DE DISPOSITIVOS PARA SINCRONIZAÇÃO: {len(devices)}')
+    if len(devices) != 1:
+        logger.error(f'❌ ERRO: Esperado 1 dispositivo, encontrados {len(devices)}')
+        return False
     
     # Buscar o id_control_id do aluno para usar como student_device_id
     student_data = None
@@ -316,36 +349,146 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
     student_control_id = student_data['id_control_id']
     student_name = student_data.get('nome', 'Nome não encontrado')
     logger.info(f'👤 ALUNO: {student_name} (ID Control: {student_control_id})')
-    logger.info(f'🔄 Usando id_control_id {student_control_id} para sincronização em TODOS os dispositivos da escola')
+    
+    device = devices[0]
+    device_info = device['dispositivos']
+    device_ip = device_info['ip'].rstrip('/')
+    device_name = device_info['nome']
+    
+    # Usar id_control_id do aluno como student_device_id
+    student_device_id = student_control_id
+    
+    logger.info(f'📱 PROCESSANDO DISPOSITIVO: {device_name}')
+    logger.info(f'   ├─ ID: {device_id}')
+    logger.info(f'   ├─ IP: {device_ip}')
+    logger.info(f'   ├─ Login: {device_info["login"]}')
+    logger.info(f'   └─ Student Device ID: {student_device_id}')
+    
+    try:
+        # Obter sessão com retries
+        logger.info(f'🔐 Obtendo sessão para {device_name}...')
+        session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=retries, timeout_seconds=login_timeout)
+        if not session:
+            logger.error(f'❌ FALHA ao obter sessão do dispositivo {device_name} ({device_ip})')
+            return False
+        
+        logger.info(f'✅ Sessão obtida para {device_name}: {session[:10]}...')
+        
+        # Atualizar foto com retries
+        logger.info(f'📸 Atualizando foto no dispositivo {device_name}...')
+        if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=retries, timeout_seconds=update_timeout):
+            logger.info(f'✅ SUCESSO: Foto atualizada no dispositivo {device_name}')
+            return True
+        else:
+            logger.error(f'❌ FALHA: Não foi possível atualizar foto no dispositivo {device_name}')
+            return False
+            
+    except Exception as e:
+        logger.error(f'❌ ERRO CRÍTICO ao processar dispositivo: {str(e)}')
+        return False
+
+def download_photo(photo_url):
+    """Baixa foto da URL fornecida."""
+    try:
+        logger.info(f'📥 Baixando imagem da URL: {photo_url}')
+        
+        # Verificar se a URL é válida
+        if not photo_url.startswith(('http://', 'https://')):
+            logger.error(f'❌ URL inválida (não começa com http/https): {photo_url}')
+            return None
+        
+        logger.info(f'🌐 Fazendo requisição HTTP para: {photo_url}')
+        req = urllib.request.Request(photo_url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (compatible; EscolaLog/1.0)')
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            logger.info(f'📡 Resposta HTTP recebida: status {response.status}')
+            if response.status == 200:
+                photo_data = response.read()
+                logger.info(f'✅ Imagem baixada com sucesso (tamanho: {len(photo_data)} bytes)')
+                return photo_data
+            else:
+                logger.error(f'❌ Erro HTTP ao baixar imagem: status {response.status}')
+                return None
+                
+    except urllib.error.HTTPError as e:
+        logger.error(f'Erro HTTP ao baixar imagem: {e.code} - {e.reason}')
+        logger.error(f'URL que causou erro: {photo_url}')
+        return None
+    except urllib.error.URLError as e:
+        logger.error(f'Erro de URL ao baixar imagem: {e.reason}')
+        logger.error(f'URL que causou erro: {photo_url}')
+        return None
+    except Exception as e:
+        logger.error(f'Erro inesperado ao baixar imagem: {e}')
+        logger.error(f'URL que causou erro: {photo_url}')
+        return None
+
+def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT, login_timeout=DEVICE_LOGIN_TIMEOUT_DEFAULT, update_timeout=DEVICE_UPDATE_TIMEOUT_DEFAULT):
+    """Atualiza foto em todos os dispositivos da escola do aluno."""
+    logger.info(f'🚀 INICIANDO SINCRONIZAÇÃO DE FOTOS para aluno {student_id}')
+    
+    devices = get_student_devices(student_id)
+    
+    if not devices:
+        logger.error(f'❌ ERRO: Nenhum dispositivo encontrado para aluno {student_id}')
+        return False
+    
+    # Buscar o id_control_id do aluno para usar como student_device_id
+    student_data = None
+    try:
+        headers = {
+            "apikey": SUPABASE_API_KEY,
+            "Authorization": f"Bearer {SUPABASE_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{SUPABASE_URL}/rest/v1/alunos?select=id_control_id,nome&id=eq.{student_id}"
+        req = urllib.request.Request(url=url, method="GET", headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=SUPABASE_TIMEOUT) as response:
+            body = response.read().decode()
+            data = json.loads(body)
+            
+            if isinstance(data, list) and len(data) > 0:
+                student_data = data[0]
+    except Exception as e:
+        logger.error(f'❌ Erro ao buscar dados do aluno: {str(e)}')
+        return False
+    
+    if not student_data or not student_data.get('id_control_id'):
+        logger.error(f'❌ id_control_id não encontrado para aluno {student_id}')
+        return False
+    
+    student_control_id = student_data['id_control_id']
+    student_name = student_data.get('nome', 'Nome não encontrado')
+    logger.info(f'👤 ALUNO: {student_name} (ID Control: {student_control_id})')
     
     success_count = 0
-    failed_count = 0
     total_devices = len(devices)
     
-    logger.info(f'🎯 INICIANDO PROCESSO DE SINCRONIZAÇÃO EM {total_devices} DISPOSITIVOS:')
+    logger.info(f'📱 PROCESSANDO {total_devices} DISPOSITIVOS:')
     
     for i, device in enumerate(devices, 1):
+        device_info = device['dispositivos']
+        device_ip = device_info['ip'].rstrip('/')
+        device_name = device_info['nome']
+        
+        # Usar id_control_id do aluno como student_device_id
+        student_device_id = student_control_id
+        
+        logger.info(f'📱 PROCESSANDO DISPOSITIVO {i}/{total_devices}: {device_name}')
+        logger.info(f'   ├─ ID: {device_info["id"]}')
+        logger.info(f'   ├─ IP: {device_ip}')
+        logger.info(f'   ├─ Login: {device_info["login"]}')
+        logger.info(f'   └─ Student Device ID: {student_device_id}')
+        
         try:
-            device_info = device['dispositivos']
-            device_ip = device_info['ip'].rstrip('/')
-            device_name = device_info['nome']
-            device_id = device_info['id']
-            
-            # Usar id_control_id do aluno como student_device_id para todos os dispositivos da escola
-            student_device_id = device.get('id_do_aluno_no_dispositivo') or student_control_id
-            
-            logger.info(f'📱 [{i}/{total_devices}] PROCESSANDO DISPOSITIVO: {device_name}')
-            logger.info(f'   ├─ ID: {device_id}')
-            logger.info(f'   ├─ IP: {device_ip}')
-            logger.info(f'   ├─ Login: {device_info["login"]}')
-            logger.info(f'   └─ Student Device ID: {student_device_id}')
-            
             # Obter sessão com retries
             logger.info(f'🔐 Obtendo sessão para {device_name}...')
             session = get_device_session(device_ip, device_info['login'], device_info['senha'], retries=retries, timeout_seconds=login_timeout)
             if not session:
-                logger.error(f'❌ [{i}/{total_devices}] FALHA ao obter sessão do dispositivo {device_name} ({device_ip})')
-                failed_count += 1
+                logger.error(f'❌ FALHA ao obter sessão do dispositivo {device_name} ({device_ip})')
                 continue
             
             logger.info(f'✅ Sessão obtida para {device_name}: {session[:10]}...')
@@ -353,32 +496,26 @@ def update_devices_photos(student_id, photo_data, retries=DEVICE_RETRIES_DEFAULT
             # Atualizar foto com retries
             logger.info(f'📸 Atualizando foto no dispositivo {device_name}...')
             if update_photo_on_device(device_ip, student_device_id, session, photo_data, retries=retries, timeout_seconds=update_timeout):
+                logger.info(f'✅ SUCESSO: Foto atualizada no dispositivo {device_name}')
                 success_count += 1
-                logger.info(f'✅ [{i}/{total_devices}] SUCESSO: Foto atualizada no dispositivo {device_name}')
             else:
-                failed_count += 1
-                logger.error(f'❌ [{i}/{total_devices}] FALHA: Não foi possível atualizar foto no dispositivo {device_name}')
+                logger.error(f'❌ FALHA: Não foi possível atualizar foto no dispositivo {device_name}')
                 
         except Exception as e:
-            failed_count += 1
-            logger.error(f'❌ [{i}/{total_devices}] ERRO CRÍTICO ao processar dispositivo: {str(e)}')
+            logger.error(f'❌ ERRO CRÍTICO ao processar dispositivo {device_name}: {str(e)}')
+            continue
     
-    # Log final detalhado
-    logger.info(f'📊 RESULTADO FINAL DA SINCRONIZAÇÃO:')
-    logger.info(f'   ├─ Total de dispositivos: {total_devices}')
-    logger.info(f'   ├─ Sucessos: {success_count}')
-    logger.info(f'   ├─ Falhas: {failed_count}')
-    logger.info(f'   └─ Taxa de sucesso: {(success_count/total_devices*100):.1f}%')
+    logger.info(f'📊 RESULTADO FINAL: {success_count}/{total_devices} dispositivos atualizados com sucesso')
     
     if success_count > 0:
-        logger.info(f'✅ SINCRONIZAÇÃO CONCLUÍDA: {success_count}/{total_devices} dispositivos atualizados com sucesso')
+        logger.info(f'🎉 SINCRONIZAÇÃO CONCLUÍDA: Pelo menos um dispositivo foi atualizado')
         return True
     else:
-        logger.error(f'❌ SINCRONIZAÇÃO FALHOU: Nenhum dispositivo foi atualizado com sucesso')
+        logger.error(f'❌ SINCRONIZAÇÃO FALHOU: Nenhum dispositivo foi atualizado')
         return False
 
 def lambda_handler(event, context):
-    """Handler principal da Lambda para edição de fotos."""
+    """Handler principal da Lambda para sincronização de fotos com dispositivos."""
     
     # CORS ultra-robusto: configuração específica para escolalog.com.br
     headers_in = event.get('headers') or {}
@@ -451,299 +588,83 @@ def lambda_handler(event, context):
             logger.info('Processando requisição OPTIONS (preflight) - retornando CORS completo')
             return safe_response(204, '')
         
-        # Verificar método HTTP (aceitar POST ou qualquer método)
-        if http_method and http_method not in ['POST', 'GET']:
-            logger.info(f'Método HTTP recebido: {http_method} - processando como POST')
+        # Parse do body
+        body = json.loads(event.get('body', '{}'))
         
-        # Continuar processamento independente do método
+        # Verificar se é uma operação de listagem de dispositivos
+        operation = body.get('operation', 'update_photo')
         
-        # Processar dados do corpo da requisição
-        body = event.get('body', '')
-        logger.info(f'Corpo da requisição recebido (primeiros 200 chars): {str(body)[:200]}...')
-        
-        if not body:
-            logger.error('Corpo da requisição vazio')
-            return safe_response(400, {'error': 'Corpo da requisição é obrigatório'})
-        
-        # Tentar decodificar base64 se necessário
-        if event.get('isBase64Encoded', False):
-            try:
-                logger.info('Decodificando corpo base64...')
-                body = base64.b64decode(body).decode('utf-8')
-                logger.info('Decodificação base64 bem-sucedida')
-            except Exception as e:
-                logger.error(f'Erro ao decodificar base64: {str(e)}')
-                return safe_response(400, {'error': 'Erro na decodificação base64'})
-        
-        # Parse JSON
-        try:
-            logger.info('Fazendo parse do JSON...')
-            if isinstance(body, str):
-                data = json.loads(body)
+        if operation == 'list_devices':
+            # Operação para listar dispositivos
+            student_id = body.get('student_id')
+            
+            if not student_id:
+                return safe_response(400, {'error': 'student_id é obrigatório para listar dispositivos'})
+            
+            logger.info(f'📋 LISTANDO DISPOSITIVOS para aluno: {student_id}')
+            
+            devices = list_student_devices(student_id)
+            
+            return safe_response(200, {
+                'devices': devices,
+                'total': len(devices)
+            })
+            
+        elif operation == 'update_single_device':
+            # Operação para atualizar um dispositivo específico
+            student_id = body.get('student_id')
+            device_id = body.get('device_id')
+            photo_url = body.get('photo_url')
+            
+            if not student_id or not device_id or not photo_url:
+                return safe_response(400, {'error': 'student_id, device_id e photo_url são obrigatórios'})
+            
+            # Parâmetros opcionais com valores padrão
+            retries = body.get('retries', DEVICE_RETRIES_DEFAULT)
+            device_login_timeout = body.get('device_login_timeout', DEVICE_LOGIN_TIMEOUT_DEFAULT)
+            device_update_timeout = body.get('device_update_timeout', DEVICE_UPDATE_TIMEOUT_DEFAULT)
+            
+            logger.info(f'📋 CONFIGURAÇÕES RECEBIDAS PARA DISPOSITIVO ÚNICO:')
+            logger.info(f'   ├─ Student ID: {student_id}')
+            logger.info(f'   ├─ Device ID: {device_id}')
+            logger.info(f'   ├─ Photo URL: {photo_url}')
+            logger.info(f'   ├─ Retries: {retries}')
+            logger.info(f'   ├─ Device Login Timeout: {device_login_timeout}s')
+            logger.info(f'   └─ Device Update Timeout: {device_update_timeout}s')
+            
+            # Download da foto
+            photo_data = download_photo(photo_url)
+            if not photo_data:
+                return safe_response(400, {'error': 'Não foi possível baixar a foto'})
+            
+            # Atualizar dispositivo específico
+            success = update_single_device_photo(
+                student_id=student_id,
+                device_id=device_id,
+                photo_data=photo_data,
+                retries=retries,
+                login_timeout=device_login_timeout,
+                update_timeout=device_update_timeout
+            )
+            
+            if success:
+                return safe_response(200, {'message': f'Foto atualizada com sucesso no dispositivo {device_id}'})
             else:
-                data = body
-            logger.info('Parse JSON bem-sucedido')
-        except json.JSONDecodeError as e:
-            logger.error(f'Erro ao fazer parse do JSON: {str(e)}')
-            logger.error(f'Corpo que causou erro: {body[:500]}...')
-            return safe_response(400, {'error': f'JSON inválido: {str(e)}'})
+                return safe_response(500, {'error': f'Falha ao atualizar foto no dispositivo {device_id}'})
         
-        logger.info(f'Dados recebidos - id_control_id: {data.get("id_control_id", "N/A")}, photo_base64 length: {len(data.get("photo_base64", ""))}, sync_only: {data.get("sync_only", False)}')
-
-        # Validar parâmetros obrigatórios
-        control_id = data.get('id_control_id')
-        photo_base64 = data.get('photo_base64')
-        photo_url = data.get('photo_url')  # Nova opção para sync_only
-        
-        # Log da photo_url ANTES da limpeza
-        if photo_url:
-            logger.info(f'🔍 PHOTO_URL EXTRAÍDA DO JSON: {repr(photo_url)}')
-        
-        # Limpar photo_url removendo caracteres especiais que podem causar problemas
-        if photo_url:
-            original_url = photo_url
-            # Limpeza mais robusta: remover backticks, aspas, espaços e caracteres de controle
-            photo_url = photo_url.strip()  # Remove espaços das extremidades
-            
-            # Remover backticks múltiplos
-            while '`' in photo_url:
-                photo_url = photo_url.replace('`', '')
-            
-            # Remover aspas múltiplas
-            while '"' in photo_url:
-                photo_url = photo_url.replace('"', '')
-            
-            while "'" in photo_url:
-                photo_url = photo_url.replace("'", '')
-            
-            # Remover espaços extras novamente
-            photo_url = photo_url.strip()
-            
-            logger.info(f'🧹 LIMPEZA ROBUSTA DA URL:')
-            logger.info(f'   ├─ Original: {repr(original_url)}')
-            logger.info(f'   ├─ Tamanho original: {len(original_url)}')
-            logger.info(f'   ├─ Limpa: {repr(photo_url)}')
-            logger.info(f'   └─ Tamanho limpa: {len(photo_url)}')
-        
-        sync_only = bool(data.get('sync_only', False))  # Modo apenas sincronização
-        file_extension = data.get('file_extension', 'jpg')
-        # Permitir controle via payload; padrão True para ambientes administrados
-        sync_devices = bool(data.get('sync_devices', True))
-        # Ajustes dinâmicos de timeout/retries vindos do payload
-        device_retries = int(data.get('device_retries', DEVICE_RETRIES_DEFAULT))
-        device_timeout_seconds = data.get('device_timeout_seconds')
-        device_login_timeout = float(data.get('device_login_timeout', DEVICE_LOGIN_TIMEOUT_DEFAULT))
-        device_update_timeout = float(data.get('device_update_timeout', DEVICE_UPDATE_TIMEOUT_DEFAULT))
-        if device_timeout_seconds:
-            # Se um timeout geral for informado, usar para ambas etapas
-            try:
-                device_timeout_seconds = float(device_timeout_seconds)
-                device_login_timeout = device_timeout_seconds
-                device_update_timeout = device_timeout_seconds
-            except Exception:
-                logger.warning('Valor inválido para device_timeout_seconds; usando padrões')
-        supabase_timeout = float(data.get('supabase_timeout', SUPABASE_TIMEOUT))
-        try:
-            globals()['SUPABASE_TIMEOUT'] = supabase_timeout
-        except Exception:
-            logger.warning('Não foi possível ajustar SUPABASE_TIMEOUT dinamicamente')
-        logger.info(f'Sincronização com dispositivos (sync_devices): {sync_devices}')
-        logger.info(f'Modo sync_only: {sync_only}')
-        logger.info(f'Config timeouts: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s, supabase_timeout={SUPABASE_TIMEOUT}s')
-
-        # Validar campos obrigatórios
-        if not control_id:
-            logger.error('Campo id_control_id ausente ou vazio')
-            return safe_response(400, {'error': 'id_control_id é obrigatório'})
-
-        # Se for modo sync_only, não precisa de photo_base64, mas precisa de photo_url
-        if sync_only:
-            if not photo_url:
-                logger.error('Campo photo_url ausente para modo sync_only')
-                return safe_response(400, {'error': 'photo_url é obrigatório para sync_only'})
         else:
-            if not photo_base64:
-                logger.error('Campo photo_base64 ausente para modo normal')
-                return safe_response(400, {'error': 'photo_base64 é obrigatório'})
-
-        # Buscar aluno pelo id_control_id
-        logger.info(f'🔍 Buscando aluno com id_control_id: {control_id}')
-        student = get_student_by_control_id(control_id)
-        if not student:
-            logger.error(f'❌ Aluno não encontrado para id_control_id: {control_id}')
-            return safe_response(404, {'error': 'Aluno não encontrado'})
-        
-        logger.info(f'✅ Aluno encontrado: {student["nome"]} (ID: {student["id"]})')
-
-        # Se for modo sync_only, usar photo_url fornecida e pular upload
-        if sync_only:
-            logger.info('🔄 MODO SYNC_ONLY ATIVADO - usando photo_url fornecida')
-            logger.info(f'📸 Photo URL para sincronização: {photo_url}')
-            final_photo_url = photo_url
-            photo_data = None  # Não temos dados da imagem em modo sync_only
+            # Operação padrão (manter compatibilidade com versão anterior)
+            student_id = body.get('student_id')
+            photo_url = body.get('photo_url')
             
-            # Para sync_only, precisamos baixar a imagem da URL para sincronizar com dispositivos
-            if sync_devices:
-                logger.info('🔄 SINCRONIZAÇÃO COM DISPOSITIVOS HABILITADA')
-                try:
-                    logger.info(f'📥 Baixando imagem da URL para sincronização: {photo_url}')
-                    
-                    # Verificar se a URL é válida
-                    if not photo_url.startswith(('http://', 'https://')):
-                        logger.error(f'❌ URL inválida (não começa com http/https): {photo_url}')
-                        photo_data = None
-                    else:
-                        logger.info(f'🌐 Fazendo requisição HTTP para: {photo_url}')
-                        req = urllib.request.Request(photo_url)
-                        req.add_header('User-Agent', 'Mozilla/5.0 (compatible; EscolaLog/1.0)')
-                        
-                        with urllib.request.urlopen(req, timeout=15) as response:
-                            logger.info(f'📡 Resposta HTTP recebida: status {response.status}')
-                            if response.status == 200:
-                                photo_data = response.read()
-                                logger.info(f'✅ Imagem baixada com sucesso para sincronização (tamanho: {len(photo_data)} bytes)')
-                            else:
-                                logger.error(f'❌ Erro HTTP ao baixar imagem: status {response.status}')
-                                photo_data = None
-                except urllib.error.HTTPError as e:
-                    logger.error(f'Erro HTTP ao baixar imagem: {e.code} - {e.reason}')
-                    logger.error(f'URL que causou erro: {photo_url}')
-                    photo_data = None
-                except urllib.error.URLError as e:
-                    logger.error(f'Erro de URL ao baixar imagem: {e.reason}')
-                    logger.error(f'URL que causou erro: {photo_url}')
-                    photo_data = None
-                except Exception as e:
-                    logger.error(f'Erro inesperado ao baixar imagem para sincronização: {e}')
-                    logger.error(f'URL que causou erro: {photo_url}')
-                    photo_data = None
-        else:
-            # Modo normal - decodificar imagem base64
-            logger.info('Processando imagem base64...')
-            try:
-                # Remover prefixo data:image se existir
-                if ',' in photo_base64:
-                    logger.info('Removendo prefixo data:image da string base64')
-                    photo_base64 = photo_base64.split(',')[1]
-                
-                logger.info(f'Decodificando base64 (tamanho: {len(photo_base64)} chars)')
-                photo_data = base64.b64decode(photo_base64)
-                logger.info(f'Imagem decodificada com sucesso (tamanho: {len(photo_data)} bytes)')
-            except Exception as e:
-                logger.error(f'Erro ao decodificar imagem base64: {str(e)}')
-                return safe_response(400, {'error': f'Formato de imagem inválido: {str(e)}'})
-
-            # Gerar nome único para o arquivo
-            timestamp = int(datetime.now().timestamp())
-            file_name = f"aluno_{control_id}_{timestamp}.{file_extension}"
-            logger.info(f'Nome do arquivo gerado: {file_name}')
-
-            # Determinar content-type
-            content_type_map = {
-                'jpg': 'image/jpeg',
-                'jpeg': 'image/jpeg',
-                'png': 'image/png',
-                'gif': 'image/gif'
-            }
-            content_type = content_type_map.get(file_extension.lower(), 'image/jpeg')
-            logger.info(f'Content-type determinado: {content_type}')
-
-            # Upload da foto
-            logger.info('Iniciando upload da foto para o storage...')
-            final_photo_url = upload_photo_to_storage(photo_data, file_name, content_type)
-            if not final_photo_url:
-                logger.error('Falha no upload da foto')
-                return safe_response(500, {'error': 'Erro ao fazer upload da foto'})
+            if not student_id or not photo_url:
+                return safe_response(400, {'error': 'student_id e photo_url são obrigatórios'})
             
-            logger.info(f'Upload concluído com sucesso. URL: {final_photo_url}')
-
-            # Atualizar URL no banco de dados (apenas em modo normal)
-            logger.info('Atualizando URL da foto no banco de dados...')
-            if not update_student_photo_url(student['id'], final_photo_url):
-                logger.error('Falha ao atualizar URL da foto no banco')
-                return safe_response(500, {'error': 'Erro ao atualizar foto no banco de dados'})
+            # Para compatibilidade, retornar erro sugerindo usar as novas operações
+            return safe_response(400, {'error': 'Use operation=list_devices para listar dispositivos ou operation=update_single_device para atualizar um dispositivo específico'})
             
-            logger.info('URL da foto atualizada no banco com sucesso')
-
-        # Sincronização com dispositivos (se habilitada)
-        devices_updated = None
-        logger.info(f'🔧 VERIFICANDO SINCRONIZAÇÃO COM DISPOSITIVOS - sync_devices: {sync_devices}')
-        
-        if sync_devices:
-            logger.info(f'📱 SINCRONIZAÇÃO HABILITADA - verificando dados da imagem...')
-            logger.info(f'📊 Status dos dados: photo_data disponível: {photo_data is not None}')
-            
-            if photo_data:
-                logger.info(f'✅ Dados da imagem disponíveis ({len(photo_data)} bytes) - iniciando sincronização...')
-                logger.info(f'⚙️ Parâmetros: retries={device_retries}, login_timeout={device_login_timeout}s, update_timeout={device_update_timeout}s')
-                
-                try:
-                    devices_updated = update_devices_photos(student['id'], photo_data, retries=device_retries, login_timeout=device_login_timeout, update_timeout=device_update_timeout)
-                    if not devices_updated:
-                        logger.warning('⚠️ Nenhum dispositivo foi atualizado.')
-                    else:
-                        logger.info('🎉 Sincronização com dispositivos concluída com sucesso')
-                except Exception as e:
-                    logger.error(f'❌ Erro durante sincronização com dispositivos: {str(e)}')
-                    devices_updated = False
-            else:
-                logger.warning('⚠️ Sincronização solicitada mas dados da imagem não disponíveis (falha no download)')
-                devices_updated = False
-        else:
-            logger.info('🚫 Sincronização de dispositivos desativada pelo cliente.')
-
-        # Preparar resposta com informações sobre dispositivos
-        logger.info('Preparando resposta final...')
-        response_data = {
-            'success': True,
-            'message': 'Sincronização concluída com sucesso' if sync_only else 'Foto atualizada com sucesso',
-            'student': {
-                'id': student['id'],
-                'nome': student['nome'],
-                'id_control_id': student['id_control_id'],
-                'foto_url': final_photo_url
-            },
-            'devices_updated': bool(devices_updated) if devices_updated is not None else False,
-            'sync_devices': sync_devices,
-            'sync_only': sync_only,
-            'partial_success': (sync_devices and not devices_updated) if devices_updated is not None else False
-        }
-
-        # Ajustar mensagem conforme sincronização
-        if sync_devices:
-            if devices_updated:
-                response_data['message'] += ' e sincronizada com dispositivos'
-            else:
-                response_data['message'] += ' (dispositivos não sincronizados)'
-
-        logger.info(f'Operação concluída com sucesso. Resposta: {json.dumps(response_data, indent=2)}')
-        
-        # Sucesso
-        return safe_response(200, response_data)
-        
+    except json.JSONDecodeError:
+        return safe_response(400, {'error': 'JSON inválido no body da requisição'})
     except Exception as e:
-        import traceback
-        error_traceback = traceback.format_exc()
-        logger.error(f'Erro crítico na Lambda: {str(e)}')
-        logger.error(f'Traceback completo: {error_traceback}')
-        
-        # Garantir que sempre temos CORS headers, mesmo em erro crítico
-        try:
-            error_headers = cors_headers
-        except:
-            # Fallback se cors_headers não foi definido
-            error_headers = {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,DELETE',
-                'Access-Control-Allow-Credentials': 'true',
-                'Content-Type': 'application/json'
-            }
-        
-        error_response = {
-            'error': f'Erro interno: {str(e)}',
-            'type': type(e).__name__,
-            'traceback': error_traceback.split('\n')[-10:]  # Últimas 10 linhas do traceback
-        }
-        
-        return safe_response(500, error_response)
+        logger.error(f'❌ ERRO CRÍTICO: {str(e)}')
+        return safe_response(500, {'error': f'Erro interno: {str(e)}'})

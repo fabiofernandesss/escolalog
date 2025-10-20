@@ -38,9 +38,17 @@ class EscolaLogPWA {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              this.showUpdateNotification();
+              // Forçar ativação imediata e recarregar automaticamente
+              try { registration.waiting?.postMessage({ type: 'SKIP_WAITING' }); } catch (_) {}
+              try { newWorker.postMessage?.({ type: 'SKIP_WAITING' }); } catch (_) {}
             }
           });
+        });
+        
+        // Recarregar automaticamente quando o novo SW assumir controle
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('🔄 PWA: Service Worker atualizado, recarregando página...');
+          window.location.reload();
         });
         
       } catch (error) {
