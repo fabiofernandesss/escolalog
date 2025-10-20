@@ -840,12 +840,7 @@
             try {
                 console.log('🔗 Navegando para:', page);
                 
-                // Adicionar efeito de loading
-                const card = event.currentTarget;
-                if (card) {
-                    card.classList.add('loading');
-                }
-
+                // Removido efeito de loading para manter opacidade
                 // Simular pequeno delay para UX
                 setTimeout(() => {
                     window.location.href = page;
