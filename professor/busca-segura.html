@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Segura - Professor</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sistema Escolar">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/metatag.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 38px;
+            height: 38px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #3b82f6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+
+
+        .filters {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 16px;
+        }
+
+        .request-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .request-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pendente {
+            background: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .status-aprovado {
+            background: rgba(34, 197, 94, 0.1);
+            color: #059669;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-rejeitado {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-realizada {
+            background: rgba(139, 92, 246, 0.1);
+            color: #7c3aed;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .request-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .seeker-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #e5e7eb;
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .student-photo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+        }
+
+        .request-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0 0 4px 0;
+        }
+
+        .request-info p {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .request-details {
+            margin-bottom: 16px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .detail-row i {
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #374151;
+            min-width: 80px;
+        }
+
+        .detail-value {
+            color: #1e293b;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-approve {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #16a34a;
+            transform: translateY(-1px);
+        }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-complete {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-complete:hover {
+            background: #7c3aed;
+            transform: translateY(-1px);
+        }
+
+        .btn-view {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .video-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .video-link:hover {
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            color: #d1d5db;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .close-btn:hover {
+            color: #374151;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px 16px;
+            }
+
+            .header {
+                flex-direction: row;
+                gap: 8px;
+                padding: 12px 16px;
+                align-items: center;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo img {
+                height: 32px;
+                flex-shrink: 0;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-left: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .user-info {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .user-name {
+                display: none;
+            }
+
+            .requests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="window.location.href='menu.html'" style="cursor: pointer;">
+                <img src="../img/logo-horizonal.png" alt="Logo">
+            </div>
+            <h1 class="page-title">
+                <i data-lucide="shield-check"></i>
+            </h1>
+        </div>
+        <div class="header-right">
+            <a href="dashboard.html" class="back-btn">
+                <i data-lucide="arrow-left"></i>
+            </a>
+            <div class="user-info" onclick="window.location.href='perfil.html'">
+                <i data-lucide="user"></i>
+                <span class="user-name" id="userName">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- Filtros -->
+        <div class="filters">
+
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" class="filter-select">
+                <option value="">Todos os Status</option>
+                <option value="pendente">Pendentes</option>
+                <option value="aprovada">Aprovadas</option>
+                <option value="rejeitada">Rejeitadas</option>
+                <option value="realizada">Realizadas</option>
+            </select>
+            </div>
+            <div class="filter-group">
+                <label for="dateFilter">Data:</label>
+                <select id="dateFilter" class="filter-select">
+                    <option value="hoje">Hoje</option>
+                    <option value="ontem">Ontem</option>
+                    <option value="semana">Esta semana</option>
+                    <option value="mes">Este mes</option>
+                    <option value="todos">Todos</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Carregando solicitações...</p>
+        </div>
+
+        <!-- Lista de Solicitações -->
+        <div class="requests-grid" id="requestsGrid">
+            <!-- Solicitações serão carregadas aqui -->
+        </div>
+
+        <!-- Estado vazio -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i data-lucide="inbox"></i>
+            <h3>Nenhuma solicitação encontrada</h3>
+            <p>Não há solicitações de busca segura para os filtros selecionados.</p>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalhes da Solicitacao</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent">
+                <!-- Conteúdo será carregado dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://sntyndufbxfzasnqvayc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Inicializar ícones Lucide
+        lucide.createIcons();
+
+        // Variáveis globais
+        let currentUser = null;
+        let allRequests = [];
+
+        // Função para verificar autenticação
+        async function checkAuth() {
+            try {
+                // Verificar se há usuário logado via WhatsApp (mesmo padrão das outras páginas)
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.log('❌ Usuário não autenticado via WhatsApp');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                currentUser = JSON.parse(whatsappUser);
+                console.log('✅ Usuário autenticado via WhatsApp:', currentUser);
+                
+                // Verificar se o usuário tem permissão (professor, diretor ou admin)
+                if (!['professor', 'diretor', 'admin'].includes(currentUser.tipo_usuario)) {
+                    console.log('❌ Usuário sem permissão:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores, diretores e administradores.');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+                
+                // Verificar status do usuário
+                if (currentUser.status && currentUser.status !== 'ativo') {
+                    console.log('❌ Usuário inativo:', currentUser.status);
+                    alert('Sua conta está inativa. Entre em contato com o administrador.');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+
+                console.log('✅ Usuário autorizado:', currentUser.nome);
+                document.getElementById('userName').textContent = currentUser.nome;
+                
+                // Não precisamos autenticar no Supabase - vamos usar uma abordagem diferente
+                
+                // Carregar solicitações
+                loadRequests();
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação de autenticação:', error);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        // Função de teste
+        async function testQuery() {
+            try {
+                // Usar a função SQL personalizada
+                const { data: requests, error } = await supabase
+                    .rpc('get_professor_requests', { professor_id: currentUser.id });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                alert(`Teste concluido:\n- Solicitacoes encontradas: ${requests?.length || 0}`);
+                
+            } catch (error) {
+                console.error('Erro no teste:', error);
+                alert('Erro no teste: ' + error.message);
+            }
+        }
+
+        // Função para carregar solicitações
+        async function loadRequests() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('requestsGrid').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'none';
+                
+                // Verificar se há usuário logado
+                if (!currentUser) {
+                    throw new Error('Usuário não autenticado');
+                }
+
+                // Usar a função SQL personalizada que contorna as políticas RLS
+                const { data: requests, error } = await supabase
+                    .rpc('get_professor_requests', { professor_id: currentUser.id });
+
+                if (error) {
+                    console.error('Erro na consulta:', error);
+                    throw error;
+                }
+                
+                // Transformar os dados para o formato esperado pelo frontend
+                allRequests = (requests || []).map(req => ({
+                    ...req,
+                    aluno: {
+                        nome: req.aluno_nome,
+                        matricula: req.aluno_matricula,
+                        foto_url: req.aluno_foto_url
+                    },
+                    turma: {
+                        nome: req.turma_nome
+                    }
+                }));
+                
+                filterAndDisplayRequests();
+
+            } catch (error) {
+                console.error('Erro ao carregar solicitações:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+
+        // Função para filtrar e exibir solicitações
+        function filterAndDisplayRequests() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+
+            let filteredRequests = [...allRequests];
+
+            // Filtro por status
+            if (statusFilter) {
+                filteredRequests = filteredRequests.filter(r => r.status === statusFilter);
+            }
+
+            // Filtro por data
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+            switch (dateFilter) {
+                case 'hoje':
+                    filteredRequests = filteredRequests.filter(r => 
+                        r.criado_em.startsWith(today.toISOString().split('T')[0])
+                    );
+                    break;
+                case 'ontem':
+                    filteredRequests = filteredRequests.filter(r => 
+                        r.criado_em.startsWith(yesterday.toISOString().split('T')[0])
+                    );
+                    break;
+                case 'semana':
+                    filteredRequests = filteredRequests.filter(r => 
+                        new Date(r.criado_em) >= weekAgo
+                    );
+                    break;
+                case 'mes':
+                    filteredRequests = filteredRequests.filter(r => 
+                        new Date(r.criado_em) >= monthAgo
+                    );
+                    break;
+            }
+
+            displayRequests(filteredRequests);
+        }
+
+        // Função para exibir solicitações
+        function displayRequests(requests) {
+            console.log('📋 Exibindo solicitações:', requests.length);
+            const grid = document.getElementById('requestsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (requests.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            grid.innerHTML = requests.map(request => `
+                <div class="request-card">
+                    <div class="status-badge status-${request.status}">
+                        ${request.status}
+                    </div>
+                    
+                    <div class="request-header">
+                        <img src="${request.foto_buscador_url}" alt="Foto do buscador" class="seeker-photo">
+                        <div class="request-info">
+                            <h3>${request.nome_buscador}</h3>
+                            <p>Solicitado por: ${request.nome_solicitante}</p>
+                        </div>
+                    </div>
+
+                    <div class="request-details">
+                        <div class="detail-row">
+                            <i data-lucide="graduation-cap"></i>
+                            <span class="detail-label">Aluno:</span>
+                            <div class="student-info">
+                                ${request.aluno?.foto_url ? `<img src="${request.aluno.foto_url}" alt="Foto do aluno" class="student-photo">` : ''}
+                                <span class="detail-value">${request.aluno?.nome || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="users"></i>
+                            <span class="detail-label">Parentesco:</span>
+                            <span class="detail-value">${request.grau_parentesco}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="credit-card"></i>
+                            <span class="detail-label">Documento:</span>
+                            <span class="detail-value">${request.doc_buscador}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="clock"></i>
+                            <span class="detail-label">Data:</span>
+                            <span class="detail-value">${new Date(request.criado_em).toLocaleString('pt-BR')}</span>
+                        </div>
+                        ${request.video_solicitante_url ? `
+                        <div class="detail-row">
+                            <i data-lucide="video"></i>
+                            <span class="detail-label">Vídeo:</span>
+                            <a href="${request.video_solicitante_url}" target="_blank" class="video-link">Ver vídeo</a>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="request-actions">
+                        ${request.status === 'pendente' ? `
+                            <button class="btn btn-approve" onclick="updateStatus('${request.id}', 'aprovada')">
+                                <i data-lucide="check"></i>
+                                Aprovar
+                            </button>
+                            <button class="btn btn-reject" onclick="updateStatus('${request.id}', 'rejeitada')">
+                                <i data-lucide="x"></i>
+                                Rejeitar
+                            </button>
+                        ` : request.status === 'aprovada' ? `
+                            <button class="btn btn-complete" onclick="updateStatus('${request.id}', 'realizada')">
+                                <i data-lucide="check-circle"></i>
+                                Marcar como Realizada
+                            </button>
+                            <button class="btn btn-view" onclick="showDetails('${request.id}')">
+                                <i data-lucide="eye"></i>
+                                Ver Detalhes
+                            </button>
+                        ` : `
+                            <button class="btn btn-view" onclick="showDetails('${request.id}')">
+                                <i data-lucide="eye"></i>
+                                Ver Detalhes
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+
+            // Esconder o loading após exibir as solicitações
+            document.getElementById('loading').style.display = 'none';
+            
+            lucide.createIcons();
+        }
+
+        // Função para atualizar status da solicitação
+        async function updateStatus(requestId, newStatus) {
+            try {
+                console.log('Atualizando status:', { requestId, newStatus, currentUser: currentUser?.id });
+                
+                // Usar a função SQL personalizada que contorna as políticas RLS
+                const { data, error } = await supabase
+                    .rpc('update_busca_segura_status', {
+                        request_id: requestId,
+                        new_status: newStatus,
+                        professor_id: currentUser.id
+                    });
+
+                if (error) {
+                    console.error('❌ Erro na função RPC:', error);
+                    throw error;
+                }
+
+                if (data?.error) {
+                    console.error('❌ Erro retornado pela função:', data.error);
+                    throw new Error(data.error);
+                }
+
+                console.log('✅ Status atualizado com sucesso:', data);
+
+                // Recarregar solicitações
+                await loadRequests();
+
+                let message;
+                switch(newStatus) {
+                    case 'aprovada':
+                        message = 'Solicitação aprovada com sucesso!';
+                        break;
+                    case 'rejeitada':
+                        message = 'Solicitação rejeitada com sucesso!';
+                        break;
+                    case 'realizada':
+                        message = 'Solicitação marcada como realizada com sucesso!';
+                        break;
+                    default:
+                        message = 'Status atualizado com sucesso!';
+                }
+                
+                alert(message);
+
+            } catch (error) {
+                console.error('❌ Erro ao atualizar status:', error);
+                alert('Erro ao atualizar status da solicitação: ' + error.message);
+            }
+        }
+
+        // Função para mostrar detalhes
+        function showDetails(requestId) {
+            console.log('Mostrando detalhes para ID:', requestId);
+            console.log('Total de solicitacoes:', allRequests?.length);
+            
+            const request = allRequests.find(r => r.id === requestId);
+            if (!request) {
+                console.error('❌ Solicitação não encontrada:', requestId);
+                alert('Solicitação não encontrada');
+                return;
+            }
+
+            console.log('✅ Solicitação encontrada:', request);
+            const modalContent = document.getElementById('modalContent');
+            
+            if (!modalContent) {
+                console.error('❌ Elemento modalContent não encontrado');
+                alert('Erro: Modal não encontrado');
+                return;
+            }
+            modalContent.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="${request.foto_buscador_url}" alt="Foto do buscador" 
+                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb;">
+                </div>
+                
+                <div class="request-details">
+                    <div class="detail-row">
+                        <i data-lucide="user"></i>
+                        <span class="detail-label">Buscador:</span>
+                        <span class="detail-value">${request.nome_buscador}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="credit-card"></i>
+                        <span class="detail-label">Documento:</span>
+                        <span class="detail-value">${request.doc_buscador}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="user-check"></i>
+                        <span class="detail-label">Solicitante:</span>
+                        <span class="detail-value">${request.nome_solicitante}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="graduation-cap"></i>
+                        <span class="detail-label">Aluno:</span>
+                        <span class="detail-value">${request.aluno?.nome || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="users"></i>
+                        <span class="detail-label">Parentesco:</span>
+                        <span class="detail-value">${request.grau_parentesco}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="clock"></i>
+                        <span class="detail-label">Solicitado em:</span>
+                        <span class="detail-value">${new Date(request.criado_em).toLocaleString('pt-BR')}</span>
+                    </div>
+                    ${request.observacao ? `
+                    <div class="detail-row">
+                        <i data-lucide="message-square"></i>
+                        <span class="detail-label">Observação:</span>
+                        <span class="detail-value">${request.observacao}</span>
+                    </div>
+                    ` : ''}
+                    ${request.video_solicitante_url ? `
+                    <div class="detail-row">
+                        <i data-lucide="video"></i>
+                        <span class="detail-label">Vídeo:</span>
+                        <a href="${request.video_solicitante_url}" target="_blank" class="video-link">Assistir vídeo</a>
+                    </div>
+                    ` : ''}
+                    ${request.status !== 'pendente' ? `
+                    <div class="detail-row">
+                        <i data-lucide="check-circle"></i>
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value status-${request.status}">${request.status}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            lucide.createIcons();
+            
+            // Mostrar modal
+            const modal = document.getElementById('detailModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Modal exibido com sucesso');
+            } else {
+                console.error('❌ Elemento detailModal não encontrado');
+                alert('Erro: Modal não encontrado');
+            }
+        }
+
+        // Função para fechar modal
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        // Event listeners
+        document.getElementById('statusFilter').addEventListener('change', filterAndDisplayRequests);
+        document.getElementById('dateFilter').addEventListener('change', filterAndDisplayRequests);
+
+        // Fechar modal ao clicar fora
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>
