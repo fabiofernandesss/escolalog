@@ -228,6 +228,8 @@
         .menu-card.cameras { --card-color: #ef4444; }
         .menu-card.busca-segura { --card-color: #f97316; }
         .menu-card.perfil { --card-color: #6b7280; }
+        .menu-card.monitor { --card-color: #06b6d4; }
+        .menu-card.mensagens { --card-color: #ec4899; }
 
         .menu-icon {
             width: 50px;
@@ -506,6 +508,259 @@
             }
         }
 
+        /* Stories Section */
+        .stories-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none; /* Initially hidden, will show when stories are available */
+        }
+
+        .stories-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .stories-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .stories-count {
+            background: #ec4899;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .stories-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .stories-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .story-item {
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .story-item:hover {
+            transform: scale(1.05);
+        }
+
+        .story-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            position: relative;
+            background: #f1f5f9;
+            overflow: hidden;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .story-avatar.unviewed {
+            background: linear-gradient(45deg, #ec4899, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6);
+            background-size: 400% 400%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        .story-avatar.viewed {
+            border-color: #d1d5db;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .story-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .story-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .story-play-icon svg {
+            width: 10px;
+            height: 10px;
+        }
+
+        .story-username {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+            max-width: 64px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Story Modal */
+        .story-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .story-modal.active {
+            display: flex;
+        }
+
+        .story-content {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            max-height: 700px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .story-header-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .story-user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .story-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ec4899;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .story-user-name {
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .story-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .story-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .story-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .story-navigation {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .story-nav-prev {
+            left: 0;
+        }
+
+        .story-nav-next {
+            right: 0;
+        }
+
+        .story-progress {
+            position: absolute;
+            top: 8px;
+            left: 16px;
+            right: 16px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 1px;
+            z-index: 10;
+        }
+
+        .story-progress-bar {
+            height: 100%;
+            background: white;
+            border-radius: 1px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
         /* Dark Mode Support */
         @media (prefers-color-scheme: dark) {
             body {
@@ -513,24 +768,31 @@
             }
 
             .menu-card,
-            .header {
+            .header,
+            .stories-section {
                 background: rgba(30, 41, 59, 0.95);
                 color: #f1f5f9;
             }
 
             .user-details h3,
-            .menu-title {
+            .menu-title,
+            .stories-title {
                 color: #f1f5f9;
             }
 
             .user-details p,
-            .menu-description {
+            .menu-description,
+            .story-username {
                 color: #94a3b8;
             }
 
             .user-info {
                 background: rgba(16, 185, 129, 0.2);
                 border-color: rgba(16, 185, 129, 0.3);
+            }
+
+            .story-avatar.viewed {
+                border-color: #4b5563;
             }
         }
     </style>
@@ -560,6 +822,41 @@
                 </button>
             </div>
         </header>
+
+        <!-- Stories Section -->
+        <div id="storiesSection" class="stories-section">
+            <div class="stories-header">
+                <h3 class="stories-title">Stories</h3>
+                <span id="storiesCount" class="stories-count">0</span>
+            </div>
+            <div id="storiesContainer" class="stories-container">
+                <!-- Stories will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <!-- Story Modal -->
+        <div id="storyModal" class="story-modal">
+            <div class="story-content">
+                <div class="story-progress">
+                    <div id="storyProgressBar" class="story-progress-bar"></div>
+                </div>
+                <div class="story-header-modal">
+                    <div class="story-user-info">
+                        <div id="storyUserAvatar" class="story-user-avatar"></div>
+                        <span id="storyUserName" class="story-user-name"></span>
+                    </div>
+                    <button id="storyCloseBtn" class="story-close">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <video id="storyVideo" class="story-video" controls autoplay>
+                    <source src="" type="video/mp4">
+                    Seu navegador não suporta vídeos.
+                </video>
+                <div class="story-navigation story-nav-prev" id="storyNavPrev"></div>
+                <div class="story-navigation story-nav-next" id="storyNavNext"></div>
+            </div>
+        </div>
 
         <!-- Menu Principal -->
         <div class="menu-grid">
@@ -593,13 +890,13 @@
 
 
 
-            <!-- Câmeras -->
-            <div class="menu-card cameras" onclick="navigateTo('cameras.html')">
+            <!-- Mensagens -->
+            <div class="menu-card mensagens" onclick="navigateTo('mensagens.html')">
                 <div class="menu-icon">
-                    <i data-lucide="video"></i>
+                    <i data-lucide="message-circle"></i>
                 </div>
-                <h2 class="menu-title">Câmeras</h2>
-                <p class="menu-description">Monitoramento das câmeras das suas turmas</p>
+                <h2 class="menu-title">Mensagens</h2>
+                <p class="menu-description">Sistema de comunicação</p>
             </div>
 
             <!-- Busca Segura -->
@@ -618,6 +915,24 @@
                 </div>
                 <h2 class="menu-title">Perfil</h2>
                 <p class="menu-description">Configurações pessoais e dados do usuário</p>
+            </div>
+
+            <!-- Monitor (apenas para diretores) -->
+            <div id="monitorCard" class="menu-card monitor" onclick="navigateTo('monitor.html')" style="display: none;">
+                <div class="menu-icon">
+                    <i data-lucide="monitor"></i>
+                </div>
+                <h2 class="menu-title">Monitor</h2>
+                <p class="menu-description">Painel de monitoramento da escola</p>
+            </div>
+
+            <!-- Câmeras -->
+            <div class="menu-card cameras" onclick="navigateTo('cameras.html')">
+                <div class="menu-icon">
+                    <i data-lucide="video"></i>
+                </div>
+                <h2 class="menu-title">Câmeras</h2>
+                <p class="menu-description">Monitoramento das câmeras das suas turmas</p>
             </div>
         </div>
     </div>
@@ -763,18 +1078,16 @@
                     whatsapp: currentUser.whatsapp
                 });
                 
-                // Verificar se o usuário é professor
-                if (currentUser.tipo_usuario !== 'professor') {
-                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
-                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                // Verificar se o usuário é professor ou diretor
+                const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (!roleRaw.includes('professor') && !roleRaw.includes('diretor')) {
+                    console.log('❌ Usuário não é professor nem diretor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores e diretores.');
                     
                     // Redirecionar baseado no tipo de usuário
-                    switch(currentUser.tipo_usuario) {
+                    switch(roleRaw) {
                         case 'admin':
                             window.location.href = '../admin/dashboard.html';
-                            break;
-                        case 'diretor':
-                            window.location.href = '../diretor/menu.html';
                             break;
                         case 'responsavel':
                             window.location.href = '../responsavel/menu.html';
@@ -828,7 +1141,17 @@
                     userAvatar.textContent = '';
                 }
 
+                // Mostrar menu Monitor apenas para diretores
+                const monitorCard = document.getElementById('monitorCard');
+                const role = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (monitorCard && role.includes('diretor')) {
+                    monitorCard.style.display = 'block';
+                }
+
                 console.log('✅ Dados do usuário carregados na interface');
+                
+                // Load video stories after user data is loaded
+                loadVideoStories();
                 
             } catch (error) {
                 console.error('Erro ao carregar dados do usuário:', error);
@@ -882,6 +1205,375 @@
 
         window.addEventListener('offline', function() {
             console.log('📡 Aplicação funcionando offline');
+        });
+
+        // Stories functionality
+        let videoStories = [];
+        let currentStoryIndex = 0;
+        let storyProgressInterval = null;
+        let viewedStories = new Set();
+
+        // Load video stories from database
+        async function loadVideoStories() {
+            try {
+                console.log('📹 Carregando stories de vídeo...');
+                
+                if (!supabase) {
+                    console.error('Supabase não inicializado');
+                    return;
+                }
+
+                // Fetch video messages from the last 24 hours
+                const twentyFourHoursAgo = new Date();
+                twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+                const { data: messages, error } = await supabase
+                    .from('mensagens')
+                    .select(`
+                        id,
+                        titulo,
+                        descricao,
+                        media_url,
+                        created_at,
+                        created_by,
+                        usuarios!mensagens_created_by_fkey (
+                            id,
+                            nome,
+                            foto_perfil
+                        )
+                    `)
+                    .eq('tipo', 'video')
+                    .gte('created_at', twentyFourHoursAgo.toISOString())
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Erro ao carregar stories:', error);
+                    return;
+                }
+
+                videoStories = messages || [];
+                console.log(`✅ ${videoStories.length} stories carregados`);
+                
+                // Load user's views for these stories from database
+                if (videoStories.length > 0) {
+                    // Prefer auth uid for RLS-compliant queries
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    const localUser = localStorage.getItem('whatsapp_user');
+                    const parsedLocalUser = localUser ? JSON.parse(localUser) : null;
+                    const userId = authUser?.id || parsedLocalUser?.id;
+                
+                    if (userId) {
+                        const storyIds = videoStories.map(story => story.id);
+                
+                        const { data: views, error: viewsError } = await supabase
+                            .from('mensagem_visualizacoes')
+                            .select('mensagem_id')
+                            .eq('usuario_id', userId)
+                            .in('mensagem_id', storyIds);
+
+                        if (viewsError) {
+                            console.error('Erro ao carregar visualizações:', viewsError);
+                        }
+
+                        viewedStories.clear();
+                        if (views && views.length > 0) {
+                            views.forEach(view => viewedStories.add(view.mensagem_id));
+                        }
+                        localStorage.setItem('viewedStories', JSON.stringify([...viewedStories]));
+                    }
+                } else {
+                    // Fallback to localStorage if no stories or user not authenticated
+                    const viewedStoriesData = localStorage.getItem('viewedStories');
+                    if (viewedStoriesData) {
+                        viewedStories = new Set(JSON.parse(viewedStoriesData));
+                    }
+                }
+
+                renderStories();
+                
+            } catch (error) {
+                console.error('Erro ao carregar stories:', error);
+            }
+        }
+
+        // Render stories in the container
+        function renderStories() {
+            const storiesContainer = document.getElementById('storiesContainer');
+            const storiesSection = document.getElementById('storiesSection');
+            const storiesCount = document.getElementById('storiesCount');
+
+            if (!storiesContainer || !storiesSection || !storiesCount) return;
+
+            // Clear container
+            storiesContainer.innerHTML = '';
+
+            if (videoStories.length === 0) {
+                storiesSection.style.display = 'none';
+                return;
+            }
+
+            // Show stories section
+            storiesSection.style.display = 'block';
+            storiesCount.textContent = videoStories.length;
+
+            // Create story items
+            videoStories.forEach((story, index) => {
+                const storyItem = document.createElement('div');
+                storyItem.className = 'story-item';
+                storyItem.onclick = () => openStory(index);
+
+                const isViewed = viewedStories.has(story.id);
+                const avatarClass = isViewed ? 'viewed' : 'unviewed';
+
+                // Generate thumbnail from video or use user avatar
+                const videoUrl = story.media_url ? 
+                    `https://sntyndufbxfzasnqvayc.supabase.co/storage/v1/object/public/mensagens-media/${story.media_url}` : 
+                    '';
+                const thumbnailSrc = videoUrl;
+                const userName = story.usuarios?.nome || 'Usuário';
+                const userAvatar = story.usuarios?.foto_perfil || '';
+                const storyTitle = story.titulo || story.descricao || 'Vídeo';
+
+                storyItem.innerHTML = `
+                    <div class="story-avatar ${avatarClass}">
+                        ${thumbnailSrc ? 
+                            `<video class="story-thumbnail" muted>
+                                <source src="${thumbnailSrc}" type="video/mp4">
+                            </video>` :
+                            `<div class="story-thumbnail" style="background: #ec4899; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                ${userName.charAt(0).toUpperCase()}
+                            </div>`
+                        }
+                        <div class="story-play-icon">
+                            <i data-lucide="play"></i>
+                        </div>
+                    </div>
+                    <div class="story-username">${userName}</div>
+                `;
+
+                storiesContainer.appendChild(storyItem);
+            });
+
+            // Initialize Lucide icons for new elements
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        // Open story modal
+        function openStory(index) {
+            currentStoryIndex = index;
+            const story = videoStories[index];
+            
+            if (!story) return;
+
+            const modal = document.getElementById('storyModal');
+            const video = document.getElementById('storyVideo');
+            const userAvatar = document.getElementById('storyUserAvatar');
+            const userName = document.getElementById('storyUserName');
+
+            if (!modal || !video || !userAvatar || !userName) return;
+
+            // Set story data
+            const user = story.usuarios || {};
+            userName.textContent = user.nome || 'Usuário';
+            userAvatar.textContent = (user.nome || 'U').charAt(0).toUpperCase();
+            
+            if (user.foto_perfil) {
+                userAvatar.style.backgroundImage = `url(${user.foto_perfil})`;
+                userAvatar.style.backgroundSize = 'cover';
+                userAvatar.textContent = '';
+            }
+
+            // Set video source
+            const videoUrl = story.media_url ? 
+                `https://sntyndufbxfzasnqvayc.supabase.co/storage/v1/object/public/mensagens-media/${story.media_url}` : 
+                '';
+            video.src = videoUrl;
+            
+            // Show modal
+            modal.classList.add('active');
+            
+            // Mark as viewed
+            markStoryAsViewed(story.id);
+            
+            // Start progress bar
+            startStoryProgress();
+            
+            // Play video
+            video.play().catch(console.error);
+        }
+
+        // Close story modal
+        function closeStory() {
+            const modal = document.getElementById('storyModal');
+            const video = document.getElementById('storyVideo');
+            
+            if (modal) modal.classList.remove('active');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+            }
+            
+            stopStoryProgress();
+        }
+
+        // Navigate to next story
+        function nextStory() {
+            if (currentStoryIndex < videoStories.length - 1) {
+                openStory(currentStoryIndex + 1);
+            } else {
+                closeStory();
+            }
+        }
+
+        // Navigate to previous story
+        function prevStory() {
+            if (currentStoryIndex > 0) {
+                openStory(currentStoryIndex - 1);
+            }
+        }
+
+        // Mark story as viewed
+        async function markStoryAsViewed(storyId) {
+            try {
+                // Get current user from localStorage
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (!whatsappUser) {
+                    console.error('Usuário não autenticado');
+                    return;
+                }
+                
+                const currentUser = JSON.parse(whatsappUser);
+                const userId = currentUser.id;
+
+                // Check if already viewed
+                const { data: existingView, error: selectError } = await supabase
+                    .from('mensagem_visualizacoes')
+                    .select('mensagem_id')
+                    .eq('mensagem_id', storyId)
+                    .eq('usuario_id', userId)
+                    .maybeSingle();
+
+                if (selectError && selectError.code && selectError.code !== 'PGRST116') {
+                    console.warn('Aviso ao verificar visualização existente:', selectError);
+                    // Continue to attempt insert; RLS will enforce correctness
+                }
+
+                if (!existingView) {
+                    // Register new view
+                    const { error: insertError } = await supabase
+                        .from('mensagem_visualizacoes')
+                        .insert({
+                            mensagem_id: storyId,
+                            usuario_id: userId,
+                            viewed_at: new Date().toISOString(),
+                            channel: 'web'
+                        });
+
+                    if (insertError) {
+                        console.error('Erro ao registrar visualização:', insertError);
+                        return;
+                    }
+
+                    console.log('✅ Visualização registrada para story:', storyId);
+                }
+
+                viewedStories.add(storyId);
+                localStorage.setItem('viewedStories', JSON.stringify([...viewedStories]));
+                
+                // Update visual indicator
+                renderStories();
+            } catch (error) {
+                console.error('Erro ao marcar story como visualizado:', error);
+            }
+        }
+
+        // Start story progress bar
+        function startStoryProgress() {
+            const progressBar = document.getElementById('storyProgressBar');
+            const video = document.getElementById('storyVideo');
+            
+            if (!progressBar || !video) return;
+            
+            stopStoryProgress();
+            
+            storyProgressInterval = setInterval(() => {
+                if (video.duration && video.currentTime) {
+                    const progress = (video.currentTime / video.duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        setTimeout(nextStory, 500);
+                    }
+                }
+            }, 100);
+        }
+
+        // Stop story progress bar
+        function stopStoryProgress() {
+            if (storyProgressInterval) {
+                clearInterval(storyProgressInterval);
+                storyProgressInterval = null;
+            }
+            
+            const progressBar = document.getElementById('storyProgressBar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+        }
+
+        // Event listeners for story modal
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close button
+            const closeBtn = document.getElementById('storyCloseBtn');
+            if (closeBtn) {
+                closeBtn.onclick = closeStory;
+            }
+
+            // Navigation areas
+            const navPrev = document.getElementById('storyNavPrev');
+            const navNext = document.getElementById('storyNavNext');
+            
+            if (navPrev) navPrev.onclick = prevStory;
+            if (navNext) navNext.onclick = nextStory;
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                const modal = document.getElementById('storyModal');
+                if (!modal || !modal.classList.contains('active')) return;
+
+                switch(e.key) {
+                    case 'Escape':
+                        closeStory();
+                        break;
+                    case 'ArrowLeft':
+                        prevStory();
+                        break;
+                    case 'ArrowRight':
+                        nextStory();
+                        break;
+                }
+            });
+
+            // Click outside modal to close
+            const modal = document.getElementById('storyModal');
+            if (modal) {
+                modal.onclick = function(e) {
+                    if (e.target === modal) {
+                        closeStory();
+                    }
+                };
+            }
+
+            // Video ended event
+            const video = document.getElementById('storyVideo');
+            if (video) {
+                video.onended = function() {
+                    setTimeout(nextStory, 500);
+                };
+            }
         });
 
         // Prevenir zoom duplo toque em dispositivos móveis

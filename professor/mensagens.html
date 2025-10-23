@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensagens - Escola Log</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="https://www.escolalog.com.br/img/metatag.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <link rel="stylesheet" href="../css/pwa-styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+            max-width: 100%;
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 12px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .header-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .user-details h3 {
+            font-size: 0.9rem;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        .user-details p {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Botão de Nova Mensagem */
+        .new-message-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .new-message-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Modal de Nova Mensagem */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        /* Formulário */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Seletor de Cor */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-option.selected {
+            border-color: #1e293b;
+            transform: scale(1.1);
+        }
+
+        .color-option::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .color-option.selected::after {
+            opacity: 1;
+        }
+
+        /* Upload de Mídia */
+        .media-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .media-upload:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .media-upload.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+
+        .media-preview {
+            margin-top: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .media-preview img, .media-preview video {
+            width: 100%;
+            height: auto;
+            max-height: 300px;
+            object-fit: cover;
+        }
+
+        /* Botões */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        /* Feed de Mensagens */
+        .messages-feed {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+        }
+
+        .message-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .message-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .message-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .author-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .author-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .message-date {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+        }
+
+        .delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .message-category {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 2px solid transparent;
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+
+        .message-category::before {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Informativo - Baixa prioridade (Verde) */
+        .category-informativo {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+            border-color: #10b981;
+        }
+        .category-informativo::before {
+            content: "ℹ️";
+        }
+
+        /* Evento - Baixa-média prioridade (Azul) */
+        .category-evento {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+            border-color: #3b82f6;
+        }
+        .category-evento::before {
+            content: "📅";
+        }
+
+        /* Aviso - Média prioridade (Azul escuro) */
+        .category-aviso {
+            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+            color: #3730a3;
+            border-color: #6366f1;
+        }
+        .category-aviso::before {
+            content: "⚠️";
+        }
+
+        /* Comunicado Importante - Alta prioridade (Laranja) */
+        .category-comunicado_importante {
+            background: linear-gradient(135deg, #fed7aa, #fdba74);
+            color: #9a3412;
+            border-color: #ea580c;
+            animation: pulse-orange 2s infinite;
+        }
+        .category-comunicado_importante::before {
+            content: "📢";
+        }
+
+        /* Urgente - Máxima prioridade (Vermelho) */
+        .category-urgente {
+            background: linear-gradient(135deg, #fecaca, #fca5a5);
+            color: #991b1b;
+            border-color: #dc2626;
+            animation: pulse-red 1.5s infinite;
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+        }
+        .category-urgente::before {
+            content: "🚨";
+        }
+
+        /* Bottom category styles - smaller and more discreet */
+        .message-category-bottom {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid transparent;
+            width: fit-content;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        .message-category-bottom::before {
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        @keyframes pulse-orange {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(234, 88, 12, 0.5);
+            }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+            }
+            50% { 
+                transform: scale(1.08);
+                box-shadow: 0 0 25px rgba(220, 38, 38, 0.6);
+            }
+        }
+
+        .message-content {
+            margin-bottom: 16px;
+        }
+
+        .message-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .message-description {
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .message-media {
+            margin: 16px 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .message-media img, .message-media video {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .message-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .message-stats {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 12px;
+                flex-direction: row;
+                gap: 8px;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .header-left .logo img {
+                height: 40px;
+                max-width: 100%;
+            }
+
+            .header-right {
+                flex-shrink: 0;
+                gap: 8px;
+            }
+
+            .header-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            .modal-content {
+                margin: 20px;
+                padding: 20px;
+            }
+
+            .color-palette {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .messages-feed {
+                grid-template-columns: 1fr;
+            }
+
+            .message-card {
+                padding: 16px;
+            }
+
+            .message-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .message-actions {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .empty-state-description {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Estilos para o overlay de nova mensagem */
+        .message-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .message-modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-title i {
+            color: #3b82f6;
+        }
+
+        .close-btn {
+            background: #f3f4f6;
+            border: none;
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .message-form-container {
+            padding: 24px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            color: #3b82f6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-grid-full {
+            grid-column: 1 / -1;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #1f2937;
+            transform: scale(1.1);
+        }
+
+        .color-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .media-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #f9fafb;
+        }
+
+        .media-upload:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .media-upload.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .media-preview {
+            margin-top: 16px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+        }
+
+        .media-preview img, .media-preview video {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .color-palette {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .message-modal {
+                max-width: 95%;
+                margin: 10px;
+            }
+
+            .modal-header {
+                padding: 16px;
+            }
+
+            .message-form-container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="../img/logo-horizonal.png" alt="Escola Log">
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn" onclick="toggleMessageSection()" title="Nova Mensagem">
+                <i data-lucide="plus"></i>
+            </button>
+            <a href="menu.html" class="header-btn">
+                <i data-lucide="arrow-left"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Container Principal -->
+    <div class="main-container">
+        <!-- Feed de Mensagens -->
+        <div class="messages-feed" id="messagesFeed">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i data-lucide="trash-2" style="color: #dc2626;"></i>
+                    Confirmar Exclusão
+                </h3>
+                <button class="close-btn" onclick="closeDeleteModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div style="padding: 0 24px 24px;">
+                <p style="color: #64748b; margin-bottom: 24px; line-height: 1.6;">
+                    Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeDeleteModal()" 
+                            style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s ease;">
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirmDeleteBtn" 
+                            style="padding: 10px 20px; border: none; background: #dc2626; color: white; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s ease;">
+                        Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de Nova Mensagem -->
+    <div class="message-overlay" id="messageOverlay" style="display: none;">
+        <div class="message-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i data-lucide="edit-3"></i>
+                    Nova Mensagem
+                </h2>
+                <button class="close-btn" onclick="toggleMessageSection()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="message-form-container" id="messageFormContainer">
+                <form id="newMessageForm">
+                    <!-- Tipo de Mensagem -->
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Mensagem</label>
+                        <select class="form-select" id="messageType" required onchange="handleMessageTypeChange()">
+                            <option value="">Selecione o tipo</option>
+                            <option value="texto">Texto</option>
+                            <option value="imagem_texto">Imagem com Texto</option>
+                            <option value="video">Vídeo</option>
+                        </select>
+                    </div>
+
+                    <!-- Categoria -->
+                    <div class="form-group">
+                        <label class="form-label">Categoria (por ordem de prioridade)</label>
+                        <select class="form-select" id="messageCategory" required>
+                            <option value="">Selecione a categoria</option>
+                            <option value="informativo">ℹ️ Informativo (Baixa prioridade)</option>
+                            <option value="evento">📅 Evento (Baixa-média prioridade)</option>
+                            <option value="aviso">⚠️ Aviso (Média prioridade)</option>
+                            <option value="comunicado_importante">📢 Comunicado Importante (Alta prioridade)</option>
+                            <option value="urgente">🚨 Urgente (Máxima prioridade)</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            Escolha a categoria que melhor representa a importância da sua mensagem
+                        </small>
+                    </div>
+
+                    <!-- Título -->
+                    <div class="form-group">
+                        <label class="form-label">Título da Mensagem</label>
+                        <input type="text" class="form-input" id="messageTitle" required maxlength="100" placeholder="Digite o título da mensagem">
+                    </div>
+
+                    <!-- Descrição -->
+                    <div class="form-group">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-textarea" id="messageDescription" required maxlength="500" placeholder="Digite a descrição da mensagem"></textarea>
+                    </div>
+
+                    <!-- Cor -->
+                    <div class="form-group">
+                        <label class="form-label">Cor da Mensagem</label>
+                        <div class="color-palette">
+                            <div class="color-option" style="background: #3b82f6;" data-color="#3b82f6"></div>
+                            <div class="color-option" style="background: #10b981;" data-color="#10b981"></div>
+                            <div class="color-option" style="background: #f59e0b;" data-color="#f59e0b"></div>
+                            <div class="color-option" style="background: #ef4444;" data-color="#ef4444"></div>
+                            <div class="color-option" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
+                            <div class="color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
+                            <div class="color-option" style="background: #84cc16;" data-color="#84cc16"></div>
+                            <div class="color-option" style="background: #f97316;" data-color="#f97316"></div>
+                            <div class="color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+                            <div class="color-option" style="background: #6366f1;" data-color="#6366f1"></div>
+                            <div class="color-option" style="background: #14b8a6;" data-color="#14b8a6"></div>
+                            <div class="color-option" style="background: #64748b;" data-color="#64748b"></div>
+                        </div>
+                        <input type="hidden" id="selectedColor" required>
+                    </div>
+
+                    <!-- Upload de Mídia -->
+                    <div class="form-group" id="mediaUploadGroup" style="display: none;">
+                        <label class="form-label" id="mediaLabel">Mídia</label>
+                        <div class="media-upload" id="mediaUpload">
+                            <i data-lucide="upload" style="width: 48px; height: 48px; margin: 0 auto 16px; color: #64748b;"></i>
+                            <p>Clique para selecionar ou arraste o arquivo aqui</p>
+                            <p style="font-size: 0.875rem; color: #64748b; margin-top: 8px;" id="mediaHint"></p>
+                        </div>
+                        <input type="file" id="mediaFile" style="display: none;" accept="">
+                        <div class="media-preview" id="mediaPreview" style="display: none;"></div>
+                    </div>
+
+                    <!-- Destinatários -->
+                    <div class="form-group">
+                        <label class="form-label">Destinatários</label>
+                        <select class="form-select" id="targetType" required onchange="handleTargetTypeChange()">
+                            <option value="">Selecione os destinatários</option>
+                            <option value="todos_professores">Todos os Professores</option>
+                            <option value="toda_escola">Toda a Escola</option>
+                            <option value="turma">Turma Específica</option>
+                            <option value="aluno">Aluno Específico</option>
+                            <option value="usuario">Usuário Específico</option>
+                        </select>
+                    </div>
+
+                    <!-- Seleção Específica -->
+                    <div class="form-group" id="specificTargetGroup" style="display: none;">
+                        <label class="form-label" id="specificTargetLabel">Selecionar</label>
+                        <select class="form-select" id="specificTarget">
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="resetForm()">Limpar</button>
+                        <button type="submit" class="btn-primary">
+                            <i data-lucide="send"></i>
+                            Enviar Mensagem
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Configuração do Supabase
+        let supabaseClient = null;
+
+        async function getSupabaseKeys() {
+            try {
+                const response = await fetch('https://yfh5dmsuucx76bronca7f7k3le0sjykd.lambda-url.us-east-2.on.aws/', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    mode: 'cors'
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.status === 'success' && data.data) {
+                    return {
+                        url: data.data.SUPABASE_URL1?.trim() || data.data.SUPABASE_URL,
+                        key: data.data.SUPABASE_KEY1?.trim() || data.data.SUPABASE_KEY
+                    };
+                }
+                throw new Error('Formato de resposta inválido');
+            } catch (error) {
+                console.error('Erro ao buscar chaves do Supabase:', error);
+                // Fallback seguro
+                return {
+                    url: 'https://sntyndufbxfzasnqvayc.supabase.co',
+                    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudHluZHVmYnhmemFzbnF2YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzQ2ODcsImV4cCI6MjA3MTc1MDY4N30.Pv9CaNkpo2HMMAtPbyLz2AdR8ZyK1jtHbP78pR5CPSM'
+                };
+            }
+        }
+
+        async function initializeSupabase() {
+            const keys = await getSupabaseKeys();
+            window.SUPABASE_URL = keys.url;
+            window.SUPABASE_KEY = keys.key;
+            supabaseClient = window.supabase.createClient(keys.url, keys.key);
+        }
+
+        let currentUser = null;
+        let selectedColor = null;
+        let uploadedFile = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            lucide.createIcons();
+            await initializeSupabase();
+            await initializeAuth();
+            setupEventListeners();
+        });
+
+        // Autenticação
+        async function initializeAuth() {
+            try {
+                currentUser = JSON.parse(localStorage.getItem('whatsapp_user')) || 
+                             JSON.parse(localStorage.getItem('currentUser'));
+                
+                if (!currentUser) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                updateUserInfo();
+                loadMessages();
+            } catch (error) {
+                console.error('Erro na autenticação:', error);
+                window.location.href = '../index.html';
+            }
+        }
+
+        function updateUserInfo() {
+            // Função mantida para compatibilidade, mas não há mais elementos de usuário no header
+            // Os dados do usuário são mantidos na variável currentUser para uso nas funcionalidades
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Seleção de cor
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedColor = this.dataset.color;
+                    document.getElementById('selectedColor').value = selectedColor;
+                });
+            });
+
+            // Upload de mídia
+            const mediaUpload = document.getElementById('mediaUpload');
+            const mediaFile = document.getElementById('mediaFile');
+            
+            mediaUpload.addEventListener('click', () => mediaFile.click());
+            mediaFile.addEventListener('change', handleFileSelect);
+            
+            // Drag and drop
+            mediaUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                mediaUpload.classList.add('dragover');
+            });
+            
+            mediaUpload.addEventListener('dragleave', () => {
+                mediaUpload.classList.remove('dragover');
+            });
+            
+            mediaUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                mediaUpload.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    mediaFile.files = files;
+                    handleFileSelect({ target: { files } });
+                }
+            });
+
+            // Formulário
+            document.getElementById('newMessageForm').addEventListener('submit', handleSubmitMessage);
+
+            // Fechar modal ao clicar fora
+            document.getElementById('messageOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    toggleMessageSection();
+                }
+            });
+        }
+
+        // Toggle da seção de mensagem
+        function toggleMessageSection() {
+            const overlay = document.getElementById('messageOverlay');
+            
+            if (overlay.style.display === 'none' || overlay.style.display === '') {
+                // Mostrar overlay
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevenir scroll do body
+            } else {
+                // Esconder overlay
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+        }
+
+        // Formulário inline
+        function resetForm() {
+            document.getElementById('newMessageForm').reset();
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            document.getElementById('mediaUploadGroup').style.display = 'none';
+            document.getElementById('specificTargetGroup').style.display = 'none';
+            document.getElementById('mediaPreview').style.display = 'none';
+            selectedColor = null;
+            uploadedFile = null;
+        }
+
+        function clearForm() {
+            resetForm();
+        }
+
+        // Helper: obter escola_id com fallback
+        async function getEscolaId() {
+            const escolaId = currentUser?.escola_id || currentUser?.escolaId || currentUser?.escola?.id;
+            if (escolaId) return escolaId;
+            
+            if (!supabaseClient || !currentUser?.id) {
+                console.warn('Supabase client ou currentUser.id não disponível');
+                return null;
+            }
+            
+            try {
+                console.log('Buscando escola_id para usuário:', currentUser.id);
+                
+                // Primeiro tenta buscar permissão direta de escola
+                let { data, error } = await supabaseClient
+                    .from('permissoes')
+                    .select('referencia_id')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'escola')
+                    .eq('ativo', true);
+                
+                if (error) {
+                    console.error('Erro ao buscar permissão de escola:', error);
+                } else if (data && data.length > 0) {
+                    console.log('Escola encontrada via permissão direta:', data[0].referencia_id);
+                    return data[0].referencia_id;
+                }
+                
+                // Se não encontrou permissão direta de escola, busca através das turmas
+                console.log('Buscando escola_id através das permissões de turma...');
+                
+                // Primeiro busca as permissões de turma do usuário
+                const { data: permissoesData, error: permissoesError } = await supabaseClient
+                    .from('permissoes')
+                    .select('referencia_id')
+                    .eq('usuario_id', currentUser.id)
+                    .eq('tipo', 'turma')
+                    .eq('ativo', true);
+                
+                if (permissoesError) {
+                    console.error('Erro ao buscar permissões de turma:', permissoesError);
+                    return null;
+                }
+                
+                if (!permissoesData || permissoesData.length === 0) {
+                    console.warn('Nenhuma permissão de turma encontrada para o usuário');
+                    return null;
+                }
+                
+                // Pega o primeiro referencia_id (turma_id)
+                const turmaId = permissoesData[0].referencia_id;
+                console.log('Turma ID encontrado:', turmaId);
+                
+                // Agora busca a escola_id da turma
+                const { data: turmaData, error: turmaError } = await supabaseClient
+                    .from('turmas')
+                    .select('escola_id')
+                    .eq('id', turmaId)
+                    .eq('soft_delete', false);
+                
+                if (turmaError) {
+                    console.error('Erro ao buscar escola_id da turma:', turmaError);
+                    return null;
+                }
+                
+                console.log('Dados de turma retornados:', turmaData);
+                
+                // Verifica se há dados retornados
+                if (!turmaData || turmaData.length === 0) {
+                    console.warn('Turma não encontrada ou foi deletada');
+                    return null;
+                }
+                
+                // Retorna o escola_id da turma encontrada
+                const escolaIdFromTurma = turmaData[0]?.escola_id;
+                if (escolaIdFromTurma) {
+                    console.log('Escola encontrada via turma:', escolaIdFromTurma);
+                    return escolaIdFromTurma;
+                }
+                
+                console.warn('Não foi possível encontrar escola_id para o usuário');
+                return null;
+                
+            } catch (e) {
+                console.error('Erro na consulta escola_id:', e);
+                return null;
+            }
+        }
+
+        // Manipulação de tipo de mensagem
+        function handleMessageTypeChange() {
+            const messageType = document.getElementById('messageType').value;
+            const mediaUploadGroup = document.getElementById('mediaUploadGroup');
+            const mediaLabel = document.getElementById('mediaLabel');
+            const mediaHint = document.getElementById('mediaHint');
+            const mediaFile = document.getElementById('mediaFile');
+
+            if (messageType === 'video') {
+                mediaUploadGroup.style.display = 'block';
+                mediaLabel.textContent = 'Vídeo (máx. 1 minuto)';
+                mediaHint.textContent = 'Formatos aceitos: MP4, MOV, AVI (máx. 50MB)';
+                mediaFile.accept = 'video/*';
+            } else if (messageType === 'imagem_texto') {
+                mediaUploadGroup.style.display = 'block';
+                mediaLabel.textContent = 'Imagem';
+                mediaHint.textContent = 'Formatos aceitos: JPG, PNG, WebP, GIF (máx. 50MB)';
+                mediaFile.accept = 'image/*';
+            } else {
+                mediaUploadGroup.style.display = 'none';
+            }
+        }
+
+        // Manipulação de arquivo
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const messageType = document.getElementById('messageType').value;
+            
+            // Validações
+            if (messageType === 'video') {
+                if (!file.type.startsWith('video/')) {
+                    alert('Por favor, selecione um arquivo de vídeo válido.');
+                    return;
+                }
+                
+                // Verificar duração do vídeo
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = function() {
+                    if (video.duration > 60) {
+                        alert('O vídeo deve ter no máximo 1 minuto de duração.');
+                        return;
+                    }
+                    showMediaPreview(file, 'video');
+                };
+                video.src = URL.createObjectURL(file);
+            } else if (messageType === 'imagem_texto') {
+                if (!file.type.startsWith('image/')) {
+                    alert('Por favor, selecione um arquivo de imagem válido.');
+                    return;
+                }
+                showMediaPreview(file, 'image');
+            }
+
+            uploadedFile = file;
+        }
+
+        function showMediaPreview(file, type) {
+            const preview = document.getElementById('mediaPreview');
+            const url = URL.createObjectURL(file);
+            
+            if (type === 'video') {
+                preview.innerHTML = `<video controls src="${url}"></video>`;
+            } else {
+                preview.innerHTML = `<img src="${url}" alt="Preview">`;
+            }
+            
+            preview.style.display = 'block';
+        }
+
+        // Manipulação de destinatários
+        function handleTargetTypeChange() {
+            const targetType = document.getElementById('targetType').value;
+            const specificTargetGroup = document.getElementById('specificTargetGroup');
+            const specificTargetLabel = document.getElementById('specificTargetLabel');
+            const specificTarget = document.getElementById('specificTarget');
+
+            if (targetType === 'turma') {
+                specificTargetGroup.style.display = 'block';
+                specificTargetLabel.textContent = 'Selecionar Turma';
+                loadTurmas();
+            } else if (targetType === 'aluno') {
+                specificTargetGroup.style.display = 'block';
+                specificTargetLabel.textContent = 'Selecionar Aluno';
+                loadAlunos();
+            } else if (targetType === 'usuario') {
+                specificTargetGroup.style.display = 'block';
+                specificTargetLabel.textContent = 'Selecionar Usuário';
+                loadUsuarios();
+            } else {
+                specificTargetGroup.style.display = 'none';
+            }
+        }
+
+        // Carregar dados para seleção
+        async function loadTurmas() {
+            try {
+                const escolaId = await getEscolaId();
+                let query = supabaseClient
+                    .from('turmas')
+                    .select('id, nome')
+                    .eq('soft_delete', false);
+
+                if (escolaId) {
+                    query = query.eq('escola_id', escolaId);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                const select = document.getElementById('specificTarget');
+                select.innerHTML = '<option value="">Selecione uma turma</option>';
+                
+                data.forEach(turma => {
+                    select.innerHTML += `<option value="${turma.id}">${turma.nome}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar turmas:', error);
+            }
+        }
+
+        async function loadAlunos() {
+            try {
+                const escolaId = await getEscolaId();
+                let query = supabaseClient
+                    .from('alunos')
+                    .select('id, nome')
+                    .eq('soft_delete', false);
+
+                if (escolaId) {
+                    query = query.eq('escola_id', escolaId);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                const select = document.getElementById('specificTarget');
+                select.innerHTML = '<option value="">Selecione um aluno</option>';
+                
+                data.forEach(aluno => {
+                    select.innerHTML += `<option value="${aluno.id}">${aluno.nome}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar alunos:', error);
+            }
+        }
+
+        async function loadUsuarios() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('usuarios')
+                    .select('id, nome')
+                    .eq('status', 'ativo');
+
+                if (error) throw error;
+
+                const select = document.getElementById('specificTarget');
+                select.innerHTML = '<option value="">Selecione um usuário</option>';
+                
+                data.forEach(usuario => {
+                    select.innerHTML += `<option value="${usuario.id}">${usuario.nome}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+            }
+        }
+
+        // Envio de mensagem
+        async function handleSubmitMessage(event) {
+            event.preventDefault();
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div> Enviando...';
+            submitBtn.disabled = true;
+
+            try {
+                const escolaId = await getEscolaId();
+                if (!escolaId) {
+                    alert('Não foi possível identificar sua escola. Faça login novamente.');
+                    return;
+                }
+
+                let mediaUrl = null;
+                
+                // Upload de mídia se necessário
+                if (uploadedFile) {
+                    const fileName = `${Date.now()}-${uploadedFile.name}`;
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('mensagens-media')
+                        .upload(fileName, uploadedFile);
+
+                    if (uploadError) throw uploadError;
+                    mediaUrl = fileName;
+                }
+
+                // Debug logs
+                console.log('🔍 Debug - Dados para criação da mensagem:');
+                console.log('📍 escolaId:', escolaId);
+                console.log('👤 currentUser:', currentUser);
+                console.log('🆔 currentUser.id:', currentUser?.id);
+                console.log('📝 Tipo:', document.getElementById('messageType').value);
+                console.log('🏷️ Categoria:', document.getElementById('messageCategory').value);
+
+                // Criar mensagem
+                const messageData = {
+                    escola_id: escolaId,
+                    created_by: currentUser.id,
+                    tipo: document.getElementById('messageType').value,
+                    categoria: document.getElementById('messageCategory').value,
+                    titulo: document.getElementById('messageTitle').value,
+                    descricao: document.getElementById('messageDescription').value,
+                    cor: selectedColor,
+                    media_url: mediaUrl,
+                    media_bucket: mediaUrl ? 'mensagens-media' : null,
+                    status: 'publicada',
+                    published_at: new Date().toISOString()
+                };
+
+                console.log('📤 Dados da mensagem a serem enviados:', messageData);
+
+                const { data: message, error: messageError } = await supabaseClient
+                    .from('mensagens')
+                    .insert([messageData])
+                    .select()
+                    .single();
+
+                if (messageError) throw messageError;
+
+                // Criar destinatário
+                const targetType = document.getElementById('targetType').value;
+                const targetId = document.getElementById('specificTarget').value || null;
+
+                const destinatarioData = {
+                    mensagem_id: message.id,
+                    target_type: targetType,
+                    target_id: targetId
+                };
+
+                const { error: destinatarioError } = await supabaseClient
+                    .from('mensagem_destinatarios')
+                    .insert([destinatarioData]);
+
+                if (destinatarioError) throw destinatarioError;
+
+                alert('Mensagem enviada com sucesso!');
+                resetForm();
+                loadMessages();
+
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                alert('Erro ao enviar mensagem. Tente novamente.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Carregar mensagens
+        async function loadMessages() {
+            try {
+                const escolaId = await getEscolaId();
+
+                let query = supabaseClient
+                    .from('mensagens')
+                    .select(`
+                        *,
+                        usuarios!created_by(nome, foto_perfil, tipo_usuario),
+                        mensagem_destinatarios(target_type, target_id),
+                        mensagem_visualizacoes(count)
+                    `)
+                    .eq('status', 'publicada')
+                    .order('published_at', { ascending: false });
+
+                if (escolaId) {
+                    query = query.eq('escola_id', escolaId);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                displayMessages(data);
+            } catch (error) {
+                console.error('Erro ao carregar mensagens:', error);
+                showEmptyState();
+            }
+        }
+
+        function displayMessages(messages) {
+            const feed = document.getElementById('messagesFeed');
+            
+            if (messages.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            feed.innerHTML = messages.map(message => createMessageCard(message)).join('');
+            lucide.createIcons();
+        }
+
+        function createMessageCard(message) {
+            const author = message.usuarios?.nome || 'Usuário';
+            const authorInitial = author.charAt(0).toUpperCase();
+            const profilePhoto = message.usuarios?.foto_perfil;
+            const date = new Date(message.published_at).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let mediaHtml = '';
+            if (message.media_url) {
+                const mediaUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${message.media_bucket}/${message.media_url}`;
+                if (message.tipo === 'video') {
+                    mediaHtml = `<div class="message-media"><video controls src="${mediaUrl}"></video></div>`;
+                } else if (message.tipo === 'imagem_texto') {
+                    mediaHtml = `<div class="message-media"><img src="${mediaUrl}" alt="Imagem da mensagem"></div>`;
+                }
+            }
+
+            return `
+                <div class="message-card" style="border-left: 4px solid ${message.cor};">
+                    <div class="message-header">
+                        <div class="message-author">
+                            <div class="author-avatar">
+                                ${profilePhoto ? 
+                                    `<img src="${profilePhoto}" alt="${author}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` : 
+                                    authorInitial
+                                }
+                            </div>
+                            <div class="author-info">
+                                <div class="author-name">${author}</div>
+                                <div class="message-date">${date}</div>
+                            </div>
+                        </div>
+                        ${(currentUser?.id === message.created_by || currentUser?.tipo_usuario === 'admin') ? `<button class="delete-btn" onclick="deleteMessage('${message.id}')" title="Excluir"><i data-lucide="trash-2"></i></button>` : ''}
+                    </div>
+                    <div class="message-content">
+                        <h3 class="message-title">${message.titulo}</h3>
+                        <p class="message-description">${message.descricao}</p>
+                        ${mediaHtml}
+                    </div>
+                    <div class="message-actions">
+                        <div class="message-stats">
+                            <div class="stat-item">
+                                <i data-lucide="eye"></i>
+                                <span>${(Array.isArray(message.mensagem_visualizacoes) && message.mensagem_visualizacoes[0] && typeof message.mensagem_visualizacoes[0].count === 'number') ? message.mensagem_visualizacoes[0].count : 0} visualizações</span>
+                            </div>
+                            <div class="stat-item">
+                                <i data-lucide="users"></i>
+                                <span>${getTargetLabel(message.mensagem_destinatarios[0])}</span>
+                            </div>
+                        </div>
+                        <div class="message-category-bottom category-${message.categoria}">
+                            ${getCategoryLabel(message.categoria)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCategoryLabel(categoria) {
+            const labels = {
+                'informativo': 'Informativo',
+                'evento': 'Evento', 
+                'aviso': 'Aviso',
+                'comunicado_importante': 'Comunicado Importante',
+                'urgente': 'Urgente'
+            };
+            return labels[categoria] || categoria;
+        }
+
+        function getTargetLabel(destinatario) {
+            const labels = {
+                'todos_professores': 'Todos os Professores',
+                'toda_escola': 'Toda a Escola',
+                'turma': 'Turma Específica',
+                'aluno': 'Aluno Específico',
+                'usuario': 'Usuário Específico'
+            };
+            return labels[destinatario?.target_type] || 'Destinatários';
+        }
+
+        let messageToDelete = null;
+
+        function deleteMessage(messageId) {
+            messageToDelete = messageId;
+            document.getElementById('deleteConfirmModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').classList.remove('active');
+            document.body.style.overflow = '';
+            messageToDelete = null;
+        }
+
+        async function confirmDelete() {
+            if (!messageToDelete) return;
+
+            try {
+                if (!supabaseClient || !currentUser?.id) {
+                    alert('Sessão inválida. Faça login novamente.');
+                    closeDeleteModal();
+                    return;
+                }
+
+                // Remove destinatários primeiro, se existirem
+                const { error: destErr } = await supabaseClient
+                    .from('mensagem_destinatarios')
+                    .delete()
+                    .eq('mensagem_id', messageToDelete);
+                if (destErr) {
+                    console.warn('Erro ao remover destinatários:', destErr.message || destErr);
+                }
+
+                // Remove a mensagem (garantindo que seja do próprio usuário)
+                const { error: msgErr } = await supabaseClient
+                    .from('mensagens')
+                    .delete()
+                    .eq('id', messageToDelete)
+                    .eq('created_by', currentUser.id);
+                if (msgErr) throw msgErr;
+
+                closeDeleteModal();
+                // Recarrega o feed
+                await loadMessages();
+            } catch (error) {
+                console.error('Erro ao excluir mensagem:', error);
+                alert('Não foi possível excluir a publicação.');
+                closeDeleteModal();
+            }
+        }
+
+        function showEmptyState() {
+            const feed = document.getElementById('messagesFeed');
+            feed.innerHTML = `
+                <div class="empty-state">
+                    <i data-lucide="message-circle" class="empty-state-icon"></i>
+                    <h3 class="empty-state-title">Nenhuma mensagem encontrada</h3>
+                    <p class="empty-state-description">
+                        Seja o primeiro a compartilhar uma mensagem com sua escola!<br>
+                        Clique no botão "Nova Mensagem" para começar.
+                    </p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // Event listeners para o modal de confirmação
+        document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
+        // Fechar modal com ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const deleteModal = document.getElementById('deleteConfirmModal');
+                if (deleteModal.classList.contains('active')) {
+                    closeDeleteModal();
+                } else {
+                    closeNewMessageModal();
+                }
+            }
+        });
+
+        // Fechar modal de confirmação ao clicar fora
+        document.getElementById('deleteConfirmModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>
