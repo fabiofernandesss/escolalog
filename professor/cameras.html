@@ -597,9 +597,9 @@
                 const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString();
                 const role = roleRaw.toLowerCase();
 
-                // Permite acesso se papel contém 'professor' em qualquer forma
-                if (!role || !role.includes('professor')) {
-                    console.log(`❌ Papel inválido para professor: '${roleRaw}'`);
+                // Permite acesso se papel contém 'professor' ou 'diretor' em qualquer forma
+                if (!role || (!role.includes('professor') && !role.includes('diretor'))) {
+                    console.log(`❌ Papel inválido para professor/diretor: '${roleRaw}'`);
                     redirectToLogin();
                     return false;
                 }

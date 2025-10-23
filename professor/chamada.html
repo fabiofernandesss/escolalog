@@ -761,6 +761,10 @@
         <div class="filters-section">
             <div class="filters-grid">
                 <div class="form-group">
+                    <label class="form-label">Buscar Aluno</label>
+                    <input type="text" class="form-input" id="filterNome" placeholder="Digite o nome do aluno..." onkeyup="filterStudents()">
+                </div>
+                <div class="form-group">
                     <label class="form-label">Data</label>
                     <input type="date" class="form-input" id="filterData" onchange="filterStudents()">
                 </div>
@@ -930,9 +934,10 @@
                 currentUser = JSON.parse(whatsappUser);
                 console.log('✅ Usuário autenticado via WhatsApp:', currentUser);
                 
-                if (currentUser.tipo_usuario !== 'professor') {
-                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
-                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (!roleRaw.includes('professor') && !roleRaw.includes('diretor')) {
+                    console.log('❌ Usuário não é professor nem diretor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores e diretores.');
                     redirectToLogin();
                     return false;
                 }
@@ -1295,6 +1300,15 @@
         // Filtrar dados dos alunos
         function filterStudentsData() {
             let filtered = [...studentsData];
+            
+            // Filtro por nome
+            const filterNome = document.getElementById('filterNome').value.toLowerCase().trim();
+            if (filterNome) {
+                filtered = filtered.filter(student => 
+                    student.nome.toLowerCase().includes(filterNome) ||
+                    (student.matricula && student.matricula.toLowerCase().includes(filterNome))
+                );
+            }
             
             // Filtro por turma
             const filterTurma = document.getElementById('filterTurma').value;

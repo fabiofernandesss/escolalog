@@ -162,6 +162,9 @@
             transition: all 0.3s ease;
             border: 2px solid transparent;
             user-select: none;
+            white-space: nowrap;
+            min-width: fit-content;
+            flex-shrink: 0;
         }
 
         .turma-badge:hover {
@@ -702,6 +705,278 @@
             display: none;
         }
 
+        /* Modal Form Styles */
+        .modal {
+            max-width: 800px;
+            max-height: 95vh;
+        }
+
+        .modal-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-save:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .btn-cancel {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel:hover {
+            background: #4b5563;
+            transform: translateY(-1px);
+        }
+
+        .responsaveis-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .responsavel-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+
+        .responsavel-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+        }
+
+        .responsavel-card-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .responsavel-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .responsavel-card-status {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .status-ativo {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-inativo {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .responsavel-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .responsavel-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .responsavel-field label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .responsavel-field input,
+        .responsavel-field select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .responsavel-field input:focus,
+        .responsavel-field select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .form-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-section h4 {
+            margin: 0 0 20px 0;
+            color: #1e293b;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .responsavel-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .responsavel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .responsavel-header h5 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .btn-search-responsavel {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-search-responsavel:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .modal {
+                max-width: 95vw;
+                margin: 10px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .modal-header-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .responsavel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
 
         .btn {
             display: inline-flex;
@@ -854,9 +1129,23 @@
             }
 
             .turma-badge {
-                font-size: 0.8rem;
-                padding: 6px 12px;
+                font-size: 0.75rem;
+                padding: 6px 10px;
                 height: 28px;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .turmas-container {
+                gap: 4px;
+            }
+
+            .turma-badge {
+                font-size: 0.7rem;
+                padding: 5px 8px;
+                height: 26px;
+                border-radius: 16px;
             }
         }
 
@@ -1119,8 +1408,10 @@
         <div class="modal-overlay" id="studentModal">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title" id="modalTitle">Detalhes do Aluno</h3>
-                    <button class="modal-close" onclick="closeModal()">×</button>
+                    <h3 class="modal-title" id="modalTitle">Editar Aluno</h3>
+                    <div class="modal-header-actions">
+                        <button class="modal-close" onclick="closeModal()">×</button>
+                    </div>
                 </div>
                 <div class="modal-content">
                     <div class="modal-photo-section">
@@ -1129,9 +1420,102 @@
                         <button class="modal-photo-edit" onclick="editPhoto()">📷 Alterar Foto</button>
                         <input type="file" id="photoInput" class="photo-input" accept="image/*" capture="environment" onchange="handlePhotoChange(event)">
                     </div>
-                    <div class="modal-details" id="modalDetails">
-                        <!-- Detalhes serão preenchidos via JavaScript -->
+                    <div class="modal-form" id="modalForm">
+                        <div class="form-section">
+                            <h4>Dados Pessoais</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentNome">Nome Completo *</label>
+                                    <input type="text" id="studentNome" placeholder="Digite o nome completo do aluno" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentMatricula">Matrícula</label>
+                                    <input type="text" id="studentMatricula" placeholder="Ex: 2024001">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentSexo">Sexo</label>
+                                    <select id="studentSexo">
+                                        <option value="">Selecione</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Feminino</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentDataNascimento">Data de Nascimento</label>
+                                    <input type="date" id="studentDataNascimento">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentWhatsapp">WhatsApp</label>
+                                    <input type="tel" id="studentWhatsapp" placeholder="(11) 99999-9999">
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentCpf">CPF</label>
+                                    <input type="text" id="studentCpf" placeholder="000.000.000-00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4>Endereço</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentEstado">Estado</label>
+                                    <select id="studentEstado" onchange="loadCidades()">
+                                        <option value="">Selecione o estado</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentCidade">Cidade</label>
+                                    <select id="studentCidade">
+                                        <option value="">Selecione a cidade</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentBairro">Bairro</label>
+                                    <input type="text" id="studentBairro" placeholder="Ex: Centro, Vila Nova">
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentEndereco">Endereço</label>
+                                    <input type="text" id="studentEndereco" placeholder="Rua, número, complemento">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4>Dados Acadêmicos</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="studentTurma">Turma</label>
+                                    <select id="studentTurma">
+                                        <option value="">Selecione a turma</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studentSerie">Série</label>
+                                    <select id="studentSerie">
+                                        <option value="">Selecione a série</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h4>Responsáveis</h4>
+                            <div id="responsaveisContainer" class="responsaveis-container">
+                                <!-- Os cards dos responsáveis serão carregados aqui dinamicamente -->
+                            </div>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button class="btn-save" onclick="salvarAluno()">💾 Salvar Alterações</button>
                 </div>
             </div>
         </div>
@@ -1190,9 +1574,10 @@
                 console.log('🔍 Chaves do objeto user:', Object.keys(currentUser));
                 console.log('🔍 Valores do objeto user:', Object.values(currentUser));
                 
-                if (currentUser.tipo_usuario !== 'professor') {
-                    console.log('❌ Usuário não é professor:', currentUser.tipo_usuario);
-                    alert('Acesso negado. Esta área é exclusiva para professores.');
+                const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (!roleRaw.includes('professor') && !roleRaw.includes('diretor')) {
+                    console.log('❌ Usuário não é professor nem diretor:', currentUser.tipo_usuario);
+                    alert('Acesso negado. Esta área é exclusiva para professores e diretores.');
                     window.location.href = '../login.html';
                     return false;
                 }
@@ -1554,12 +1939,12 @@
         }
 
         // Funções do Modal
-        function openStudentModal(studentId) {
+        async function openStudentModal(studentId) {
             currentStudent = students.find(s => s.id === studentId);
             if (!currentStudent) return;
 
             // Atualizar título
-            document.getElementById('modalTitle').textContent = currentStudent.nome;
+            document.getElementById('modalTitle').textContent = `Editar: ${currentStudent.nome}`;
 
             // Atualizar foto
             const modalPhoto = document.getElementById('modalPhoto');
@@ -1575,77 +1960,457 @@
                 modalPhotoPlaceholder.textContent = currentStudent.nome.charAt(0).toUpperCase();
             }
 
-            // Atualizar detalhes
-            const modalDetails = document.getElementById('modalDetails');
-            modalDetails.innerHTML = `
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Nome Completo</div>
-                        <div class="modal-detail-value">${currentStudent.nome}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Matrícula</div>
-                        <div class="modal-detail-value">${currentStudent.matricula || '-'}</div>
-                    </div>
-                </div>
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Sexo</div>
-                        <div class="modal-detail-value">${currentStudent.sexo === 'M' ? 'Masculino' : currentStudent.sexo === 'F' ? 'Feminino' : '-'}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Data de Nascimento</div>
-                        <div class="modal-detail-value">${currentStudent.data_nascimento || '-'}</div>
-                    </div>
-                </div>
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Turma</div>
-                        <div class="modal-detail-value">${currentStudent.turmas?.nome || '-'}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Série</div>
-                        <div class="modal-detail-value">${currentStudent.series?.nome || '-'}</div>
-                    </div>
-                </div>
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Bairro</div>
-                        <div class="modal-detail-value">${currentStudent.bairro || '-'}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Cidade</div>
-                        <div class="modal-detail-value">${currentStudent.cidade || '-'}</div>
-                    </div>
-                </div>
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">WhatsApp</div>
-                        <div class="modal-detail-value">${currentStudent.whatsapp || '-'}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Estado</div>
-                        <div class="modal-detail-value">${currentStudent.estado || '-'}</div>
-                    </div>
-                </div>
-                <div class="modal-detail modal-detail-full">
-                    <div class="modal-detail-label">Responsável Principal</div>
-                    <div class="modal-detail-value">${currentStudent.nome_responsavel_1 || '-'}</div>
-                </div>
-                <div class="modal-detail-group">
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Telefone Responsável</div>
-                        <div class="modal-detail-value">${currentStudent.telefone_responsavel_1 || '-'}</div>
-                    </div>
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">Segundo Responsável</div>
-                        <div class="modal-detail-value">${currentStudent.responsavel_2 || '-'}</div>
-                    </div>
-                </div>
-            `;
+            // Preencher formulário
+            await populateStudentForm(currentStudent);
 
             // Mostrar modal
             document.getElementById('studentModal').classList.add('open');
+        }
+
+        async function populateStudentForm(student) {
+            // Dados pessoais
+            document.getElementById('studentNome').value = student.nome || '';
+            document.getElementById('studentMatricula').value = student.matricula || '';
+            document.getElementById('studentSexo').value = student.sexo || '';
+            document.getElementById('studentDataNascimento').value = student.data_nascimento || '';
+            document.getElementById('studentWhatsapp').value = student.whatsapp || '';
+            document.getElementById('studentCpf').value = student.cpf || '';
+
+            // Endereço
+            document.getElementById('studentBairro').value = student.bairro || '';
+            document.getElementById('studentEndereco').value = student.endereco || '';
+
+            // Carregar estados e cidades
+            await loadEstados();
+            if (student.estado) {
+                document.getElementById('studentEstado').value = student.estado;
+                await loadCidades();
+                if (student.cidade) {
+                    document.getElementById('studentCidade').value = student.cidade;
+                }
+            }
+
+            // Carregar turmas e séries
+            await loadTurmasAndSeries();
+            if (student.turma_id) {
+                document.getElementById('studentTurma').value = student.turma_id;
+            }
+            if (student.serie_id) {
+                document.getElementById('studentSerie').value = student.serie_id;
+            }
+
+            // Responsáveis - buscar dados completos dos responsáveis
+            await loadResponsaveisData(student);
+        }
+
+        async function loadResponsaveisData(student) {
+            try {
+                const container = document.getElementById('responsaveisContainer');
+                container.innerHTML = '';
+
+                // Criar lista de responsáveis a partir dos dados do aluno
+                const responsaveis = [];
+
+                // Responsável 1
+                if (student.whatsapp_responsavel_1 || student.nome_responsavel_1) {
+                    responsaveis.push({
+                        id: 1,
+                        tipo: 'Principal',
+                        nome: student.nome_responsavel_1 || '',
+                        whatsapp: student.whatsapp_responsavel_1 || '',
+                        telefone: student.telefone_responsavel_1 || '',
+                        parentesco: student.parentesco_responsavel_1 || '',
+                        ativo: !!(student.whatsapp_responsavel_1 && student.nome_responsavel_1)
+                    });
+                }
+
+                // Responsável 2
+                if (student.whatsapp_responsavel_2 || student.responsavel_2) {
+                    responsaveis.push({
+                        id: 2,
+                        tipo: 'Secundário',
+                        nome: student.responsavel_2 || '',
+                        whatsapp: student.whatsapp_responsavel_2 || '',
+                        telefone: student.telefone_responsavel_2 || '',
+                        parentesco: student.parentesco_responsavel_2 || '',
+                        ativo: !!(student.whatsapp_responsavel_2 && student.responsavel_2)
+                    });
+                }
+
+                // Se não há responsáveis, criar cards vazios para preenchimento
+                if (responsaveis.length === 0) {
+                    responsaveis.push(
+                        {
+                            id: 1,
+                            tipo: 'Principal',
+                            nome: '',
+                            whatsapp: '',
+                            telefone: '',
+                            parentesco: '',
+                            ativo: false
+                        },
+                        {
+                            id: 2,
+                            tipo: 'Secundário',
+                            nome: '',
+                            whatsapp: '',
+                            telefone: '',
+                            parentesco: '',
+                            ativo: false
+                        }
+                    );
+                } else if (responsaveis.length === 1) {
+                    // Adicionar segundo responsável vazio se só há um
+                    responsaveis.push({
+                        id: 2,
+                        tipo: 'Secundário',
+                        nome: '',
+                        whatsapp: '',
+                        telefone: '',
+                        parentesco: '',
+                        ativo: false
+                    });
+                }
+
+                // Buscar dados adicionais dos responsáveis na tabela usuarios
+                const whatsappNumbers = responsaveis
+                    .filter(r => r.whatsapp)
+                    .map(r => r.whatsapp);
+
+                if (whatsappNumbers.length > 0) {
+                    const { data: usuariosResponsaveis, error } = await supabase
+                        .from('usuarios')
+                        .select('*')
+                        .in('whatsapp', whatsappNumbers)
+                        .eq('tipo_usuario', 'responsavel');
+
+                    if (!error && usuariosResponsaveis) {
+                        responsaveis.forEach(resp => {
+                            if (resp.whatsapp) {
+                                const usuario = usuariosResponsaveis.find(u => u.whatsapp === resp.whatsapp);
+                                if (usuario) {
+                                    resp.nome = usuario.nome || resp.nome;
+                                    resp.telefone = usuario.telefone || resp.telefone;
+                                    resp.ativo = usuario.ativo || false;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // Criar cards para cada responsável
+                responsaveis.forEach(responsavel => {
+                    const card = createResponsavelCard(responsavel);
+                    container.appendChild(card);
+                });
+
+                console.log('Cards dos responsáveis criados:', responsaveis.length);
+
+            } catch (error) {
+                console.error('Erro ao carregar dados dos responsáveis:', error);
+            }
+        }
+
+        function createResponsavelCard(responsavel) {
+            const card = document.createElement('div');
+            card.className = 'responsavel-card';
+            card.innerHTML = `
+                <div class="responsavel-card-header">
+                    <h5 class="responsavel-card-title">Responsável ${responsavel.tipo}</h5>
+                    <span class="responsavel-card-status ${responsavel.ativo ? 'status-ativo' : 'status-inativo'}">
+                        ${responsavel.ativo ? 'Ativo' : 'Inativo'}
+                    </span>
+                </div>
+                <div class="responsavel-card-body">
+                    <div class="responsavel-field">
+                        <label for="responsavel${responsavel.id}Nome">Nome Completo</label>
+                        <input type="text" id="responsavel${responsavel.id}Nome" value="${responsavel.nome}" placeholder="Nome completo do responsável">
+                    </div>
+                    <div class="responsavel-field">
+                        <label for="responsavel${responsavel.id}WhatsApp">WhatsApp</label>
+                        <input type="tel" id="responsavel${responsavel.id}WhatsApp" value="${responsavel.whatsapp}" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="responsavel-field">
+                        <label for="responsavel${responsavel.id}Telefone">Telefone</label>
+                        <input type="tel" id="responsavel${responsavel.id}Telefone" value="${responsavel.telefone}" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="responsavel-field">
+                        <label for="responsavel${responsavel.id}Parentesco">Parentesco</label>
+                        <select id="responsavel${responsavel.id}Parentesco">
+                            <option value="">Selecione</option>
+                            <option value="pai" ${responsavel.parentesco === 'pai' ? 'selected' : ''}>Pai</option>
+                            <option value="mae" ${responsavel.parentesco === 'mae' ? 'selected' : ''}>Mãe</option>
+                            <option value="avo" ${responsavel.parentesco === 'avo' ? 'selected' : ''}>Avô/Avó</option>
+                            <option value="tio" ${responsavel.parentesco === 'tio' ? 'selected' : ''}>Tio/Tia</option>
+                            <option value="responsavel" ${responsavel.parentesco === 'responsavel' ? 'selected' : ''}>Responsável Legal</option>
+                            <option value="outro" ${responsavel.parentesco === 'outro' ? 'selected' : ''}>Outro</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Função para carregar estados via API
+        async function loadEstados() {
+            try {
+                const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
+                const estados = await response.json();
+                
+                const estadoSelect = document.getElementById('studentEstado');
+                estadoSelect.innerHTML = '<option value="">Selecione o estado</option>';
+                
+                estados.sort((a, b) => a.nome.localeCompare(b.nome));
+                estados.forEach(estado => {
+                    const option = document.createElement('option');
+                    option.value = estado.sigla;
+                    option.textContent = estado.nome;
+                    estadoSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar estados:', error);
+            }
+        }
+
+        // Função para carregar cidades via API
+        async function loadCidades() {
+            const estadoSelecionado = document.getElementById('studentEstado').value;
+            const cidadeSelect = document.getElementById('studentCidade');
+            
+            if (!estadoSelecionado) {
+                cidadeSelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSelecionado}/municipios`);
+                const cidades = await response.json();
+                
+                cidadeSelect.innerHTML = '<option value="">Selecione a cidade</option>';
+                
+                cidades.sort((a, b) => a.nome.localeCompare(b.nome));
+                cidades.forEach(cidade => {
+                    const option = document.createElement('option');
+                    option.value = cidade.nome;
+                    option.textContent = cidade.nome;
+                    cidadeSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar cidades:', error);
+            }
+        }
+
+        // Função para carregar turmas e séries
+        async function loadTurmasAndSeries() {
+            try {
+                // Carregar turmas
+                const { data: turmas, error: turmasError } = await supabase
+                    .from('turmas')
+                    .select('*')
+                    .order('nome');
+
+                if (!turmasError && turmas) {
+                    const turmaSelect = document.getElementById('studentTurma');
+                    turmaSelect.innerHTML = '<option value="">Selecione a turma</option>';
+                    turmas.forEach(turma => {
+                        const option = document.createElement('option');
+                        option.value = turma.id;
+                        option.textContent = turma.nome;
+                        turmaSelect.appendChild(option);
+                    });
+                }
+
+                // Carregar séries
+                const { data: series, error: seriesError } = await supabase
+                    .from('series')
+                    .select('*')
+                    .order('nome');
+
+                if (!seriesError && series) {
+                    const serieSelect = document.getElementById('studentSerie');
+                    serieSelect.innerHTML = '<option value="">Selecione a série</option>';
+                    series.forEach(serie => {
+                        const option = document.createElement('option');
+                        option.value = serie.id;
+                        option.textContent = serie.nome;
+                        serieSelect.appendChild(option);
+                    });
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar turmas e séries:', error);
+            }
+        }
+
+        // Função para buscar responsável por WhatsApp
+        async function buscarResponsavelPorWhatsApp(responsavelNum) {
+            const whatsappInput = document.getElementById(`responsavel${responsavelNum}WhatsApp`);
+            const whatsapp = whatsappInput.value.trim();
+            
+            if (!whatsapp) {
+                alert('Por favor, digite o número do WhatsApp');
+                return;
+            }
+
+            try {
+                const { data: responsavel, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('whatsapp', whatsapp)
+                    .eq('tipo_usuario', 'responsavel')
+                    .single();
+
+                if (error || !responsavel) {
+                    alert('Responsável não encontrado com este WhatsApp');
+                    return;
+                }
+
+                // Preencher os campos com os dados encontrados
+                document.getElementById(`responsavel${responsavelNum}Nome`).value = responsavel.nome || '';
+                document.getElementById(`responsavel${responsavelNum}Telefone`).value = responsavel.telefone || '';
+                
+                alert('Responsável encontrado e dados preenchidos!');
+
+            } catch (error) {
+                console.error('Erro ao buscar responsável:', error);
+                alert('Erro ao buscar responsável');
+            }
+        }
+
+        // Função para salvar alterações do aluno
+        async function salvarAluno() {
+            if (!currentStudent) {
+                alert('Nenhum aluno selecionado para edição');
+                return;
+            }
+
+            // Validar campos obrigatórios
+            const nome = document.getElementById('studentNome').value.trim();
+            if (!nome) {
+                alert('O nome do aluno é obrigatório');
+                return;
+            }
+
+            try {
+                // Coletar dados do formulário com validação
+                const dadosAluno = {
+                    nome: nome,
+                    matricula: document.getElementById('studentMatricula').value.trim() || null,
+                    sexo: document.getElementById('studentSexo').value || null,
+                    data_nascimento: document.getElementById('studentDataNascimento').value || null,
+                    whatsapp: document.getElementById('studentWhatsapp').value.trim() || null,
+                    cpf: document.getElementById('studentCpf').value.trim() || null,
+                    bairro: document.getElementById('studentBairro').value.trim() || null,
+                    endereco: document.getElementById('studentEndereco').value.trim() || null,
+                    estado: document.getElementById('studentEstado').value || null,
+                    cidade: document.getElementById('studentCidade').value || null,
+                    turma_id: document.getElementById('studentTurma').value ? parseInt(document.getElementById('studentTurma').value) : null,
+                    serie_id: document.getElementById('studentSerie').value ? parseInt(document.getElementById('studentSerie').value) : null,
+                    // Coletar dados dos responsáveis dos cards
+                    nome_responsavel_1: document.getElementById('responsavel1Nome')?.value?.trim() || null,
+                    telefone_responsavel_1: document.getElementById('responsavel1Telefone')?.value?.trim() || null,
+                    whatsapp_responsavel_1: document.getElementById('responsavel1WhatsApp')?.value?.trim() || null,
+                    parentesco_responsavel_1: document.getElementById('responsavel1Parentesco')?.value || null,
+                    responsavel_2: document.getElementById('responsavel2Nome')?.value?.trim() || null,
+                    telefone_responsavel_2: document.getElementById('responsavel2Telefone')?.value?.trim() || null,
+                    whatsapp_responsavel_2: document.getElementById('responsavel2WhatsApp')?.value?.trim() || null,
+                    parentesco_responsavel_2: document.getElementById('responsavel2Parentesco')?.value || null
+                };
+
+                console.log('Dados a serem salvos:', dadosAluno);
+
+                // Atualizar aluno na base de dados
+                const { data, error: alunoError } = await supabase
+                    .from('alunos')
+                    .update(dadosAluno)
+                    .eq('id', currentStudent.id)
+                    .select();
+
+                if (alunoError) {
+                    console.error('Erro detalhado:', alunoError);
+                    throw new Error(`Erro ao atualizar aluno: ${alunoError.message}`);
+                }
+
+                console.log('Aluno atualizado com sucesso:', data);
+
+                // Atualizar responsáveis na tabela usuarios
+                await atualizarResponsaveis(dadosAluno);
+
+                // Atualizar a lista local de estudantes
+                const index = students.findIndex(s => s.id === currentStudent.id);
+                if (index !== -1) {
+                    students[index] = { ...students[index], ...dadosAluno };
+                }
+
+                // Recarregar a lista de estudantes
+                await loadStudents();
+
+                alert('Dados do aluno salvos com sucesso!');
+                closeModal();
+
+            } catch (error) {
+                console.error('Erro ao salvar aluno:', error);
+                alert(`Erro ao salvar dados do aluno: ${error.message}`);
+            }
+        }
+
+        // Função para atualizar responsáveis na tabela usuarios
+        async function atualizarResponsaveis(dadosAluno) {
+            try {
+                // Coletar dados dos responsáveis dos cards
+                const responsavel1Nome = document.getElementById('responsavel1Nome')?.value?.trim() || '';
+                const responsavel1WhatsApp = document.getElementById('responsavel1WhatsApp')?.value?.trim() || '';
+                const responsavel1Telefone = document.getElementById('responsavel1Telefone')?.value?.trim() || '';
+                const responsavel1Parentesco = document.getElementById('responsavel1Parentesco')?.value || '';
+
+                const responsavel2Nome = document.getElementById('responsavel2Nome')?.value?.trim() || '';
+                const responsavel2WhatsApp = document.getElementById('responsavel2WhatsApp')?.value?.trim() || '';
+                const responsavel2Telefone = document.getElementById('responsavel2Telefone')?.value?.trim() || '';
+                const responsavel2Parentesco = document.getElementById('responsavel2Parentesco')?.value || '';
+
+                // Atualizar responsável 1
+                if (responsavel1WhatsApp && responsavel1Nome) {
+                    const { error: resp1Error } = await supabase
+                        .from('usuarios')
+                        .upsert({
+                            whatsapp: responsavel1WhatsApp,
+                            nome: responsavel1Nome,
+                            telefone: responsavel1Telefone,
+                            tipo_usuario: 'responsavel',
+                            ativo: true
+                        }, {
+                            onConflict: 'whatsapp'
+                        });
+
+                    if (resp1Error) {
+                        console.error('Erro ao atualizar responsável 1:', resp1Error);
+                    }
+                }
+
+                // Atualizar responsável 2
+                if (responsavel2WhatsApp && responsavel2Nome) {
+                    const { error: resp2Error } = await supabase
+                        .from('usuarios')
+                        .upsert({
+                            whatsapp: responsavel2WhatsApp,
+                            nome: responsavel2Nome,
+                            telefone: responsavel2Telefone,
+                            tipo_usuario: 'responsavel',
+                            ativo: true
+                        }, {
+                            onConflict: 'whatsapp'
+                        });
+
+                    if (resp2Error) {
+                        console.error('Erro ao atualizar responsável 2:', resp2Error);
+                    }
+                }
+
+                console.log('Responsáveis atualizados com sucesso');
+
+            } catch (error) {
+                console.error('Erro ao atualizar responsáveis:', error);
+            }
         }
 
         function closeModal() {
@@ -2408,10 +3173,16 @@
         });
 
 
-        // Inicializar ícones Lucide
+        // Inicializar ícones Lucide e event listeners
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+            }
+            
+            // Event listener para mudança de estado
+            const estadoSelect = document.getElementById('studentEstado');
+            if (estadoSelect) {
+                estadoSelect.addEventListener('change', loadCidades);
             }
         });
     </script>

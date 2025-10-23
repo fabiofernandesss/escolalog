@@ -171,6 +171,41 @@
             }
         }
         
+        .mobile-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @media (min-width: 991px) {
+            .mobile-actions {
+                display: none;
+            }
+        }
+        
+        .mobile-login-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: hsl(var(--brand-blue));
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .mobile-login-btn:hover {
+            background: hsl(var(--brand-blue) / 0.9);
+            transform: translateY(-1px);
+        }
+        
+        .mobile-login-btn span {
+            font-size: 0.875rem;
+        }
+        
         .menu-toggle {
             display: block;
             background: none;
@@ -178,12 +213,6 @@
             cursor: pointer;
             padding: 0.5rem;
             color: hsl(var(--foreground));
-        }
-        
-        @media (min-width: 991px) {
-            .menu-toggle {
-                display: none;
-            }
         }
         
         /* Button Styles */
@@ -708,13 +737,23 @@
                     <a href="#contato" class="btn btn-primary">Agende Demo</a>
                 </div>
                 
-                <button class="menu-toggle" onclick="toggleMobileMenu()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
+                <div class="mobile-actions">
+                    <a href="login.html" class="mobile-login-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                            <polyline points="10,17 15,12 10,7"></polyline>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                        </svg>
+                        <span>Entrar</span>
+                    </a>
+                    <button class="menu-toggle" onclick="toggleMobileMenu()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
             </nav>
         </div>
     </header>
@@ -731,12 +770,16 @@
             </button>
         </div>
         <div class="mobile-menu-items">
+            <!-- Botão de Login Destacado -->
+            <a href="login.html" class="btn btn-primary" style="margin-bottom: 1.5rem; text-align: center; padding: 1rem 2rem; border-radius: 2rem; font-weight: 600;" onclick="toggleMobileMenu()">
+                🔐 Entrar no Sistema
+            </a>
+            
             <a href="#quem-somos" class="mobile-menu-item" onclick="toggleMobileMenu()">Quem Somos</a>
             <a href="#seguranca" class="mobile-menu-item" onclick="toggleMobileMenu()">Segurança</a>
             <a href="#funcionalidades" class="mobile-menu-item" onclick="toggleMobileMenu()">Funcionalidades</a>
             <a href="#faq" class="mobile-menu-item" onclick="toggleMobileMenu()">FAQ</a>
             <a href="#contato" class="mobile-menu-item" onclick="toggleMobileMenu()">Contato</a>
-            <a href="login.html" class="mobile-menu-item" onclick="toggleMobileMenu()">Entrar</a>
         </div>
     </div>
     

@@ -1,4 +1,5 @@
 # Dependências e caches
+.trae/rules/
 node_modules/
 .pnp/
 .cache/

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor - Escola Log</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1e40af">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Escola Log">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../img/favicon.png">
+    <link rel="apple-touch-icon" href="../img/favicon.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #1e40af;
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .map-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .map-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .neighborhood-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .neighborhood-card {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .neighborhood-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border-color: #06b6d4;
+        }
+
+        .neighborhood-card.active {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            border-color: #0891b2;
+        }
+
+        .neighborhood-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .neighborhood-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background: #10b981;
+        }
+
+        .status-warning {
+            background: #f59e0b;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .school-count {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .neighborhood-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .legend {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <i data-lucide="monitor"></i>
+            Monitor de Bairros
+        </h1>
+        <button class="back-btn" onclick="goBack()">
+            <i data-lucide="arrow-left"></i>
+            Voltar
+        </button>
+    </div>
+
+    <div class="container">
+        <!-- Estatísticas Gerais -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i data-lucide="building-2"></i>
+                </div>
+                <div class="stat-number" id="totalSchools">0</div>
+                <div class="stat-label">Escolas Ativas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="stat-number" id="totalStudents">0</div>
+                <div class="stat-label">Alunos Presentes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i data-lucide="camera"></i>
+                </div>
+                <div class="stat-number" id="activeCameras">0</div>
+                <div class="stat-label">Câmeras Online</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="stat-number" id="alerts">0</div>
+                <div class="stat-label">Alertas Ativos</div>
+            </div>
+        </div>
+
+        <!-- Mapa dos Bairros -->
+        <div class="map-container">
+            <h2 class="map-title">Monitoramento por Bairros</h2>
+            <div class="neighborhood-grid" id="neighborhoodGrid">
+                <!-- Bairros serão carregados dinamicamente -->
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot status-online"></div>
+                    <span>Online</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot status-warning"></div>
+                    <span>Atenção</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot status-offline"></div>
+                    <span>Offline</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        let supabase;
+        let currentUser = null;
+
+        // Dados simulados dos bairros
+        const neighborhoodsData = [
+            {
+                name: "Centro",
+                schools: 5,
+                students: 1250,
+                cameras: 15,
+                status: "online",
+                activities: [
+                    { icon: "user-check", text: "123 alunos presentes" },
+                    { icon: "camera", text: "Todas câmeras funcionando" },
+                    { icon: "shield-check", text: "Sistema seguro" }
+                ]
+            },
+            {
+                name: "Jardim das Flores",
+                schools: 3,
+                students: 890,
+                cameras: 9,
+                status: "warning",
+                activities: [
+                    { icon: "user-check", text: "89 alunos presentes" },
+                    { icon: "camera-off", text: "1 câmera offline" },
+                    { icon: "alert-triangle", text: "Verificar conexão" }
+                ]
+            },
+            {
+                name: "Vila Nova",
+                schools: 4,
+                students: 1100,
+                cameras: 12,
+                status: "online",
+                activities: [
+                    { icon: "user-check", text: "110 alunos presentes" },
+                    { icon: "camera", text: "Todas câmeras funcionando" },
+                    { icon: "trending-up", text: "Frequência em alta" }
+                ]
+            },
+            {
+                name: "Bairro Alto",
+                schools: 2,
+                students: 650,
+                cameras: 6,
+                status: "offline",
+                activities: [
+                    { icon: "user-x", text: "Dados não disponíveis" },
+                    { icon: "wifi-off", text: "Sem conexão" },
+                    { icon: "tool", text: "Manutenção necessária" }
+                ]
+            },
+            {
+                name: "Parque Industrial",
+                schools: 6,
+                students: 1450,
+                cameras: 18,
+                status: "online",
+                activities: [
+                    { icon: "user-check", text: "145 alunos presentes" },
+                    { icon: "camera", text: "Todas câmeras funcionando" },
+                    { icon: "shield-check", text: "Segurança ativa" }
+                ]
+            },
+            {
+                name: "Residencial Sul",
+                schools: 3,
+                students: 780,
+                cameras: 9,
+                status: "warning",
+                activities: [
+                    { icon: "user-check", text: "78 alunos presentes" },
+                    { icon: "battery-low", text: "Bateria baixa - Câmera 3" },
+                    { icon: "clock", text: "Última atualização: 5min" }
+                ]
+            }
+        ];
+
+        async function initializeSupabase() {
+            try {
+                const { createClient } = supabase;
+                supabase = createClient(
+                    'https://yfhqjqhqjqhqjqhqjqhq.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaHFqcWhxanFocWpxaHFqcWhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4NzEsImV4cCI6MjA1MDU0ODg3MX0.Hs_5Aw8KJhz4tOLLHqr_Hs_5Aw8KJhz4tOLLHqr_Hs'
+                );
+                console.log('Supabase inicializado com sucesso');
+            } catch (error) {
+                console.error('Erro ao inicializar Supabase:', error);
+            }
+        }
+
+        async function checkAuthentication() {
+            try {
+                // Primeiro, verificar localStorage (método usado pelos outros arquivos)
+                const whatsappUser = localStorage.getItem('whatsapp_user');
+                
+                if (whatsappUser) {
+                    try {
+                        currentUser = JSON.parse(whatsappUser);
+                        console.log('Usuário encontrado no localStorage:', currentUser);
+                    } catch (e) {
+                        console.error('Erro ao parsear whatsapp_user:', e);
+                        localStorage.removeItem('whatsapp_user');
+                        window.location.href = '../login.html';
+                        return false;
+                    }
+                } else {
+                    // Fallback para Supabase auth se localStorage não estiver disponível
+                    const { data: { user } } = await supabase.auth.getUser();
+                    
+                    if (!user) {
+                        console.log('Nenhum usuário encontrado, redirecionando para login');
+                        window.location.href = '../login.html';
+                        return false;
+                    }
+
+                    // Buscar dados do usuário no Supabase
+                    const { data: userData, error } = await supabase
+                        .from('usuarios')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (error || !userData) {
+                        console.error('Erro ao buscar dados do usuário:', error);
+                        window.location.href = '../login.html';
+                        return false;
+                    }
+
+                    currentUser = userData;
+                }
+
+                if (!currentUser) {
+                    console.log('Dados do usuário não encontrados');
+                    window.location.href = '../login.html';
+                    return false;
+                }
+
+                // Normaliza o perfil do usuário e valida acesso de diretor
+                const roleRaw = String(
+                    currentUser?.tipo_usuario ||
+                    currentUser?.tipo ||
+                    currentUser?.role ||
+                    currentUser?.perfil ||
+                    ''
+                ).toLowerCase();
+
+                console.log('Verificando perfil do usuário:', { roleRaw, currentUser });
+
+                if (!roleRaw.includes('diretor')) {
+                    console.warn('Acesso negado: perfil não é diretor.', { roleRaw, currentUser });
+                    alert('Acesso negado. Esta área é restrita a diretores.');
+                    window.location.href = 'menu.html';
+                    return false;
+                }
+
+                console.log('Acesso autorizado para diretor');
+                return true;
+            } catch (error) {
+                console.error('Erro na autenticação:', error);
+                window.location.href = '../login.html';
+                return false;
+            }
+        }
+
+        function renderNeighborhoods() {
+            const grid = document.getElementById('neighborhoodGrid');
+            grid.innerHTML = '';
+
+            neighborhoodsData.forEach((neighborhood, index) => {
+                const card = document.createElement('div');
+                card.className = `neighborhood-card ${neighborhood.status === 'online' ? 'active' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="neighborhood-header">
+                        <div class="neighborhood-name">${neighborhood.name}</div>
+                        <div class="status-indicator status-${neighborhood.status}"></div>
+                    </div>
+                    <div class="school-count">${neighborhood.schools} escolas • ${neighborhood.students} alunos</div>
+                    <ul class="activity-list">
+                        ${neighborhood.activities.map(activity => `
+                            <li class="activity-item">
+                                <i data-lucide="${activity.icon}" class="activity-icon"></i>
+                                <span>${activity.text}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+
+                card.addEventListener('click', () => {
+                    showNeighborhoodDetails(neighborhood);
+                });
+
+                grid.appendChild(card);
+            });
+
+            // Reinicializar ícones Lucide
+            lucide.createIcons();
+        }
+
+        function updateStats() {
+            const totalSchools = neighborhoodsData.reduce((sum, n) => sum + n.schools, 0);
+            const totalStudents = neighborhoodsData.reduce((sum, n) => sum + n.students, 0);
+            const totalCameras = neighborhoodsData.reduce((sum, n) => sum + n.cameras, 0);
+            const alerts = neighborhoodsData.filter(n => n.status !== 'online').length;
+
+            document.getElementById('totalSchools').textContent = totalSchools;
+            document.getElementById('totalStudents').textContent = totalStudents.toLocaleString();
+            document.getElementById('activeCameras').textContent = totalCameras;
+            document.getElementById('alerts').textContent = alerts;
+        }
+
+        function showNeighborhoodDetails(neighborhood) {
+            alert(`Detalhes do ${neighborhood.name}:\n\n` +
+                  `• ${neighborhood.schools} escolas\n` +
+                  `• ${neighborhood.students} alunos\n` +
+                  `• ${neighborhood.cameras} câmeras\n` +
+                  `• Status: ${neighborhood.status}\n\n` +
+                  `Atividades recentes:\n` +
+                  neighborhood.activities.map(a => `• ${a.text}`).join('\n'));
+        }
+
+        function goBack() {
+            window.location.href = 'menu.html';
+        }
+
+        // Simular atualizações em tempo real
+        function simulateRealTimeUpdates() {
+            setInterval(() => {
+                // Atualizar alguns dados aleatoriamente
+                neighborhoodsData.forEach(neighborhood => {
+                    // Pequenas variações nos números de alunos
+                    const variation = Math.floor(Math.random() * 10) - 5;
+                    neighborhood.students = Math.max(0, neighborhood.students + variation);
+                    
+                    // Ocasionalmente mudar status
+                    if (Math.random() < 0.1) {
+                        const statuses = ['online', 'warning', 'offline'];
+                        neighborhood.status = statuses[Math.floor(Math.random() * statuses.length)];
+                    }
+                });
+
+                updateStats();
+                renderNeighborhoods();
+            }, 30000); // Atualizar a cada 30 segundos
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                await initializeSupabase();
+                lucide.createIcons();
+                
+                const isAuthenticated = await checkAuthentication();
+                if (isAuthenticated) {
+                    renderNeighborhoods();
+                    updateStats();
+                    simulateRealTimeUpdates();
+                }
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+            }
+        });
+    </script>
+</body>
+</html>

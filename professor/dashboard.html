@@ -175,6 +175,13 @@
         .stat-number { font-size: 1.6rem; font-weight: 700; color: #1e293b; }
         .stat-label { font-size: 0.85rem; color: #64748b; }
 
+        /* Controle de visibilidade por tipo de usuário */
+        .card-professor { display: flex; }
+        .card-diretor { display: flex; }
+        
+        /* Ocultar cards de diretor para professores */
+        body.user-professor .card-diretor:not(.card-professor) { display: none; }
+
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -194,6 +201,11 @@
         .chart-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
         .chart-canvas { width: 100%; height: 280px; display: block; }
         .chart-card.chart-square .chart-canvas { aspect-ratio: 1 / 1; height: auto; }
+        .chart-card.chart-wide { grid-column: span 2; }
+        
+        @media (max-width: 768px) {
+            .chart-card.chart-wide { grid-column: span 1; }
+        }
 
         .recent-students {
             background: white;
@@ -375,6 +387,7 @@
             .stat-number { font-size: 0.9rem; }
             .stat-label { font-size: 0.6rem; line-height: 1.1; }
         }
+
     </style>
     <style>
         /* Mobile readability boost (no header changes) */
@@ -404,7 +417,7 @@
         </header>
 
         <div class="stats-grid">
-            <div class="stat-card total">
+            <div class="stat-card total card-professor card-diretor">
                 <div class="icon">
                     <i data-lucide="users"></i>
                 </div>
@@ -412,7 +425,7 @@
                 <div class="stat-label">Total de Alunos</div>
             </div>
 
-            <div class="stat-card male">
+            <div class="stat-card male card-diretor">
                 <div class="icon">
                     <i data-lucide="user"></i>
                 </div>
@@ -420,7 +433,7 @@
                 <div class="stat-label">Masculinos</div>
             </div>
 
-            <div class="stat-card female">
+            <div class="stat-card female card-diretor">
                 <div class="icon">
                     <i data-lucide="user"></i>
                 </div>
@@ -428,7 +441,7 @@
                 <div class="stat-label">Femininos</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card card-diretor">
                 <div class="icon">
                     <i data-lucide="help-circle"></i>
                 </div>
@@ -436,7 +449,7 @@
                 <div class="stat-label">Não Informado</div>
             </div>
 
-            <div class="stat-card schools">
+            <div class="stat-card schools card-diretor">
                 <div class="icon">
                     <i data-lucide="users"></i>
                 </div>
@@ -446,7 +459,7 @@
 
 
 
-            <div class="stat-card">
+            <div class="stat-card card-professor card-diretor">
                 <div class="icon">
                     <i data-lucide="check-circle"></i>
                 </div>
@@ -454,7 +467,7 @@
                 <div class="stat-label">Presentes Hoje</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card card-diretor">
                 <div class="icon">
                     <i data-lucide="x-circle"></i>
                 </div>
@@ -462,7 +475,7 @@
                 <div class="stat-label">Faltas Hoje</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card card-professor card-diretor">
                 <div class="icon">
                     <i data-lucide="trending-up"></i>
                 </div>
@@ -470,12 +483,53 @@
                 <div class="stat-label">Taxa de Presença</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card card-diretor">
                 <div class="icon">
                     <i data-lucide="clock"></i>
                 </div>
                 <div class="stat-number" id="avgTimeInSchool">-</div>
                 <div class="stat-label">Tempo Médio na Escola</div>
+            </div>
+
+            <div class="stat-card card-diretor">
+                <div class="icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="stat-number" id="preTeensCount1">-</div>
+                <div class="stat-label">Pré-adolescentes (12-14)</div>
+            </div>
+
+            <!-- Métricas Avançadas para Diretores -->
+            <div class="stat-card card-diretor">
+                <div class="icon">
+                    <i data-lucide="trending-down"></i>
+                </div>
+                <div class="stat-number" id="evasionRate">-</div>
+                <div class="stat-label">Taxa de Evasão</div>
+            </div>
+
+            <div class="stat-card card-diretor">
+                <div class="icon">
+                    <i data-lucide="user-check"></i>
+                </div>
+                <div class="stat-number" id="teensCount">-</div>
+                <div class="stat-label">Adolescentes (15+)</div>
+            </div>
+
+            <div class="stat-card card-diretor">
+                <div class="icon">
+                    <i data-lucide="timer"></i>
+                </div>
+                <div class="stat-number" id="avgStayTime">-</div>
+                <div class="stat-label">Permanência por Turma</div>
+            </div>
+
+            <div class="stat-card card-diretor">
+                <div class="icon">
+                    <i data-lucide="calendar-check"></i>
+                </div>
+                <div class="stat-number" id="weeklyAttendanceRate">-</div>
+                <div class="stat-label">Frequência Semanal</div>
             </div>
         </div>
 
@@ -485,14 +539,9 @@
                 <div id="genderChart" class="chart-canvas"></div>
             </div>
 
-            <div class="chart-card">
-                <h3 class="chart-title">Alunos por Série</h3>
-                <div id="seriesChart" class="chart-canvas"></div>
-            </div>
-
-            <div class="chart-card">
-                <h3 class="chart-title">Alunos por Turma</h3>
-                <div id="classChart" class="chart-canvas"></div>
+            <div class="chart-card chart-wide">
+                <h3 class="chart-title">Turmas com Mais Alunos</h3>
+                <div id="unifiedClassChart" class="chart-canvas"></div>
             </div>
 
             <div class="chart-card chart-square">
@@ -573,6 +622,31 @@
         let currentUser = null;
         let turmas = [];
         let turmaIds = [];
+
+        // Funções auxiliares para fuso horário brasileiro (UTC-3)
+        function getBrazilianDate() {
+            const now = new Date();
+            // Ajustar para horário brasileiro (UTC-3)
+            const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+            return brazilTime;
+        }
+
+        function getBrazilianDateString() {
+            const brazilDate = getBrazilianDate();
+            return brazilDate.toISOString().split('T')[0];
+        }
+
+        function convertToBrazilianTime(utcTimestamp) {
+            const utcDate = new Date(utcTimestamp);
+            // Ajustar para horário brasileiro (UTC-3)
+            return new Date(utcDate.getTime() - (3 * 60 * 60 * 1000));
+        }
+
+        function getDaysAgo(days) {
+            const brazilDate = getBrazilianDate();
+            brazilDate.setDate(brazilDate.getDate() - days);
+            return brazilDate.toISOString().split('T')[0];
+        }
         let logsSubscription = null; // Para subscription em tempo real
         let dashboardData = {
             totalStudents: 0,
@@ -581,8 +655,7 @@
             unknownGender: 0,
             totalSchools: 0,
             genderData: [],
-            seriesData: [],
-            classData: [],
+            unifiedClassData: [],
             neighborhoodData: [],
             recentLogs: [] // Mudança: logs ao invés de students
         };
@@ -598,15 +671,13 @@
                     return false;
                 }
 
-                // Checar perfil do usuário
-                if (currentUser.tipo_usuario && currentUser.tipo_usuario !== 'professor') {
+                // Checar perfil do usuário (normaliza papel)
+                const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (roleRaw && !roleRaw.includes('professor') && !roleRaw.includes('diretor')) {
                     // Redireciona por tipo (mantém consistência com menu)
-                    switch(currentUser.tipo_usuario) {
+                    switch(roleRaw) {
                         case 'admin':
                             window.location.href = '../admin/dashboard.html';
-                            break;
-                        case 'diretor':
-                            window.location.href = '../diretor/menu.html';
                             break;
                         case 'responsavel':
                             window.location.href = '../responsavel/menu.html';
@@ -622,6 +693,14 @@
                 const nome = currentUser.nome || currentUser.name || '';
                 if (userAvatar && nome) {
                     userAvatar.textContent = nome.charAt(0).toUpperCase();
+                }
+
+                // Aplicar classe CSS baseada no tipo de usuário para controlar visibilidade dos cards
+                const userType = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
+                if (userType.includes('professor') && !userType.includes('diretor')) {
+                    document.body.classList.add('user-professor');
+                } else if (userType.includes('diretor')) {
+                    document.body.classList.add('user-diretor');
                 }
 
                 return true;
@@ -891,6 +970,9 @@
                 // Carregar dados para gráficos
                 await loadChartData();
                 
+                // Carregar métricas de alunos (novas métricas)
+                await loadStudentMetrics();
+                
                 // Carregar logs recentes (substituindo alunos recentes)
                 await loadRecentLogs();
                 
@@ -1007,16 +1089,8 @@
         // Carregar estatísticas de frequência
         async function loadFrequencyStats() {
             try {
-                // Função para obter a data local do navegador em formato YYYY-MM-DD
-                function getTodayLocalISODate() {
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                }
-
-                const today = getTodayLocalISODate();
+                // Usar data brasileira para obter dados de hoje
+                const today = getBrazilianDateString();
 
                 // Presentes hoje via view frequencia_diaria (mesma fonte que chamada.html)
                 const { data: frequenciaData, error: frequenciaError } = await supabase
@@ -1056,10 +1130,8 @@
                     ? Math.round(((dashboardData.presentToday || 0) / totalStudentsToday) * 100)
                     : 0;
 
-                // Referência de 30 dias para cálculo de tempo médio na escola
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+                // Referência de 30 dias para cálculo de tempo médio na escola usando fuso horário brasileiro
+                const thirtyDaysAgoStr = getDaysAgo(30);
 
                 // Tempo médio na escola (últimos 30 dias)
                 const { data: timeRecords, error: timeError } = await supabase
@@ -1111,8 +1183,7 @@
             try {
                 if (!turmaIds || turmaIds.length === 0) {
                     // Se não há turmas, definir dados vazios
-                    dashboardData.seriesData = [];
-                    dashboardData.classData = [];
+                    dashboardData.unifiedClassData = [];
                     dashboardData.neighborhoodData = [];
                     return;
                 }
@@ -1133,25 +1204,24 @@
 
                 if (studentsError) {
                     console.error('Erro ao carregar dados para gráficos:', studentsError);
-                    dashboardData.seriesData = [];
-                    dashboardData.classData = [];
+                    dashboardData.unifiedClassData = [];
                     dashboardData.neighborhoodData = [];
                     return;
                 }
 
                 // Processar dados por série
-                const seriesCount = {};
-                const classCount = {};
+                const unifiedClassCount = {};
                 const neighborhoodCount = {};
 
                 (students || []).forEach(student => {
-                    // Contar por série
-                    const serieName = student.series?.nome || 'Sem série';
-                    seriesCount[serieName] = (seriesCount[serieName] || 0) + 1;
-
-                    // Contar por turma
+                    // Contar por turma + série (unificado)
                     const className = student.turmas?.nome || 'Sem turma';
-                    classCount[className] = (classCount[className] || 0) + 1;
+                    const serieName = student.series?.nome || 'Sem série';
+                    
+                    // Abreviar nome da turma (T.A, T.B, etc.)
+                    const abbreviatedClassName = className.replace(/^Turma\s*/i, 'T.');
+                    const unifiedName = `${abbreviatedClassName} (${serieName})`;
+                    unifiedClassCount[unifiedName] = (unifiedClassCount[unifiedName] || 0) + 1;
 
                     // Contar por bairro
                     if (student.bairro && student.bairro.trim()) {
@@ -1160,14 +1230,9 @@
                     }
                 });
 
-                // Converter para formato de array [nome, quantidade]
-                dashboardData.seriesData = Object.entries(seriesCount)
-                    .sort((a, b) => b[1] - a[1]) // Ordenar por quantidade decrescente
-                    .slice(0, 10); // Limitar a 10 itens
-
-                dashboardData.classData = Object.entries(classCount)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10);
+                // Converter para formato de array [nome, quantidade] - Todas as turmas
+                dashboardData.unifiedClassData = Object.entries(unifiedClassCount)
+                    .sort((a, b) => b[1] - a[1]); // Ordenar por quantidade decrescente (sem limite)
 
                 dashboardData.neighborhoodData = Object.entries(neighborhoodCount)
                     .sort((a, b) => b[1] - a[1])
@@ -1175,9 +1240,215 @@
 
             } catch (error) {
                 console.error('Erro ao carregar dados dos gráficos:', error);
-                dashboardData.seriesData = [];
-                dashboardData.classData = [];
+                dashboardData.unifiedClassData = [];
                 dashboardData.neighborhoodData = [];
+            }
+        }
+
+        // Carregar métricas de alunos baseadas em frequência
+        async function loadStudentMetrics() {
+            try {
+                if (!turmaIds || turmaIds.length === 0) {
+                    console.log('Nenhuma turma encontrada para calcular métricas avançadas');
+                    return;
+                }
+
+                // Carregar métricas avançadas em paralelo
+                await Promise.all([
+                    loadPreTeensMetric(),
+                    loadEvasionRate(),
+                    loadAverageStayTime(),
+                    loadWeeklyAttendanceRate()
+                ]);
+
+            } catch (error) {
+                console.error('Erro ao carregar métricas avançadas:', error);
+            }
+        }
+
+        // Métrica 1: Taxa de Evasão Escolar
+        async function loadEvasionRate() {
+            try {
+                // Buscar alunos matriculados nas turmas
+                const { data: enrolledStudents, error: enrolledError } = await supabase
+                    .from('alunos')
+                    .select('id')
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false);
+
+                if (enrolledError) throw enrolledError;
+
+                // Buscar alunos que tiveram frequência nos últimos 30 dias usando fuso horário brasileiro
+                const thirtyDaysAgoStr = getDaysAgo(30);
+
+                const { data: activeStudents, error: activeError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('user_id')
+                    .in('turma_id', turmaIds)
+                    .gte('dia', thirtyDaysAgoStr);
+
+                if (activeError) throw activeError;
+
+                const totalEnrolled = enrolledStudents.length;
+                const activeUserIds = new Set(activeStudents.map(s => s.user_id));
+                const activeCount = activeUserIds.size;
+                const evasionCount = totalEnrolled - activeCount;
+                const evasionRate = totalEnrolled > 0 ? (evasionCount / totalEnrolled) * 100 : 0;
+
+                document.getElementById('evasionRate').textContent = `${evasionRate.toFixed(1)}%`;
+
+            } catch (error) {
+                console.error('Erro ao calcular taxa de evasão:', error);
+                document.getElementById('evasionRate').textContent = '-';
+            }
+        }
+
+
+
+        // Métrica 3: Permanência Média por Turma
+        async function loadAverageStayTime() {
+            try {
+                // Buscar dados de permanência dos últimos 30 dias usando fuso horário brasileiro
+                const thirtyDaysAgoStr = getDaysAgo(30);
+
+                const { data: stayData, error } = await supabase
+                    .from('frequencia_diaria')
+                    .select('horas_na_escola, turma_nome')
+                    .in('turma_id', turmaIds)
+                    .gte('dia', thirtyDaysAgoStr)
+                    .not('horas_na_escola', 'is', null);
+
+                if (error) throw error;
+
+                if (stayData.length === 0) {
+                    document.getElementById('avgStayTime').textContent = '-';
+                    return;
+                }
+
+                // Calcular média de permanência por turma
+                const turmaStats = {};
+                stayData.forEach(record => {
+                    const turma = record.turma_nome || 'Sem Turma';
+                    if (!turmaStats[turma]) {
+                        turmaStats[turma] = { total: 0, count: 0 };
+                    }
+                    turmaStats[turma].total += parseFloat(record.horas_na_escola) || 0;
+                    turmaStats[turma].count++;
+                });
+
+                // Encontrar a turma com maior permanência média
+                let bestTurma = '';
+                let bestAverage = 0;
+
+                Object.entries(turmaStats).forEach(([turma, stats]) => {
+                    const average = stats.total / stats.count;
+                    if (average > bestAverage) {
+                        bestAverage = average;
+                        bestTurma = turma;
+                    }
+                });
+
+                const hours = Math.floor(bestAverage);
+                const minutes = Math.round((bestAverage - hours) * 60);
+                document.getElementById('avgStayTime').textContent = `${hours}h${minutes}m`;
+
+            } catch (error) {
+                console.error('Erro ao calcular permanência média:', error);
+                document.getElementById('avgStayTime').textContent = '-';
+            }
+        }
+
+        // Métrica 4: Taxa de Frequência Semanal
+        async function loadWeeklyAttendanceRate() {
+            try {
+                // Buscar total de alunos matriculados
+                const { data: enrolledStudents, error: enrolledError } = await supabase
+                    .from('alunos')
+                    .select('id')
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false);
+
+                if (enrolledError) throw enrolledError;
+
+                // Buscar alunos com frequência nos últimos 7 dias usando fuso horário brasileiro
+                const startDate = getDaysAgo(7);
+
+                const { data: weeklyAttendance, error: weeklyError } = await supabase
+                    .from('frequencia_diaria')
+                    .select('user_id')
+                    .in('turma_id', turmaIds)
+                    .gte('dia', startDate);
+
+                if (weeklyError) throw weeklyError;
+
+                const totalEnrolled = enrolledStudents.length;
+                const uniqueAttendees = new Set(weeklyAttendance.map(s => s.user_id));
+                const attendanceRate = totalEnrolled > 0 ? (uniqueAttendees.size / totalEnrolled) * 100 : 0;
+
+                document.getElementById('weeklyAttendanceRate').textContent = `${attendanceRate.toFixed(1)}%`;
+
+            } catch (error) {
+                console.error('Erro ao calcular taxa de frequência semanal:', error);
+                document.getElementById('weeklyAttendanceRate').textContent = '-';
+            }
+        }
+
+        // Carregar métricas de idade
+        async function loadPreTeensMetric() {
+            try {
+                if (!turmaIds || turmaIds.length === 0) {
+                    document.getElementById('preTeensCount1').textContent = '-';
+                    document.getElementById('teensCount').textContent = '-';
+                    return;
+                }
+
+                // Buscar alunos das turmas do professor
+                const { data: students, error } = await supabase
+                    .from('alunos')
+                    .select('data_nascimento')
+                    .in('turma_id', turmaIds)
+                    .eq('soft_delete', false)
+                    .not('data_nascimento', 'is', null);
+
+                if (error) {
+                    console.error('Erro ao carregar dados de idades:', error);
+                    return;
+                }
+
+                // Calcular idades e contar por faixa etária
+                const today = new Date();
+                let preTeensCount = 0;
+                let teensCount = 0;
+
+                students.forEach(student => {
+                    if (student.data_nascimento) {
+                        const birthDate = new Date(student.data_nascimento);
+                        const age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                        
+                        // Ajustar idade se ainda não fez aniversário este ano
+                        const actualAge = (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) 
+                            ? age - 1 : age;
+
+                        // Pré-adolescentes: 12-14 anos
+                        if (actualAge >= 12 && actualAge <= 14) {
+                            preTeensCount++;
+                        }
+                        // Adolescentes: 15+ anos
+                        else if (actualAge >= 15) {
+                            teensCount++;
+                        }
+                    }
+                });
+
+                // Atualizar os cards com valores específicos
+                document.getElementById('preTeensCount1').textContent = preTeensCount;
+                document.getElementById('teensCount').textContent = teensCount;
+
+            } catch (error) {
+                console.error('Erro ao carregar métricas de idade:', error);
+                document.getElementById('preTeensCount1').textContent = '-';
+                document.getElementById('teensCount').textContent = '-';
             }
         }
 
@@ -1200,37 +1471,62 @@
             const genderChart = new ApexCharts(document.querySelector('#genderChart'), genderOptions);
             genderChart.render();
 
-            // Séries (bar)
-            const seriesLabels = (dashboardData.seriesData || []).map(i => i[0]);
-            const seriesValues = (dashboardData.seriesData || []).map(i => i[1]);
-            const seriesOptions = {
-                chart: { type: 'bar', height: 280 },
-                series: [{ name: 'Alunos', data: seriesValues }],
-                xaxis: { categories: seriesLabels },
+            // Turmas com Mais Alunos (bar horizontal)
+            const unifiedLabels = (dashboardData.unifiedClassData || []).map(i => i[0]);
+            const unifiedValues = (dashboardData.unifiedClassData || []).map(i => i[1]);
+            const unifiedOptions = {
+                chart: { type: 'bar', height: 350 },
+                series: [{ name: 'Alunos', data: unifiedValues }],
+                xaxis: { 
+                    categories: unifiedLabels,
+                    labels: {
+                        style: { fontSize: '12px' }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: { fontSize: '12px' }
+                    }
+                },
                 colors: ['#667EEA'],
-                plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
-                dataLabels: { enabled: false },
+                plotOptions: { 
+                    bar: { 
+                        borderRadius: 6, 
+                        columnWidth: '70%',
+                        horizontal: false
+                    } 
+                },
+                dataLabels: { 
+                    enabled: true,
+                    style: { fontSize: '11px', fontWeight: 'bold' }
+                },
                 legend: { show: false },
-                responsive: [{ breakpoint: 640, options: { chart: { height: 200 } } }]
+                grid: {
+                    borderColor: '#e7e7e7',
+                    strokeDashArray: 3
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + ' alunos'
+                        }
+                    }
+                },
+                responsive: [{ 
+                    breakpoint: 768, 
+                    options: { 
+                        chart: { height: 300 },
+                        plotOptions: {
+                            bar: { horizontal: true }
+                        },
+                        xaxis: {
+                            labels: { style: { fontSize: '10px' } }
+                        }
+                    } 
+                }]
             };
-            const seriesChart = new ApexCharts(document.querySelector('#seriesChart'), seriesOptions);
-            seriesChart.render();
-
-            // Turmas (bar)
-            const classLabels = (dashboardData.classData || []).map(i => i[0]);
-            const classValues = (dashboardData.classData || []).map(i => i[1]);
-            const classOptions = {
-                chart: { type: 'bar', height: 280 },
-                series: [{ name: 'Alunos', data: classValues }],
-                xaxis: { categories: classLabels },
-                colors: ['#A8EDEA'],
-                plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
-                dataLabels: { enabled: false },
-                legend: { show: false },
-                responsive: [{ breakpoint: 640, options: { chart: { height: 200 } } }]
-            };
-            const classChart = new ApexCharts(document.querySelector('#classChart'), classOptions);
-            classChart.render();
+            const unifiedClassChart = new ApexCharts(document.querySelector('#unifiedClassChart'), unifiedOptions);
+            unifiedClassChart.render();
 
             // Bairros (pie)
             const neighLabels = (dashboardData.neighborhoodData || []).map(i => i[0]);

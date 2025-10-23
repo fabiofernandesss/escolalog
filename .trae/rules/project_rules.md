@@ -2,4 +2,4 @@
 
 2- Nunca CRIE README.
 
-3- Toda vez que criar uma lista de alguma tabela do banco de dados, traga a quantidade no topp.
+3- Toda vez que criar uma lista de alguma tabela do banco de dados, traga a quantidade no topo.

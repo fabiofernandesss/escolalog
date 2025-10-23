@@ -1289,7 +1289,7 @@
                     .select(`
                         *,
                         escolas:escola_id(nome),
-                        turmas:turma_id(nome),
+                        turmas:turma_id(nome, series:serie_id(nome)),
                         series:serie_id(nome)
                     `)
                     .eq('soft_delete', false)
@@ -1378,7 +1378,11 @@
                 console.log('📚 Carregando séries...');
                 const { data, error } = await supabase
                     .from('series')
-                    .select('id, nome')
+                    .select(`
+                        id, 
+                        nome,
+                        turmas:turmas(id, nome)
+                    `)
                     .order('nome');
 
                 console.log('Resultado séries:', { data, error });
@@ -1390,7 +1394,7 @@
 
                 if (data && data.length > 0) {
                     series = data;
-                    populateSelect('serieId', series, 'nome');
+                    populateSeriesSelect('serieId', series);
                     populateSelect('filterSeries', series, 'nome');
                     console.log(`✅ ${data.length} séries carregadas`);
                 } else {
@@ -1419,7 +1423,11 @@
             try {
                 const { data, error } = await supabase
                     .from('turmas')
-                    .select('id, nome')
+                    .select(`
+                        id, 
+                        nome,
+                        series:serie_id(nome)
+                    `)
                     .eq('escola_id', escolaId)
                     .eq('soft_delete', false)
                     .order('nome');
@@ -1435,7 +1443,14 @@
                     data.forEach(turma => {
                         const option = document.createElement('option');
                         option.value = turma.id;
-                        option.textContent = turma.nome;
+                        
+                        // Criar texto com turma e série associada
+                        let optionText = turma.nome;
+                        if (turma.series && turma.series.nome) {
+                            optionText += ` (Série: ${turma.series.nome})`;
+                        }
+                        
+                        option.textContent = optionText;
                         turmaSelect.appendChild(option);
                     });
                     console.log(`✅ ${data.length} turmas carregadas`);
@@ -1457,7 +1472,11 @@
                 console.log('🎓 Carregando todas as turmas para filtros...');
                 const { data, error } = await supabase
                     .from('turmas')
-                    .select('id, nome')
+                    .select(`
+                        id, 
+                        nome,
+                        series:serie_id(nome)
+                    `)
                     .eq('soft_delete', false)
                     .order('nome');
 
@@ -1469,7 +1488,7 @@
                 }
 
                 if (data && data.length > 0) {
-                    populateSelect('filterClass', data, 'nome');
+                    populateTurmasSelect('filterClass', data);
                     console.log(`✅ ${data.length} turmas carregadas para filtros`);
                 } else {
                     console.log('⚠️ Nenhuma turma encontrada para filtros');
@@ -1791,6 +1810,77 @@
                 console.log(`✅ ${data.length} opções adicionadas ao ${selectId}`);
             } else {
                 console.warn(`⚠️ Nenhum dado para popular ${selectId}`);
+            }
+        }
+
+        // Função para popular select de séries com turmas associadas
+        function populateSeriesSelect(selectId, seriesData) {
+            const select = document.getElementById(selectId);
+            if (!select) {
+                console.warn(`⚠️ Select ${selectId} não encontrado`);
+                return;
+            }
+            
+            // Limpar opções existentes (exceto a primeira)
+            const firstOption = select.querySelector('option');
+            select.innerHTML = '';
+            if (firstOption) {
+                select.appendChild(firstOption);
+            }
+            
+            if (seriesData && seriesData.length > 0) {
+                seriesData.forEach(serie => {
+                    const option = document.createElement('option');
+                    option.value = serie.id;
+                    
+                    // Criar texto com série e turmas associadas
+                    let optionText = serie.nome;
+                    if (serie.turmas && serie.turmas.length > 0) {
+                        const turmasNomes = serie.turmas.map(t => t.nome).join(', ');
+                        optionText += ` (Turmas: ${turmasNomes})`;
+                    }
+                    
+                    option.textContent = optionText;
+                    select.appendChild(option);
+                });
+                console.log(`✅ ${seriesData.length} séries adicionadas ao ${selectId}`);
+            } else {
+                console.warn(`⚠️ Nenhum dado para popular ${selectId}`);
+            }
+        }
+
+        // Função para popular select de turmas com série associada
+        function populateTurmasSelect(selectId, data) {
+            const select = document.getElementById(selectId);
+            if (!select) {
+                console.warn(`⚠️ Select ${selectId} não encontrado`);
+                return;
+            }
+            
+            // Limpar opções existentes (exceto a primeira)
+            const firstOption = select.querySelector('option');
+            select.innerHTML = '';
+            if (firstOption) {
+                select.appendChild(firstOption);
+            }
+            
+            if (data && data.length > 0) {
+                data.forEach(turma => {
+                    const option = document.createElement('option');
+                    option.value = turma.id;
+                    
+                    // Criar texto com turma e série associada
+                    let optionText = turma.nome;
+                    if (turma.series && turma.series.nome) {
+                        optionText += ` (Série: ${turma.series.nome})`;
+                    }
+                    
+                    option.textContent = optionText;
+                    select.appendChild(option);
+                });
+                console.log(`✅ ${data.length} turmas adicionadas ao ${selectId}`);
+            } else {
+                console.log(`⚠️ Nenhuma turma encontrada para ${selectId}`);
             }
         }
 

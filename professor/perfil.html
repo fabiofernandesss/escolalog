@@ -217,6 +217,29 @@
 
     <div class="container">
         <div class="section">
+            <!-- Foto de Perfil -->
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="field" style="text-align: center;">
+                    <label>Foto de Perfil</label>
+                    <div class="profile-photo-container" style="margin: 10px 0;">
+                        <div id="profilePhotoPreview" class="profile-photo-preview" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #ddd; margin: 0 auto; background: #f5f5f5; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="document.getElementById('profilePhotoInput').click()">
+                            <i data-lucide="user" style="width: 60px; height: 60px; color: #999;"></i>
+                        </div>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" onchange="handleProfilePhotoChange(event)">
+                        <div style="margin-top: 10px;">
+                            <button type="button" class="btn secondary" onclick="document.getElementById('profilePhotoInput').click()" style="margin-right: 10px;">
+                                <i data-lucide="upload" style="width: 16px; height: 16px; margin-right: 5px;"></i>
+                                Escolher Foto
+                            </button>
+                            <button type="button" id="removePhotoBtn" class="btn secondary" onclick="removeProfilePhoto()" style="display: none;">
+                                <i data-lucide="trash-2" style="width: 16px; height: 16px; margin-right: 5px;"></i>
+                                Remover
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="row">
                 <div class="field">
                     <label>Nome</label>
@@ -244,8 +267,112 @@
     <script>
     let supabase = null;
     let currentUser = null;
+    let currentProfilePhoto = null;
 
     function goBack() { window.location.href = 'menu.html'; }
+
+    // Funções para gerenciamento da foto de perfil
+    function handleProfilePhotoChange(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar tipo de arquivo
+        if (!file.type.startsWith('image/')) {
+            document.getElementById('statusMsg').textContent = 'Por favor, selecione apenas arquivos de imagem.';
+            return;
+        }
+
+        // Validar tamanho (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            document.getElementById('statusMsg').textContent = 'A imagem deve ter no máximo 5MB.';
+            return;
+        }
+
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePhotoPreview');
+            preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            document.getElementById('removePhotoBtn').style.display = 'inline-block';
+            currentProfilePhoto = file;
+            document.getElementById('statusMsg').textContent = 'Foto selecionada. Clique em "Salvar alterações" para confirmar.';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeProfilePhoto() {
+        const preview = document.getElementById('profilePhotoPreview');
+        preview.innerHTML = '<i data-lucide="user" style="width: 60px; height: 60px; color: #999;"></i>';
+        document.getElementById('removePhotoBtn').style.display = 'none';
+        document.getElementById('profilePhotoInput').value = '';
+        currentProfilePhoto = 'remove';
+        lucide.createIcons();
+        document.getElementById('statusMsg').textContent = 'Foto removida. Clique em "Salvar alterações" para confirmar.';
+    }
+
+    async function uploadProfilePhoto(file) {
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+            
+            // Upload para o bucket 'perfil-fotos'
+            const { data, error } = await supabase.storage
+                .from('perfil-fotos')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) throw error;
+
+            // Obter URL pública
+            const { data: urlData } = supabase.storage
+                .from('perfil-fotos')
+                .getPublicUrl(fileName);
+
+            return urlData.publicUrl;
+        } catch (error) {
+            console.error('Erro no upload da foto:', error);
+            throw error;
+        }
+    }
+
+    async function deleteProfilePhoto(photoUrl) {
+        try {
+            if (!photoUrl) return;
+            
+            // Extrair nome do arquivo da URL
+            const fileName = photoUrl.split('/').pop();
+            
+            const { error } = await supabase.storage
+                .from('perfil-fotos')
+                .remove([fileName]);
+
+            if (error) console.warn('Erro ao remover foto antiga:', error);
+        } catch (error) {
+            console.warn('Erro ao remover foto antiga:', error);
+        }
+    }
+
+    async function loadProfilePhoto() {
+        try {
+            if (!currentUser?.id) return;
+
+            const { data, error } = await supabase
+                .from('usuarios')
+                .select('foto_perfil')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+
+            if (!error && data && data.foto_perfil) {
+                const preview = document.getElementById('profilePhotoPreview');
+                preview.innerHTML = `<img src="${data.foto_perfil}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                document.getElementById('removePhotoBtn').style.display = 'inline-block';
+            }
+        } catch (error) {
+            console.warn('Erro ao carregar foto de perfil:', error);
+        }
+    }
 
     async function getSupabaseKeys() {
         try {
@@ -284,7 +411,7 @@
         currentUser = getSession();
         if (!currentUser) { window.location.href = '../login.html'; return false; }
         const roleRaw = (currentUser.tipo || currentUser.tipo_usuario || currentUser.role || currentUser.perfil || '').toString().toLowerCase();
-        if (!roleRaw.includes('professor')) { window.location.href = '../login.html'; return false; }
+        if (!roleRaw.includes('professor') && !roleRaw.includes('diretor')) { window.location.href = '../login.html'; return false; }
         currentUser.id = currentUser.id || currentUser.usuario_id || currentUser.user_id || currentUser.uid || null;
         return true;
     }
@@ -311,13 +438,20 @@
             try {
                 const { data, error } = await supabase
                     .from('usuarios')
-                    .select('id, nome, email, whatsapp, tipo_usuario')
+                    .select('id, nome, email, whatsapp, tipo_usuario, foto_perfil')
                     .eq('id', currentUser.id)
                     .maybeSingle();
                 if (!error && data) {
                     nomeEl.value = data.nome || nomeEl.value;
                     emailEl.value = data.email || emailEl.value;
                     waEl.value = data.whatsapp || waEl.value;
+                    
+                    // Carregar foto de perfil
+                    if (data.foto_perfil) {
+                        const preview = document.getElementById('profilePhotoPreview');
+                        preview.innerHTML = `<img src="${data.foto_perfil}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                        document.getElementById('removePhotoBtn').style.display = 'inline-block';
+                    }
                 }
             } catch (_) {}
         }
@@ -334,6 +468,41 @@
         const payload = { nome };
 
         try {
+            // Processar foto de perfil se houver mudanças
+            if (currentProfilePhoto) {
+                if (currentProfilePhoto === 'remove') {
+                    // Remover foto existente
+                    const { data: currentData } = await supabase
+                        .from('usuarios')
+                        .select('foto_perfil')
+                        .eq('id', currentUser.id)
+                        .maybeSingle();
+                    
+                    if (currentData?.foto_perfil) {
+                        await deleteProfilePhoto(currentData.foto_perfil);
+                    }
+                    payload.foto_perfil = null;
+                } else {
+                    // Upload nova foto
+                    statusMsg.textContent = 'Fazendo upload da foto...';
+                    
+                    // Remover foto antiga se existir
+                    const { data: currentData } = await supabase
+                        .from('usuarios')
+                        .select('foto_perfil')
+                        .eq('id', currentUser.id)
+                        .maybeSingle();
+                    
+                    if (currentData?.foto_perfil) {
+                        await deleteProfilePhoto(currentData.foto_perfil);
+                    }
+                    
+                    const photoUrl = await uploadProfilePhoto(currentProfilePhoto);
+                    payload.foto_perfil = photoUrl;
+                }
+                currentProfilePhoto = null;
+            }
+
             let updateOk = false;
             if (currentUser?.id) {
                 const { error } = await supabase
@@ -353,6 +522,7 @@
             statusMsg.textContent = updateOk ? 'Alterações salvas com sucesso.' : 'Alterações salvas localmente.';
         } catch (e) {
             statusMsg.textContent = 'Erro ao salvar: ' + e.message;
+            console.error('Erro ao salvar perfil:', e);
         } finally {
             btn.disabled = false;
         }

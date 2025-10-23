@@ -133,6 +133,11 @@
             color: hsl(var(--destructive-foreground));
         }
         
+        .toast-info {
+            background: hsl(var(--brand-blue));
+            color: white;
+        }
+        
         .spinner {
             border: 2px solid transparent;
             border-top: 2px solid currentColor;
@@ -633,7 +638,7 @@
                 'admin': 'admin/dashboard.html',
                 'prefeito': 'prefeito/menu.html', 
                 'secretario': 'secretario/menu.html',
-                'diretor': 'diretor/menu.html',
+                'diretor': 'professor/menu.html', // Diretores agora vão para a sessão de professor
                 'professor': 'professor/menu.html',
                 'responsavel': 'responsavel/menu.html'
             };
@@ -793,66 +798,18 @@
             }
         }
         
-        // Função para liberar acesso via WhatsApp
+        // Função para liberar acesso - Em implementação
         async function liberarAcesso() {
             try {
-                // Buscar número do administrador do banco de dados
-                let numeroSuporte = '5511969039674'; // Fallback padrão
+                // Mostrar mensagem informativa sobre implementação em breve
+                showToast('🚧 Acesso para responsáveis em breve! Estamos implementando esta funcionalidade.', 'info');
                 
-                if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-                    try {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/geral?select=cel_admin&limit=1`, {
-                            method: 'GET',
-                            headers: {
-                                'apikey': SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data && data.length > 0 && data[0].cel_admin) {
-                                numeroSuporte = data[0].cel_admin;
-                                console.log('✅ Número do administrador obtido do banco:', numeroSuporte);
-                            }
-                        }
-                    } catch (error) {
-                        console.warn('⚠️ Erro ao buscar número do administrador, usando fallback:', error);
-                    }
-                } else {
-                    console.warn('⚠️ Supabase não inicializado, usando número padrão');
-                }
-                
-                // Solicitar nome completo do usuário
-                const nomeUsuario = prompt('Digite seu nome completo:');
-                if (!nomeUsuario || nomeUsuario.trim().length < 3) {
-                    alert('Nome completo é obrigatório para solicitar liberação de acesso.');
-                    return;
-                }
-                
-                // Solicitar nome completo do filho
-                const nomeFilho = prompt('Digite o nome completo do seu filho:');
-                if (!nomeFilho || nomeFilho.trim().length < 3) {
-                    alert('Nome completo do filho é obrigatório para solicitar liberação de acesso.');
-                    return;
-                }
-                
-                // Mensagem padrão
-                const mensagem = `Olá, meu nome é ${nomeUsuario} e o nome do meu filho é ${nomeFilho}. Eu quero liberar o acesso.`;
-                
-                // Codificar a mensagem para URL
-                const mensagemCodificada = encodeURIComponent(mensagem);
-                
-                // Criar URL do WhatsApp
-                const urlWhatsApp = `https://wa.me/${numeroSuporte}?text=${mensagemCodificada}`;
-                
-                // Abrir WhatsApp na mesma aba
-                window.location.href = urlWhatsApp;
+                // Log para desenvolvimento
+                console.log('ℹ️ Função liberarAcesso chamada - Implementação em andamento');
                 
             } catch (error) {
                 console.error('❌ Erro na função liberarAcesso:', error);
-                alert('Erro ao processar solicitação. Tente novamente.');
+                showToast('Erro ao processar solicitação. Tente novamente.', 'error');
             }
         }
     </script>
