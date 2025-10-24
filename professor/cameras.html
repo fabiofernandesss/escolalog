@@ -34,10 +34,29 @@
 
 
     <style>
+        /* Força tema claro independente das configurações do navegador */
+        :root {
+            color-scheme: light only !important;
+        }
+        
+        html {
+            color-scheme: light only !important;
+        }
+        
+        body {
+            color-scheme: light only !important;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            color-scheme: light only !important;
+        }
+        
+        /* Previne inversão de cores em elementos específicos */
+        input, textarea, select, button {
+            color-scheme: light only !important;
         }
 
         body {

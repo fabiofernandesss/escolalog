@@ -1,10 +1,24 @@
 /* PWA Styles - Escola Log */
 
+/* Força tema claro independente das configurações do navegador */
+:root {
+  color-scheme: light only;
+}
+
+html {
+  color-scheme: light only;
+}
+
+body {
+  color-scheme: light only;
+}
+
 /* Reset e base */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  color-scheme: light only;
 }
 
 html {
@@ -17,11 +31,36 @@ body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background-color: #f8fafc;
+  color: #333 !important;
+  background-color: #f8fafc !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+/* Força elementos específicos a manter tema claro */
+input, textarea, select, button {
+  color-scheme: light only !important;
+}
+
+/* Previne inversão de cores em elementos de formulário */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="number"], 
+input[type="tel"], 
+input[type="url"], 
+input[type="search"], 
+textarea, 
+select {
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Força cor de fundo e texto para elementos comuns */
+div, span, p, h1, h2, h3, h4, h5, h6, a, li, td, th {
+  color-scheme: light only;
 }
 
 /* PWA Safe Area */
