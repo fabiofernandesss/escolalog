@@ -2101,7 +2101,7 @@
                     <td>${student.escolas?.nome || student.escola_nome || '-'}</td>
                     <td>${student.turmas?.nome || student.turma_nome || '-'}</td>
                     <td>${student.series?.nome || student.serie_nome || '-'}</td>
-
+                    <td>${student.sexo || '-'}</td>
                     <td>${student.nome_responsavel_1 || '-'}</td>
                     <td>
                         <div class="actions">
@@ -2146,6 +2146,7 @@
             const filterSchool = document.getElementById('filterSchool').value;
             const filterClass = document.getElementById('filterClass').value;
             const filterSeries = document.getElementById('filterSeries').value;
+            const filterSexo = document.getElementById('filterSexo').value;
             const filterPhoto = document.getElementById('filterPhoto').value;
 
             const filtered = students.filter(student => {
@@ -2153,6 +2154,7 @@
                 const matchSchool = !filterSchool || student.escola_id === filterSchool;
                 const matchClass = !filterClass || student.turma_id === filterClass;
                 const matchSeries = !filterSeries || student.serie_id === filterSeries;
+                const matchSexo = !filterSexo || student.sexo === filterSexo;
                 
                 let matchPhoto = true;
                 if (filterPhoto === 'com') {
@@ -2161,13 +2163,13 @@
                     matchPhoto = !student.foto_url || student.foto_url.trim() === '';
                 }
 
-                return matchName && matchSchool && matchClass && matchSeries && matchPhoto;
+                return matchName && matchSchool && matchClass && matchSeries && matchSexo && matchPhoto;
             });
 
             renderStudents(filtered);
             
             // Verificar se há filtros aplicados
-            const hasFilters = searchName || filterSchool || filterClass || filterSeries || filterPhoto !== 'todas';
+            const hasFilters = searchName || filterSchool || filterClass || filterSeries || filterSexo || filterPhoto !== 'todas';
             
             if (hasFilters) {
                 updateStudentsCount(filtered.length, students.length);
